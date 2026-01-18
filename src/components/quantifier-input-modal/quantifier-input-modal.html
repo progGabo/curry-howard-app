@@ -1,0 +1,38 @@
+<div class="quantifier-modal">
+  <h3>{{ title }}</h3>
+  
+  <div class="input-group">
+    <label>
+      {{ isVariableInput ? labelVariable : labelTerm }}
+    </label>
+    <input
+      type="text"
+      [(ngModel)]="inputValue"
+      [placeholder]="placeholder"
+      (keyup.enter)="confirm()"
+      (keyup.escape)="cancel()"
+      class="input-field"
+      autofocus
+    />
+  </div>
+  
+  <div class="error-message" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+  
+  <div class="button-group">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="cancel()">
+      {{ btnCancel }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="confirm()">
+      {{ btnConfirm }}
+    </button>
+  </div>
+</div>
+

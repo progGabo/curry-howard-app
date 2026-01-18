@@ -1,0 +1,28 @@
+.proof-with-lambda {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.tree-panel, .lambda-panel {
+  flex: 1;
+}
+
+.lambda-panel {
+  padding: 0.5rem 0;
+}
+
+.lambda-panel h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.lambda-panel pre {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0;
+}

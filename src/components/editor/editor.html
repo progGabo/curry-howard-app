@@ -1,0 +1,7 @@
+<div class="editor">
+  <ngx-monaco-editor
+    [(ngModel)]="code"
+    (ngModelChange)="onCodeChange($event)"
+    [options]="editorOptions">
+  </ngx-monaco-editor>
+</div>

@@ -1,0 +1,23 @@
+.editor {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+ngx-monaco-editor,
+.ngx-monaco-editor {
+  display: block;
+  width: 100%;
+  max-height: calc(19px * 10 + 4px); /* 10 rows * line height + padding */
+  min-height: calc(19px * 3); /* Minimum 3 rows */
+  overflow: hidden;
+}
+
+::ng-deep .monaco-editor {
+  max-height: calc(19px * 10 + 4px) !important;
+}
+
+::ng-deep .monaco-editor .monaco-scrollable-element {
+  max-height: calc(19px * 10 + 4px) !important;
+}

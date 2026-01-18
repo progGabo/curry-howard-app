@@ -1,0 +1,336 @@
+<header class="header">
+  <div class="header-left">
+    <div class="mode-switcher">
+      <p-button 
+        [label]="t.exprToLambda" 
+        [severity]="conversionMode === 'expression-to-lambda' ? 'primary' : 'secondary'"
+        (click)="switchMode('expression-to-lambda')"
+        styleClass="btn">
+      </p-button>
+      <p-button 
+        [label]="t.lambdaToExpr" 
+        [severity]="conversionMode === 'lambda-to-expression' ? 'primary' : 'secondary'"
+        (click)="switchMode('lambda-to-expression')"
+        styleClass="btn">
+      </p-button>
+    </div>
+    
+    <!-- Divider -->
+    <div class="header-divider"></div>
+    
+    <!-- Mode Toggle Switch -->
+    <div class="mode-toggle-container">
+      <div class="mode-toggle">
+        <button 
+          class="mode-toggle-btn"
+          [class.active]="mode === 'auto'"
+          [disabled]="isPredicateLogic && conversionMode === 'expression-to-lambda'"
+          [title]="isPredicateLogic && conversionMode === 'expression-to-lambda' ? (currentLanguage === 'sk' ? 'Auto mód nie je dostupný pre predikátovú logiku' : 'Auto mode is not available for predicate logic') : ''"
+          (click)="mode = 'auto'; parseAndBuild()">
+          {{ t.autoMode }}
+        </button>
+        <button 
+          class="mode-toggle-btn"
+          [class.active]="mode === 'interactive'"
+          (click)="mode = 'interactive'; parseAndBuild()">
+          {{ t.interactiveMode }}
+        </button>
+      </div>
+      
+      <!-- Interactive Submode Dropdown -->
+      <div class="submode-dropdown" *ngIf="mode === 'interactive'">
+        <select class="submode-select" [(ngModel)]="interactiveSubmode">
+          <option value="applicable">{{ t.applicableOnly }}</option>
+          <option value="all">{{ t.allRules }}</option>
+          <option value="predict">{{ t.predictNext }}</option>
+        </select>
+      </div>
+      
+      <!-- Step Back Button -->
+      <p-button 
+        *ngIf="mode === 'interactive'"
+        [label]="t.stepBack" 
+        styleClass="btn btn-step-back" 
+        [disabled]="!canStepBack"
+        (click)="stepBack()">
+      </p-button>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <p-button [label]="t.help" (click)="helpVisible = true" styleClass="btn btn-ghost"></p-button>
+
+    <div class="lang-switch">
+      <p-button label="SK" [severity]="currentLanguage === 'sk' ? 'primary' : 'secondary'" (click)="currentLanguage = 'sk'" styleClass="btn btn-toggle"></p-button>
+      <p-button label="EN" [severity]="currentLanguage === 'en' ? 'primary' : 'secondary'" (click)="currentLanguage = 'en'" styleClass="btn btn-toggle"></p-button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <p-splitter [style]="{ height: '100%' }" [panelSizes]="[30, 70]" [minSizes]="[0, 0]" layout="horizontal" styleClass="main-splitter">
+    <ng-template pTemplate>
+      <div class="editor-panel">
+        <div class="examples">
+          <label>{{ t.examples }}</label>
+          <select *ngIf="conversionMode === 'expression-to-lambda'" class="select" (change)="applyExample($any($event.target).value)">
+            <option value="" selected disabled>{{ t.chooseExampleExpr }}</option>
+            <option *ngFor="let ex of expressionExamples" [value]="ex.code">{{ ex.label }}</option>
+          </select>
+          <select *ngIf="conversionMode === 'lambda-to-expression'" class="select" (change)="applyExample($any($event.target).value)">
+            <option value="" selected disabled>{{ t.chooseExampleLambda }}</option>
+            <option *ngFor="let ex of lambdaExamples" [value]="ex.code">{{ ex.label }}</option>
+          </select>
+          
+          <p-button (click)="parseAndBuild()" styleClass="btn btn-primary">
+            {{ conversionMode === 'expression-to-lambda' ? t.generateProof : t.convertLambda }}
+          </p-button>
+        </div>
+        <div class="editor-wrapper">
+          <div class="editor">
+            <app-editor 
+              [conversionMode]="conversionMode"
+              [presetCode]="code"
+              (formulaEntered)="onInputChanged($event)">
+            </app-editor>
+          </div>
+          <app-proof-lambda
+            *ngIf="conversionMode === 'expression-to-lambda' && lambdaExpr"
+            [lambdaExpr]="lambdaExpr"
+          ></app-proof-lambda>
+          <div class="result-type" *ngIf="conversionMode === 'lambda-to-expression' && resultExpression">
+            <h4>{{ t.exprType }}</h4>
+            <pre>{{ resultExpression }}</pre>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+    <ng-template pTemplate>
+      <div class="proof-container">
+        <div class="tree-panel" *ngIf="proofTree || resultExpression || typeInferenceTree">
+          
+          <div *ngIf="conversionMode === 'expression-to-lambda'">
+            <div class="tabs-container">
+              <div class="tabs-header">
+                <button 
+                  class="tab-button" 
+                  [class.active]="activeTab === 'proof'"
+                  (click)="activeTab = 'proof'"
+                >
+                  {{ t.proofTree }}
+                </button>
+                <button 
+                  *ngIf="lambdaExprNode && typeInferenceTreeForLambda"
+                  class="tab-button" 
+                  [class.active]="activeTab === 'typeInference'"
+                  (click)="activeTab = 'typeInference'"
+                >
+                  {{ currentLanguage === 'sk' ? 'Strom odvodenia typu' : 'Type Inference Tree' }}
+                </button>
+              </div>
+              <div class="tabs-content">
+                <div *ngIf="activeTab === 'proof'" class="tab-panel">
+                  <div 
+                    class="tree-canvas-container"
+                    (mousedown)="onTreeCanvasMouseDown($event)"
+                    (mousemove)="onTreeCanvasMouseMove($event)"
+                    (mouseup)="onTreeCanvasMouseUp($event)"
+                    (mouseleave)="onTreeCanvasMouseUp($event)"
+                    (wheel)="onTreeCanvasWheel($event)"
+                    (contextmenu)="$event.preventDefault()"
+                  >
+                    <div 
+                      class="tree-canvas"
+                      [style.transform]="'translate(' + treePanX + 'px, ' + treePanY + 'px) scale(' + treeZoom + ')'"
+                      [style.transform-origin]="'0 0'"
+                    >
+                      <app-proof-tree
+                        [root]="proofTree"
+                        [mode]="mode"
+                        [interactiveSubmode]="interactiveSubmode"
+                        [currentLanguage]="currentLanguage"
+                        [selectedNode]="selectedNode"
+                        [predictionRuleRequest]="predictionRuleRequest"
+                        (nodeClicked)="onNodeClicked($event)"
+                        (plusButtonClicked)="onProofPlusButtonClicked($event)"
+                        (ruleSelected)="applyRuleToNode($event)"
+                      ></app-proof-tree>
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="activeTab === 'typeInference' && lambdaExprNode && typeInferenceTreeForLambda" class="tab-panel">
+                  <div 
+                    class="tree-canvas-container"
+                    (mousedown)="onTreeCanvasMouseDown($event)"
+                    (mousemove)="onTreeCanvasMouseMove($event)"
+                    (mouseup)="onTreeCanvasMouseUp($event)"
+                    (mouseleave)="onTreeCanvasMouseUp($event)"
+                    (wheel)="onTreeCanvasWheel($event)"
+                    (contextmenu)="$event.preventDefault()"
+                  >
+                    <div 
+                      class="tree-canvas"
+                      [style.transform]="'translate(' + treePanX + 'px, ' + treePanY + 'px) scale(' + treeZoom + ')'"
+                      [style.transform-origin]="'0 0'"
+                    >
+                      <app-type-inference-tree
+                        [root]="typeInferenceTreeForLambda"
+                        [mode]="'auto'"
+                        [interactiveSubmode]="'all'"
+                        [selectedNode]="null"
+                        [currentLanguage]="currentLanguage"
+                      ></app-type-inference-tree>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="conversionMode === 'lambda-to-expression'">
+            <div 
+              class="tree-canvas-container"
+              (mousedown)="onTreeCanvasMouseDown($event)"
+              (mousemove)="onTreeCanvasMouseMove($event)"
+              (mouseup)="onTreeCanvasMouseUp($event)"
+              (mouseleave)="onTreeCanvasMouseUp($event)"
+              (wheel)="onTreeCanvasWheel($event)"
+              (contextmenu)="$event.preventDefault()"
+            >
+              <div 
+                class="tree-canvas"
+                [style.transform]="'translate(' + treePanX + 'px, ' + treePanY + 'px) scale(' + treeZoom + ')'"
+                [style.transform-origin]="'0 0'"
+              >
+                <div class="type-inference-section">
+                  <app-type-inference-tree
+                    [root]="typeInferenceTree"
+                    [mode]="mode"
+                    [interactiveSubmode]="interactiveSubmode"
+                    [selectedNode]="selectedTypeNode"
+                    [predictionRuleRequest]="predictionTypeRuleRequest"
+                    [currentLanguage]="currentLanguage"
+                    (nodeClicked)="onTypeNodeClicked($event)"
+                    (plusButtonClicked)="onTypePlusButtonClicked($event)"
+                    (ruleSelected)="applyTypeRuleToNode($event)"
+                  ></app-type-inference-tree>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </ng-template>
+  </p-splitter>
+</div>
+
+<p-toast></p-toast>
+
+<!-- Rule Menu Popup - Moved outside tree components -->
+<div
+  class="rule-menu-popup"
+  *ngIf="popupVisible"
+  [ngStyle]="popupPosition"
+  (mousemove)="onPopupDragMove($event)"
+  (mouseup)="onPopupDragEnd()"
+  (mouseleave)="onPopupDragEnd()"
+>
+  <div class="popup-header" (mousedown)="onPopupDragStart($event)">
+    <span class="drag-handle">☰ Drag to move</span>
+    <button class="close-btn" (click)="closePopup()">×</button>
+  </div>
+
+  <!-- Proof Tree Rules -->
+  <div *ngIf="conversionMode === 'expression-to-lambda'">
+    <h4>Pravidlá pre záver</h4>
+    <div class="rule-group">
+      <button *ngFor="let rule of filteredConclusionRules" (click)="onProofRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+
+    <h4>Pravidlá pre predpoklad</h4>
+    <div class="rule-group">
+      <button *ngFor="let rule of filteredAssumptionRules" (click)="onProofRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+
+    <h4>Špeciálne</h4>
+    <div class="rule-group special">
+      <button *ngFor="let rule of filteredSpecialRules" (click)="onProofRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Type Inference Rules -->
+  <div *ngIf="conversionMode === 'lambda-to-expression'">
+    <h4>Basic</h4>
+    <div class="rule-group" *ngIf="filteredBasicRules.length">
+      <button *ngFor="let rule of filteredBasicRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+
+    <h4>Functions</h4>
+    <div class="rule-group" *ngIf="filteredAbsRules.length || filteredAppRules.length">
+      <button *ngFor="let rule of filteredAbsRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+      <button *ngFor="let rule of filteredAppRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+
+    <h4>Pairs & Sums</h4>
+    <div class="rule-group" *ngIf="filteredPairRules.length || filteredSumRules.length">
+      <button *ngFor="let rule of filteredPairRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+      <button *ngFor="let rule of filteredSumRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+
+    <h4>Control Flow</h4>
+    <div class="rule-group" *ngIf="filteredConditionalRules.length || filteredLetRules.length">
+      <button *ngFor="let rule of filteredConditionalRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+      <button *ngFor="let rule of filteredLetRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+
+    <h4>Naturals</h4>
+    <div class="rule-group" *ngIf="filteredNatRules.length">
+      <button *ngFor="let rule of filteredNatRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="help-modal" *ngIf="helpVisible" (click)="helpVisible = false">
+  <div class="help-modal__dialog" (click)="$event.stopPropagation()">
+    <div class="help-modal__header">
+      <h3>{{ t.helpTitle }}</h3>
+      <button class="modal-close" (click)="helpVisible = false">✕</button>
+    </div>
+    <div class="help-modal__body">
+    </div>
+    <div class="help-modal__footer">
+      <p-button [label]="t.close" (click)="helpVisible = false" styleClass="btn btn-primary"></p-button>
+    </div>
+  </div>
+  <div class="help-modal__backdrop"></div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>© {{ currentYear }} {{ t.footerText }}</span>
+  </div>
+</footer>
