@@ -53,7 +53,7 @@
         <span class="plus-icon">+</span>
       </button>
       <span class="rule" *ngIf="root && (root.children?.length || root.rule === 'Var' || root.rule === 'True' || root.rule === 'False' || root.rule === 'Zero')">
-        ({{ root.rule }})
+        {{ root.rule }}
       </span>
       <div class="inference-content" *ngIf="root">
         <div class="expression">{{ formatExpression(root.expression) }}</div>

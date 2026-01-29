@@ -1,18 +1,22 @@
 <header class="header">
   <div class="header-left">
-    <div class="mode-switcher">
-      <p-button 
-        [label]="t.exprToLambda" 
-        [severity]="conversionMode === 'expression-to-lambda' ? 'primary' : 'secondary'"
-        (click)="switchMode('expression-to-lambda')"
-        styleClass="btn">
-      </p-button>
-      <p-button 
-        [label]="t.lambdaToExpr" 
-        [severity]="conversionMode === 'lambda-to-expression' ? 'primary' : 'secondary'"
-        (click)="switchMode('lambda-to-expression')"
-        styleClass="btn">
-      </p-button>
+    <h1 class="app-title">Curry-Howard</h1>
+    <div class="header-divider"></div>
+    <div class="direction-toggle">
+      <button
+        type="button"
+        class="direction-toggle-btn"
+        [class.active]="conversionMode === 'expression-to-lambda'"
+        (click)="switchMode('expression-to-lambda')">
+        {{ t.exprToLambda }}
+      </button>
+      <button
+        type="button"
+        class="direction-toggle-btn"
+        [class.active]="conversionMode === 'lambda-to-expression'"
+        (click)="switchMode('lambda-to-expression')">
+        {{ t.lambdaToExpr }}
+      </button>
     </div>
     
     <!-- Divider -->
@@ -58,7 +62,7 @@
   </div>
 
   <div class="header-actions">
-    <p-button [label]="t.help" (click)="helpVisible = true" styleClass="btn btn-ghost"></p-button>
+    <p-button [icon]="'pi pi-question-circle'" [label]="t.help" (click)="helpVisible = true" styleClass="btn btn-ghost"></p-button>
 
     <div class="lang-switch">
       <p-button label="SK" [severity]="currentLanguage === 'sk' ? 'primary' : 'secondary'" (click)="currentLanguage = 'sk'" styleClass="btn btn-toggle"></p-button>
@@ -67,24 +71,37 @@
   </div>
 </header>
 
+<!-- Slide Panel Toggle Button -->
+<button class="slide-panel-toggle" (click)="slidePanelVisible = !slidePanelVisible" [class.active]="slidePanelVisible">
+  <i [class]="slidePanelVisible ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"></i>
+</button>
+
+<!-- Slide Panel -->
+<div class="slide-panel" [class.open]="slidePanelVisible">
+  <div class="slide-panel-content">
+    <!-- Content will go here -->
+  </div>
+</div>
+
 <div class="main">
-  <p-splitter [style]="{ height: '100%' }" [panelSizes]="[30, 70]" [minSizes]="[0, 0]" layout="horizontal" styleClass="main-splitter">
+  <p-splitter [style]="{ height: '100%' }" [panelSizes]="panelSizes" [minSizes]="[15, 0]" layout="horizontal" styleClass="main-splitter" (onResizeEnd)="onSplitterResizeEnd($event)">
     <ng-template pTemplate>
       <div class="editor-panel">
         <div class="examples">
-          <label>{{ t.examples }}</label>
-          <select *ngIf="conversionMode === 'expression-to-lambda'" class="select" (change)="applyExample($any($event.target).value)">
-            <option value="" selected disabled>{{ t.chooseExampleExpr }}</option>
-            <option *ngFor="let ex of expressionExamples" [value]="ex.code">{{ ex.label }}</option>
-          </select>
-          <select *ngIf="conversionMode === 'lambda-to-expression'" class="select" (change)="applyExample($any($event.target).value)">
-            <option value="" selected disabled>{{ t.chooseExampleLambda }}</option>
-            <option *ngFor="let ex of lambdaExamples" [value]="ex.code">{{ ex.label }}</option>
-          </select>
-          
-          <p-button (click)="parseAndBuild()" styleClass="btn btn-primary">
-            {{ conversionMode === 'expression-to-lambda' ? t.generateProof : t.convertLambda }}
-          </p-button>
+          <label class="examples-label">{{ t.examples }}</label>
+          <div class="examples-row">
+            <select *ngIf="conversionMode === 'expression-to-lambda'" class="select examples-select" (change)="applyExample($any($event.target).value)">
+              <option value="" selected disabled>{{ t.chooseExampleExpr }}</option>
+              <option *ngFor="let ex of expressionExamples" [value]="ex.code">{{ ex.label }}</option>
+            </select>
+            <select *ngIf="conversionMode === 'lambda-to-expression'" class="select examples-select" (change)="applyExample($any($event.target).value)">
+              <option value="" selected disabled>{{ t.chooseExampleLambda }}</option>
+              <option *ngFor="let ex of lambdaExamples" [value]="ex.code">{{ ex.label }}</option>
+            </select>
+            <p-button (click)="parseAndBuild()" styleClass="btn btn-primary examples-btn">
+              {{ conversionMode === 'expression-to-lambda' ? t.generateProof : t.convertLambda }}
+            </p-button>
+          </div>
         </div>
         <div class="editor-wrapper">
           <div class="editor">
@@ -97,6 +114,7 @@
           <app-proof-lambda
             *ngIf="conversionMode === 'expression-to-lambda' && lambdaExpr"
             [lambdaExpr]="lambdaExpr"
+            [label]="t.lambdaExpression"
           ></app-proof-lambda>
           <div class="result-type" *ngIf="conversionMode === 'lambda-to-expression' && resultExpression">
             <h4>{{ t.exprType }}</h4>
@@ -294,6 +312,13 @@
       </button>
     </div>
 
+    <h4>Dependent (∀ / ∃)</h4>
+    <div class="rule-group" *ngIf="filteredDependentRules.length">
+      <button *ngFor="let rule of filteredDependentRules" (click)="onTypeRuleClick(rule)">
+        {{ rule }}
+      </button>
+    </div>
+
     <h4>Control Flow</h4>
     <div class="rule-group" *ngIf="filteredConditionalRules.length || filteredLetRules.length">
       <button *ngFor="let rule of filteredConditionalRules" (click)="onTypeRuleClick(rule)">
@@ -321,6 +346,107 @@
       <button class="modal-close" (click)="helpVisible = false">✕</button>
     </div>
     <div class="help-modal__body">
+      <div class="tutorial-content" *ngIf="currentLanguage === 'sk'">
+        <h4>Úvod</h4>
+        <p>Táto aplikácia demonštruje Curry-Howardov izomorfizmus, ktorý spája logiku a typy v programovaní. Môžete prevádzať medzi logickými výrazmi a lambda výrazmi.</p>
+        
+        <h4>Dva režimy prevodu</h4>
+        <ul>
+          <li><strong>Výraz → Lambda:</strong> Zadajte logický výraz a aplikácia vygeneruje zodpovedajúci lambda výraz a dôkazový strom.</li>
+          <li><strong>Lambda → Výraz:</strong> Zadajte lambda výraz a aplikácia určí jeho typ.</li>
+        </ul>
+        
+        <h4>Použitie aplikácie</h4>
+        <ol>
+          <li><strong>Vyberte režim:</strong> Použite tlačidlá "Výraz → Lambda" alebo "Lambda → Výraz" v hlavičke.</li>
+          <li><strong>Zadajte výraz:</strong> Napíšte logický výraz alebo lambda výraz do editora vľavo.</li>
+          <li><strong>Príklady:</strong> Môžete použiť rozbaľovací zoznam príkladov na rýchle testovanie.</li>
+          <li><strong>Generovanie:</strong> Kliknite na tlačidlo "Generuj dôkaz" alebo "Konvertuj lambda".</li>
+          <li><strong>Výsledok:</strong> V pravej časti sa zobrazí dôkazový strom alebo typ výrazu.</li>
+        </ol>
+        
+        <h4>Režimy práce</h4>
+        <ul>
+          <li><strong>Auto mód:</strong> Aplikácia automaticky vygeneruje celý dôkaz.</li>
+          <li><strong>Interaktívny mód:</strong> Môžete manuálne aplikovať pravidlá:
+            <ul>
+              <li><strong>Iba použiteľné:</strong> Zobrazí len pravidlá, ktoré možno aplikovať.</li>
+              <li><strong>Všetky pravidlá:</strong> Zobrazí všetky dostupné pravidlá.</li>
+              <li><strong>Predpovedať ďalší:</strong> Môžete predpovedať nasledujúce kroky.</li>
+            </ul>
+          </li>
+        </ul>
+        
+        <h4>Práca s dôkazovým stromom</h4>
+        <ul>
+          <li>Kliknite na uzol v strome pre výber.</li>
+          <li>Kliknite na tlačidlo "+" pri uzle pre zobrazenie dostupných pravidiel.</li>
+          <li>V interaktívnom režime môžete použiť tlačidlo "Krok späť" pre vrátenie sa.</li>
+        </ul>
+        
+        <h4>Syntax výrazov</h4>
+        <ul>
+          <li><strong>Konjunkcia:</strong> &&</li>
+          <li><strong>Disjunkcia:</strong> ||</li>
+          <li><strong>Implikácia:</strong> =></li>
+          <li><strong>Negácia:</strong> !</li>
+          <li><strong>Univerzálny kvantifikátor:</strong> forall</li>
+          <li><strong>Existenčný kvantifikátor:</strong> exists</li>
+          <li><strong>Turnstile (sekvent):</strong> |-</li>
+          <li><strong>Lambda abstrakcia:</strong> \\</li>
+        </ul>
+      </div>
+      
+      <div class="tutorial-content" *ngIf="currentLanguage === 'en'">
+        <h4>Introduction</h4>
+        <p>This application demonstrates the Curry-Howard isomorphism, which connects logic and types in programming. You can convert between logical expressions and lambda expressions.</p>
+        
+        <h4>Two conversion modes</h4>
+        <ul>
+          <li><strong>Expression → Lambda:</strong> Enter a logical expression and the app will generate the corresponding lambda expression and proof tree.</li>
+          <li><strong>Lambda → Expression:</strong> Enter a lambda expression and the app will determine its type.</li>
+        </ul>
+        
+        <h4>How to use</h4>
+        <ol>
+          <li><strong>Select mode:</strong> Use the "Expression → Lambda" or "Lambda → Expression" buttons in the header.</li>
+          <li><strong>Enter expression:</strong> Type a logical or lambda expression into the editor on the left.</li>
+          <li><strong>Examples:</strong> You can use the dropdown list of examples for quick testing.</li>
+          <li><strong>Generate:</strong> Click the "Generate proof" or "Convert lambda" button.</li>
+          <li><strong>Result:</strong> The proof tree or expression type will be displayed on the right side.</li>
+        </ol>
+        
+        <h4>Work modes</h4>
+        <ul>
+          <li><strong>Auto mode:</strong> The app automatically generates the entire proof.</li>
+          <li><strong>Interactive mode:</strong> You can manually apply rules:
+            <ul>
+              <li><strong>Applicable only:</strong> Shows only rules that can be applied.</li>
+              <li><strong>All rules:</strong> Shows all available rules.</li>
+              <li><strong>Predict next:</strong> You can predict the next steps.</li>
+            </ul>
+          </li>
+        </ul>
+        
+        <h4>Working with proof tree</h4>
+        <ul>
+          <li>Click on a node in the tree to select it.</li>
+          <li>Click the "+" button next to a node to show available rules.</li>
+          <li>In interactive mode, you can use the "Step Back" button to go back.</li>
+        </ul>
+        
+        <h4>Expression syntax</h4>
+        <ul>
+          <li><strong>Conjunction:</strong> &&</li>
+          <li><strong>Disjunction:</strong> ||</li>
+          <li><strong>Implication:</strong> =></li>
+          <li><strong>Negation:</strong> !</li>
+          <li><strong>Universal quantifier:</strong> forall</li>
+          <li><strong>Existential quantifier:</strong> exists</li>
+          <li><strong>Turnstile (sequent):</strong> |-</li>
+          <li><strong>Lambda abstraction:</strong> \\</li>
+        </ul>
+      </div>
     </div>
     <div class="help-modal__footer">
       <p-button [label]="t.close" (click)="helpVisible = false" styleClass="btn btn-primary"></p-button>

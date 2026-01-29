@@ -634,7 +634,7 @@ export class LambdaBuilderService {
         return this.generate(node.children[0]);
 
       default:
-        return { kind: 'Var', name: '‹unsupported›' };
+        return { kind: 'Var', name: '-' };
     }
   }
 
@@ -799,7 +799,7 @@ export class LambdaBuilderService {
       case 'Cut':
         return seq.conclusions[0] ?? seq.assumptions[0]!;
       default:
-        return { kind: 'Var', name: '‹unsupported›' };
+        return { kind: 'Var', name: '-' };
     }
   }
 
@@ -1180,7 +1180,7 @@ export class LambdaBuilderService {
         return `⟨${this.exprToString(e.witness)}, ${this.exprToString(e.proof)}⟩`;
       case 'LetDependentPair':
         return `let ⟨${e.x}, ${e.p}⟩ = ${this.exprToString(e.pair)} in ${this.exprToString(e.inExpr)}`;
-      default: return '‹unsupported›';
+      default: return '-';
     }
   }
 

@@ -32,8 +32,10 @@ export class App {
 
   // UI state (non-logic)
   helpVisible: boolean = false;
+  slidePanelVisible: boolean = false;
   currentLanguage: 'sk' | 'en' = 'sk';
   currentYear: number = new Date().getFullYear();
+  panelSizes: number[] = [33, 67];
 
   // Translations
   translations = {
@@ -45,7 +47,7 @@ export class App {
       examples: 'Príklady',
       chooseExampleExpr: 'Vyberte príklad (Výraz → Lambda)',
       chooseExampleLambda: 'Vyberte príklad (Lambda → Typ)',
-      generateProof: 'Generuj dôkaz',
+      generateProof: 'Generovať dôkaz',
       convertLambda: 'Konvertuj lambda',
       autoMode: 'Auto mód',
       interactiveMode: 'Interaktívny mód',
@@ -55,11 +57,12 @@ export class App {
       proofTree: 'Dôkazový strom',
       typeInferenceTree: 'Strom odvodenia typu',
       lambdaExpr: 'Lambda výraz:',
+      lambdaExpression: 'Lambda-výraz',
       exprType: 'Typ výrazu:',
       helpTitle: 'Ako používať aplikáciu',
       helpLanguage: 'Jazyky môžete prepínať pomocou tlačidiel SK/EN v hlavičke.',
       close: 'Zavrieť',
-      footerText: 'Curry–Howard App',
+      footerText: 'Curry-Howard Aplikácia',
       stepBack: 'Krok späť',
       // Error messages
       errorRuleCannotBeApplied: 'Pravidlo {rule} sa nedá aplikovať na tento uzol.',
@@ -90,6 +93,7 @@ export class App {
       proofTree: 'Proof Tree',
       typeInferenceTree: 'Type Inference Tree',
       lambdaExpr: 'Lambda expression:',
+      lambdaExpression: 'Lambda Expression',
       exprType: 'Expression type:',
       helpTitle: 'How to use the app',
       helpLanguage: 'You can switch languages using the SK/EN buttons in the header.',
@@ -153,6 +157,7 @@ export class App {
   absRules = ['Abs'];
   appRules = ['App'];
   pairRules = ['Pair', 'LetPair'];
+  dependentRules = ['DependentAbs', 'DependentPair', 'LetDependentPair'];
   sumRules = ['Inl', 'Inr', 'Case'];
   conditionalRules = ['If'];
   natRules = ['Succ', 'Pred', 'IsZero'];
@@ -177,8 +182,20 @@ export class App {
     private lambdaParser: LambdaParserService,
     private lambdaToExpression: LambdaToExpressionService,
     private typeInference: TypeInferenceService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private cdr: ChangeDetectorRef
   ) {}
+
+  onSplitterResizeEnd(e?: { sizes?: number[] }): void {
+    const sizes = e?.sizes ?? this.panelSizes;
+    if (Array.isArray(sizes) && sizes.length >= 2 && sizes[0] > 50) {
+      this.panelSizes = [50, 50];
+      this.cdr.detectChanges();
+    } else if (Array.isArray(sizes) && sizes.length >= 2) {
+      this.panelSizes = [...sizes];
+      this.cdr.detectChanges();
+    }
+  }
 
   private showError(key: string, params?: { [key: string]: string | number }) {
     let message = (this.t as typeof this.translations.sk)[key as keyof typeof this.translations.sk] as string || key;
@@ -352,6 +369,10 @@ export class App {
     return this.filterTypeRules(this.pairRules);
   }
 
+  get filteredDependentRules(): string[] {
+    return this.filterTypeRules(this.dependentRules);
+  }
+
   get filteredSumRules(): string[] {
     return this.filterTypeRules(this.sumRules);
   }
@@ -390,6 +411,9 @@ export class App {
         case 'Succ': return expr.kind === 'Succ';
         case 'Pred': return expr.kind === 'Pred';
         case 'IsZero': return expr.kind === 'IsZero';
+        case 'DependentAbs': return expr.kind === 'DependentAbs';
+        case 'DependentPair': return expr.kind === 'DependentPair';
+        case 'LetDependentPair': return expr.kind === 'LetDependentPair';
         default: return true;
       }
     });

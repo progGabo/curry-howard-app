@@ -68,6 +68,15 @@ export class TypeInferenceService {
       case 'IsZero':
         return this.inferNatOp(expr, assumptions);
       
+      case 'DependentAbs':
+        return this.inferDependentAbs(expr, assumptions);
+      
+      case 'DependentPair':
+        return this.inferDependentPair(expr, assumptions);
+      
+      case 'LetDependentPair':
+        return this.inferLetDependentPair(expr, assumptions);
+      
       default:
         throw new Error(`Unsupported expression kind: ${(expr as any).kind}`);
     }
@@ -123,19 +132,27 @@ export class TypeInferenceService {
     const fnInference = this.inferType(expr.fn, assumptions);
     const argInference = this.inferType(expr.arg, assumptions);
     
-    // Check that function type is compatible
-    if (fnInference.inferredType.kind !== 'Func') {
+    const fnType = fnInference.inferredType;
+    let resultType: TypeNode;
+
+    if (fnType.kind === 'Func') {
+      if (!this.typesEqual(fnType.from, argInference.inferredType)) {
+        throw new Error('Type mismatch in application');
+      }
+      resultType = fnType.to;
+    } else if (fnType.kind === 'DependentFunc') {
+      if (!this.typesEqual(fnType.paramType, argInference.inferredType)) {
+        throw new Error('Type mismatch in application');
+      }
+      resultType = fnType.bodyType;
+    } else {
       throw new Error('Application of non-function type');
-    }
-    
-    if (!this.typesEqual(fnInference.inferredType.from, argInference.inferredType)) {
-      throw new Error('Type mismatch in application');
     }
 
     return {
       rule: 'App',
       expression: expr,
-      inferredType: fnInference.inferredType.to,
+      inferredType: resultType,
       assumptions: new Map(assumptions),
       children: [fnInference, argInference]
     };
@@ -265,6 +282,79 @@ export class TypeInferenceService {
     };
   }
 
+  private inferDependentAbs(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'DependentAbs') throw new Error('Expected DependentAbs expression');
+    
+    const newAssumptions = new Map(assumptions);
+    newAssumptions.set(expr.param, expr.paramType);
+    
+    const bodyInference = this.inferType(expr.body, newAssumptions);
+    
+    const resultType: TypeNode = {
+      kind: 'DependentFunc',
+      param: expr.param,
+      paramType: expr.paramType,
+      bodyType: bodyInference.inferredType
+    };
+
+    return {
+      rule: 'DependentAbs',
+      expression: expr,
+      inferredType: resultType,
+      assumptions: new Map(assumptions),
+      children: [bodyInference]
+    };
+  }
+
+  private inferDependentPair(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'DependentPair') throw new Error('Expected DependentPair expression');
+    
+    const witnessInference = this.inferType(expr.witness, assumptions);
+    if (!this.typesEqual(witnessInference.inferredType, expr.witnessType)) {
+      throw new Error('Witness type mismatch in dependent pair');
+    }
+    
+    const proofInference = this.inferType(expr.proof, assumptions);
+    
+    const resultType: TypeNode = {
+      kind: 'DependentProd',
+      param: 'x',
+      paramType: expr.witnessType,
+      bodyType: proofInference.inferredType
+    };
+
+    return {
+      rule: 'DependentPair',
+      expression: expr,
+      inferredType: resultType,
+      assumptions: new Map(assumptions),
+      children: [witnessInference, proofInference]
+    };
+  }
+
+  private inferLetDependentPair(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'LetDependentPair') throw new Error('Expected LetDependentPair expression');
+    
+    const pairInference = this.inferType(expr.pair, assumptions);
+    
+    if (pairInference.inferredType.kind !== 'DependentProd') {
+      throw new Error('LetDependentPair requires a dependent product type');
+    }
+    
+    const newAssumptions = new Map(assumptions);
+    newAssumptions.set(expr.x, expr.xType);
+    newAssumptions.set(expr.p, expr.pType);
+    const bodyInference = this.inferType(expr.inExpr, newAssumptions);
+
+    return {
+      rule: 'LetDependentPair',
+      expression: expr,
+      inferredType: bodyInference.inferredType,
+      assumptions: new Map(assumptions),
+      children: [pairInference, bodyInference]
+    };
+  }
+
   private inferIf(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
     if (expr.kind !== 'If') throw new Error('Expected If expression');
     
@@ -354,6 +444,18 @@ export class TypeInferenceService {
       case 'Sum':
         return this.typesEqual(t1.left, (t2 as any).left) && 
                this.typesEqual(t1.right, (t2 as any).right);
+      case 'PredicateType':
+        if (t1.name !== (t2 as any).name) return false;
+        if (t1.argTypes.length !== (t2 as any).argTypes.length) return false;
+        return t1.argTypes.every((a, i) => this.typesEqual(a, (t2 as any).argTypes[i]));
+      case 'DependentFunc':
+        return t1.param === (t2 as any).param &&
+               this.typesEqual(t1.paramType, (t2 as any).paramType) &&
+               this.typesEqual(t1.bodyType, (t2 as any).bodyType);
+      case 'DependentProd':
+        return t1.param === (t2 as any).param &&
+               this.typesEqual(t1.paramType, (t2 as any).paramType) &&
+               this.typesEqual(t1.bodyType, (t2 as any).bodyType);
       default:
         return false;
     }
@@ -384,6 +486,14 @@ export class TypeInferenceService {
       case 'PredicateType':
         const args = type.argTypes.map(arg => this.formatType(arg)).join(', ');
         return `${type.name}(${args})`;
+      case 'DependentFunc':
+        const dfParamStr = this.formatType(type.paramType);
+        const dfBodyStr = this.formatType(type.bodyType);
+        return `(${type.param}: ${dfParamStr}) → ${dfBodyStr}`;
+      case 'DependentProd':
+        const dpParamStr = this.formatType(type.paramType);
+        const dpBodyStr = this.formatType(type.bodyType);
+        return `(${type.param}: ${dpParamStr}) × ${dpBodyStr}`;
       default:
         return `[${(type as any).kind}]`;
     }
@@ -396,6 +506,20 @@ export class TypeInferenceService {
     try {
       if (lambdaExpr.kind === 'Abs') {
         baseType = { kind: 'Func', from: lambdaExpr.paramType, to: { kind: 'TypeVar', name: '?' } };
+      } else if (lambdaExpr.kind === 'DependentAbs') {
+        baseType = {
+          kind: 'DependentFunc',
+          param: lambdaExpr.param,
+          paramType: lambdaExpr.paramType,
+          bodyType: { kind: 'TypeVar', name: '?' }
+        };
+      } else if (lambdaExpr.kind === 'DependentPair') {
+        baseType = {
+          kind: 'DependentProd',
+          param: 'x',
+          paramType: lambdaExpr.witnessType,
+          bodyType: { kind: 'TypeVar', name: '?' }
+        };
       } else {
         baseType = { kind: 'TypeVar', name: '?' };
       }
@@ -462,6 +586,15 @@ export class TypeInferenceService {
       if (rule === 'IsZero' && expr.kind === 'IsZero') {
         return this.inferNatOpInteractive(expr, assumptions);
       }
+      if (rule === 'DependentAbs' && expr.kind === 'DependentAbs') {
+        return this.inferDependentAbsInteractive(expr, assumptions);
+      }
+      if (rule === 'DependentPair' && expr.kind === 'DependentPair') {
+        return this.inferDependentPairInteractive(expr, assumptions);
+      }
+      if (rule === 'LetDependentPair' && expr.kind === 'LetDependentPair') {
+        return this.inferLetDependentPairInteractive(expr, assumptions);
+      }
       
       return null;
     } catch (error) {
@@ -492,10 +625,41 @@ export class TypeInferenceService {
           const fnType = node.children[0].inferredType;
           if (fnType.kind === 'Func') {
             node.inferredType = fnType.to;
+          } else if (fnType.kind === 'DependentFunc') {
+            node.inferredType = fnType.bodyType;
           } else if (fnType.kind !== 'TypeVar') {
-
             node.inferredType = { kind: 'TypeVar', name: '?' };
           }
+        }
+        break;
+        
+      case 'DependentAbs':
+        if (node.children.length === 1) {
+          const bodyType = node.children[0].inferredType;
+          node.inferredType = {
+            kind: 'DependentFunc',
+            param: (expr as any).param,
+            paramType: (expr as any).paramType,
+            bodyType
+          };
+        }
+        break;
+        
+      case 'DependentPair':
+        if (node.children.length === 2) {
+          node.inferredType = {
+            kind: 'DependentProd',
+            param: 'x',
+            paramType: (expr as any).witnessType,
+            bodyType: node.children[1].inferredType
+          };
+        }
+        break;
+        
+      case 'LetPair':
+      case 'LetDependentPair':
+        if (node.children.length >= 2) {
+          node.inferredType = node.children[node.children.length - 1].inferredType;
         }
         break;
         
@@ -510,7 +674,6 @@ export class TypeInferenceService {
         break;
         
       case 'Let':
-      case 'LetPair':
         if (node.children.length >= 2) {
           node.inferredType = node.children[node.children.length - 1].inferredType;
         }
@@ -635,6 +798,103 @@ export class TypeInferenceService {
 
     return {
       rule: 'LetPair',
+      expression: expr,
+      inferredType: bodyChild.inferredType,
+      assumptions: new Map(assumptions),
+      children: [pairChild, bodyChild]
+    };
+  }
+
+  private inferDependentAbsInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'DependentAbs') throw new Error('Expected DependentAbs expression');
+    
+    const newAssumptions = new Map(assumptions);
+    newAssumptions.set(expr.param, expr.paramType);
+    
+    const bodyChild: TypeInferenceNode = {
+      rule: '∅',
+      expression: expr.body,
+      inferredType: { kind: 'TypeVar', name: '?' },
+      assumptions: newAssumptions,
+      children: []
+    };
+
+    return {
+      rule: 'DependentAbs',
+      expression: expr,
+      inferredType: {
+        kind: 'DependentFunc',
+        param: expr.param,
+        paramType: expr.paramType,
+        bodyType: bodyChild.inferredType
+      },
+      assumptions: new Map(assumptions),
+      children: [bodyChild]
+    };
+  }
+
+  private inferDependentPairInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'DependentPair') throw new Error('Expected DependentPair expression');
+    
+    const witnessChild: TypeInferenceNode = {
+      rule: '∅',
+      expression: expr.witness,
+      inferredType: expr.witnessType,
+      assumptions: new Map(assumptions),
+      children: []
+    };
+
+    const proofChild: TypeInferenceNode = {
+      rule: '∅',
+      expression: expr.proof,
+      inferredType: { kind: 'TypeVar', name: '?' },
+      assumptions: new Map(assumptions),
+      children: []
+    };
+
+    return {
+      rule: 'DependentPair',
+      expression: expr,
+      inferredType: {
+        kind: 'DependentProd',
+        param: 'x',
+        paramType: expr.witnessType,
+        bodyType: proofChild.inferredType
+      },
+      assumptions: new Map(assumptions),
+      children: [witnessChild, proofChild]
+    };
+  }
+
+  private inferLetDependentPairInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'LetDependentPair') throw new Error('Expected LetDependentPair expression');
+    
+    const pairChild: TypeInferenceNode = {
+      rule: '∅',
+      expression: expr.pair,
+      inferredType: {
+        kind: 'DependentProd',
+        param: 'x',
+        paramType: expr.xType,
+        bodyType: expr.pType
+      },
+      assumptions: new Map(assumptions),
+      children: []
+    };
+
+    const newAssumptions = new Map(assumptions);
+    newAssumptions.set(expr.x, expr.xType);
+    newAssumptions.set(expr.p, expr.pType);
+    const bodyChild: TypeInferenceNode = {
+      rule: '∅',
+      expression: expr.inExpr,
+      inferredType: { kind: 'TypeVar', name: '?' },
+      assumptions: newAssumptions,
+      children: []
+    };
+
+    return {
+      rule: 'LetDependentPair',
       expression: expr,
       inferredType: bodyChild.inferredType,
       assumptions: new Map(assumptions),

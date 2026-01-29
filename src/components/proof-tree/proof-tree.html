@@ -53,7 +53,7 @@
         <span class="plus-icon">+</span>
       </button>
       <span class="rule" *ngIf="root.children?.length || root.rule === 'Ax'">
-        ({{ root.rule }})
+        {{ root.rule }}
       </span>
       <div class="sequent-content">
         {{ formatSequent(root.sequent) }}

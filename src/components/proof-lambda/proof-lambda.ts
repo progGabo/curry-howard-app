@@ -15,6 +15,7 @@ import { FormulaNode } from '../../models/formula-node';
 })
 export class ProofLambda{         
   @Input() lambdaExpr: string = '';
+  @Input() label: string = 'Lambda-výraz';
 
   constructor(
     private lambdaBuilder: LambdaBuilderService

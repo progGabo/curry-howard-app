@@ -1,4 +1,12 @@
 <div class="editor">
+  <div class="editor-toolbar">
+    <label class="editor-toolbar-label">Font size</label>
+    <div class="editor-font-stepper">
+      <button type="button" class="editor-stepper-btn" (click)="fontSizeDown()" [disabled]="fontSize <= minFontSize">−</button>
+      <span class="editor-font-value">{{ fontSize }}</span>
+      <button type="button" class="editor-stepper-btn" (click)="fontSizeUp()" [disabled]="fontSize >= maxFontSize">+</button>
+    </div>
+  </div>
   <ngx-monaco-editor
     [(ngModel)]="code"
     (ngModelChange)="onCodeChange($event)"

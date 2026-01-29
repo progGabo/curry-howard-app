@@ -12,17 +12,11 @@ export class Editor implements OnChanges {
   @Output() formulaEntered = new EventEmitter<string>();
 
   code: string = '';
-  editorOptions = {
-    theme: 'vs-dark', 
-    language: 'plaintext',
-    automaticLayout: true,
-    minimap: { enabled: false },
-    scrollBeyondLastLine: false,
-    wordWrap: 'on',
-    lineNumbers: 'on',
-    fontSize: 14,
-    lineHeight: 19
-  };
+  fontSize: number = 16;
+  fontSizeStep = 2;
+  minFontSize = 8;
+  maxFontSize = 24;
+  editorOptions = this.buildEditorOptions();
 
   constructor() {
     this.updatePlaceholder();
@@ -39,49 +33,48 @@ export class Editor implements OnChanges {
     }
   }
 
+  private buildEditorOptions() {
+    const lineHeight = Math.round(this.fontSize * 1.35);
+    return {
+      theme: 'vs',
+      language: 'plaintext',
+      automaticLayout: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: 'on',
+      lineNumbers: 'on',
+      fontSize: this.fontSize,
+      lineHeight
+    };
+  }
+
+  onFontSizeChange() {
+    this.editorOptions = { ...this.buildEditorOptions() };
+  }
+
+  fontSizeDown() {
+    if (this.fontSize > this.minFontSize) {
+      this.fontSize = Math.max(this.minFontSize, this.fontSize - this.fontSizeStep);
+      this.onFontSizeChange();
+    }
+  }
+
+  fontSizeUp() {
+    if (this.fontSize < this.maxFontSize) {
+      this.fontSize = Math.min(this.maxFontSize, this.fontSize + this.fontSizeStep);
+      this.onFontSizeChange();
+    }
+  }
+
   private updatePlaceholder() {
     if (this.presetCode) {
       this.code = this.presetCode;
-      this.editorOptions = {
-        theme: 'vs-dark', 
-        language: 'plaintext',
-        automaticLayout: true,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        wordWrap: 'on',
-        lineNumbers: 'on',
-        fontSize: 14,
-        lineHeight: 19
-      };
-      return;
-    }
-    if (this.conversionMode === 'expression-to-lambda') {
+    } else if (this.conversionMode === 'expression-to-lambda') {
       this.code = 'p => q => p && q';
-      this.editorOptions = {
-        theme: 'vs-dark', 
-        language: 'plaintext',
-        automaticLayout: true,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        wordWrap: 'on',
-        lineNumbers: 'on',
-        fontSize: 14,
-        lineHeight: 19
-      };
     } else {
       this.code = 'λx:Bool. λy:Bool. x';
-      this.editorOptions = {
-        theme: 'vs-dark', 
-        language: 'plaintext',
-        automaticLayout: true,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        wordWrap: 'on',
-        lineNumbers: 'on',
-        fontSize: 14,
-        lineHeight: 19
-      };
     }
+    this.editorOptions = { ...this.buildEditorOptions() };
   }
 
   onCodeChange(code: string) {
