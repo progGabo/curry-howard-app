@@ -1,13 +1,31 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, Inject } from '@angular/core';
 import { LogicParserService } from '../services/logic-parser-service';
-import { ProofTreeBuilderService } from '../services/proof-tree-builder'; 
+import { ProofTreeBuilderService } from '../services/proof-tree-builder';
 import { DerivationNode, SequentNode, FormulaNode } from '../models/formula-node';
 import { LambdaBuilderService } from '../services/lambda-builder-service';
 import { LambdaParserService } from '../services/lambda-parser-service';
 import { LambdaToExpressionService } from '../services/lambda-to-expression-service';
 import { TypeInferenceService, TypeInferenceNode } from '../services/type-inference-service';
-import { MessageService } from 'primeng/api';
-import { ExprNode } from '../models/lambda-node';
+import { FormulaTypeService } from '../services/formula-type-service';
+import { I18nService, AppTranslations } from '@services/i18n.service';
+import { NotificationService } from '../services/notification.service';
+import { TreeHistoryService } from '../services/tree-history.service';
+import { RuleFilterService } from '../services/rule-filter.service';
+import { ExprNode, TypeNode } from '../models/lambda-node';
+import {
+  CONCLUSION_RULES,
+  ASSUMPTION_RULES,
+  SPECIAL_RULES,
+  BASIC_RULES,
+  ABS_RULES,
+  APP_RULES,
+  PAIR_RULES,
+  DEPENDENT_RULES,
+  SUM_RULES,
+  CONDITIONAL_RULES,
+  NAT_RULES,
+  LET_RULES
+} from '../constants/rules';
 
 @Component({
   selector: 'app-root',
@@ -29,6 +47,8 @@ export class App {
   typeInferenceTreeForLambda: TypeInferenceNode | null = null;
   isPredicateLogic: boolean = false; // Track if predicate logic is detected
   activeTab: 'proof' | 'typeInference' = 'proof'; // Active tab in expression-to-lambda mode
+  /** When user proves in expression→lambda, store assumption types so lambda→expression can use them for the generated lambda. */
+  storedLambdaInitialAssumptions: Map<string, TypeNode> | null = null;
 
   // UI state (non-logic)
   helpVisible: boolean = false;
@@ -37,84 +57,8 @@ export class App {
   currentYear: number = new Date().getFullYear();
   panelSizes: number[] = [33, 67];
 
-  // Translations
-  translations = {
-    sk: {
-      appName: 'Curry–Howard Izomorfizmus',
-      help: 'Help',
-      exprToLambda: 'Výraz → Lambda',
-      lambdaToExpr: 'Lambda → Výraz',
-      examples: 'Príklady',
-      chooseExampleExpr: 'Vyberte príklad (Výraz → Lambda)',
-      chooseExampleLambda: 'Vyberte príklad (Lambda → Typ)',
-      generateProof: 'Generovať dôkaz',
-      convertLambda: 'Konvertuj lambda',
-      autoMode: 'Auto mód',
-      interactiveMode: 'Interaktívny mód',
-      applicableOnly: 'Iba použiteľné',
-      allRules: 'Všetky pravidlá',
-      predictNext: 'Predpovedať ďalší',
-      proofTree: 'Dôkazový strom',
-      typeInferenceTree: 'Strom odvodenia typu',
-      lambdaExpr: 'Lambda výraz:',
-      lambdaExpression: 'Lambda-výraz',
-      exprType: 'Typ výrazu:',
-      helpTitle: 'Ako používať aplikáciu',
-      helpLanguage: 'Jazyky môžete prepínať pomocou tlačidiel SK/EN v hlavičke.',
-      close: 'Zavrieť',
-      footerText: 'Curry-Howard Aplikácia',
-      stepBack: 'Krok späť',
-      // Error messages
-      errorRuleCannotBeApplied: 'Pravidlo {rule} sa nedá aplikovať na tento uzol.',
-      errorApplyingRule: 'Chyba pri aplikovaní pravidla {rule}: {message}',
-      errorParsing: 'Chyba pri parsovaní',
-      errorLambdaConversion: 'Chyba pri konverzii lambda výrazu',
-      errorRuleCannotBeAppliedToSequent: 'Toto pravidlo sa nedá aplikovať na tento sekvent.',
-      errorFillAllFields: 'Prosím vyplňte všetky polia.',
-      errorInvalidSequentFormat: 'Neplatný formát sekventu. Použite formát: "A, B ⊢ C, D"',
-      errorExpectedSequents: 'Očakávané {expected} sekvent(ov), získané {got}.',
-      errorIncorrectAtPosition: 'Nesprávne na pozícii {position}! Očakávané: {expected}'
-    },
-    en: {
-      appName: 'Curry–Howard Isomorphism',
-      help: 'Help',
-      exprToLambda: 'Expression → Lambda',
-      lambdaToExpr: 'Lambda → Expression',
-      examples: 'Examples',
-      chooseExampleExpr: 'Choose example (Expr → Lambda)',
-      chooseExampleLambda: 'Choose example (Lambda → Type)',
-      generateProof: 'Generate proof',
-      convertLambda: 'Convert lambda',
-      autoMode: 'Auto mode',
-      interactiveMode: 'Interactive mode',
-      applicableOnly: 'Applicable only',
-      allRules: 'All rules',
-      predictNext: 'Predict next',
-      proofTree: 'Proof Tree',
-      typeInferenceTree: 'Type Inference Tree',
-      lambdaExpr: 'Lambda expression:',
-      lambdaExpression: 'Lambda Expression',
-      exprType: 'Expression type:',
-      helpTitle: 'How to use the app',
-      helpLanguage: 'You can switch languages using the SK/EN buttons in the header.',
-      close: 'Close',
-      footerText: 'Curry–Howard App',
-      stepBack: 'Step Back',
-      // Error messages
-      errorRuleCannotBeApplied: 'Rule {rule} cannot be applied to this node.',
-      errorApplyingRule: 'Error applying rule {rule}: {message}',
-      errorParsing: 'Error parsing',
-      errorLambdaConversion: 'Error in lambda to expression conversion',
-      errorRuleCannotBeAppliedToSequent: 'This rule cannot be applied to this sequent.',
-      errorFillAllFields: 'Please fill all prediction fields.',
-      errorInvalidSequentFormat: 'Invalid sequent format. Use format: "A, B ⊢ C, D"',
-      errorExpectedSequents: 'Expected {expected} sequent(s), got {got}.',
-      errorIncorrectAtPosition: 'Incorrect at position {position}! Expected: {expected}'
-    }
-  };
-
   get t() {
-    return this.translations[this.currentLanguage];
+    return this.i18n.t(this.currentLanguage);
   }
 
   expressionExamples = [
@@ -130,6 +74,8 @@ export class App {
     { label: '\\f:(A⇒B). \\x:A. f x', code: '\\f:(A->B). \\x:A. f x' },
     { label: '\\x:A. x', code: '\\x:A. x' },
     { label: '\\x:A. \\y:B. ⟨x,y⟩', code: '\\x:A. \\y:B. <x,y>' },
+    { label: '\\x: T. \\p: P(x). p', code: '\\x: T. \\p: P(x). p' },
+    { label: 'let ⟨x : T, p : P(x)⟩ = e in ⟨x : T, ((f x) p)⟩', code: 'let ⟨x : T, p : P(x)⟩ = e in ⟨x : T, ((f x) p)⟩' },
   ];
 
   selectedNode: DerivationNode | null = null;
@@ -141,39 +87,28 @@ export class App {
   popupPosition: { top: string; left: string } = { top: '0px', left: '0px' };
   popupX: number = 0;
   popupY: number = 0;
-  isDragging: boolean = false;
-  dragStartX: number = 0;
-  dragStartY: number = 0;
   popupNode: DerivationNode | TypeInferenceNode | null = null;
   predictionRuleRequest: { node: DerivationNode, rule: string } | null = null;
   predictionTypeRuleRequest: { node: TypeInferenceNode, rule: string } | null = null;
 
-  // Rule arrays
-  conclusionRules = ['→R', '∧R', '∨R', '¬R', '∀R', '∃R'];
-  assumptionRules = ['→L', '∧L', '∨L', '¬L', '∀L', '∃L'];
-  specialRules = ['WR', 'WL', 'Ax'];
-  
-  basicRules = ['Var', 'True', 'False', 'Zero'];
-  absRules = ['Abs'];
-  appRules = ['App'];
-  pairRules = ['Pair', 'LetPair'];
-  dependentRules = ['DependentAbs', 'DependentPair', 'LetDependentPair'];
-  sumRules = ['Inl', 'Inr', 'Case'];
-  conditionalRules = ['If'];
-  natRules = ['Succ', 'Pred', 'IsZero'];
-  letRules = ['Let'];
+  // Rule arrays (from constants)
+  conclusionRules = [...CONCLUSION_RULES];
+  assumptionRules = [...ASSUMPTION_RULES];
+  specialRules = [...SPECIAL_RULES];
+  basicRules = [...BASIC_RULES];
+  absRules = [...ABS_RULES];
+  appRules = [...APP_RULES];
+  pairRules = [...PAIR_RULES];
+  dependentRules = [...DEPENDENT_RULES];
+  sumRules = [...SUM_RULES];
+  conditionalRules = [...CONDITIONAL_RULES];
+  natRules = [...NAT_RULES];
+  letRules = [...LET_RULES];
 
-  // Tree canvas pan and zoom
-  treePanX: number = 0;
-  treePanY: number = 0;
-  treeZoom: number = 1;
-  isPanning: boolean = false;
-  panStartX: number = 0;
-  panStartY: number = 0;
+  /** Incremented on parseAndBuild to reset tree canvas pan/zoom */
+  treeCanvasResetTrigger: number = 0;
 
-  // History for step back functionality
-  proofTreeHistory: DerivationNode[] = [];
-  typeInferenceTreeHistory: TypeInferenceNode[] = [];
+  // History for step back (managed by TreeHistoryService)
 
   constructor(
     private logicParser: LogicParserService,
@@ -182,7 +117,11 @@ export class App {
     private lambdaParser: LambdaParserService,
     private lambdaToExpression: LambdaToExpressionService,
     private typeInference: TypeInferenceService,
-    private messageService: MessageService,
+    private formulaType: FormulaTypeService,
+    @Inject(I18nService) private i18n: I18nService,
+    private notification: NotificationService,
+    private treeHistory: TreeHistoryService,
+    private ruleFilter: RuleFilterService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -197,20 +136,10 @@ export class App {
     }
   }
 
-  private showError(key: string, params?: { [key: string]: string | number }) {
-    let message = (this.t as typeof this.translations.sk)[key as keyof typeof this.translations.sk] as string || key;
-    
-    // Replace parameters in message
-    if (params) {
-      Object.keys(params).forEach(param => {
-        message = message.replace(`{${param}}`, String(params[param]));
-      });
-    }
-    
-    this.messageService.add({
-      severity: 'error',
-      summary: this.currentLanguage === 'sk' ? 'Chyba' : 'Error',
-      detail: message,
+  private showError(key: keyof AppTranslations, params?: { [key: string]: string | number }) {
+    const message = this.i18n.translate(this.currentLanguage, key, params);
+    this.notification.showError(message, {
+      summary: this.i18n.errorSummary(this.currentLanguage),
       life: 7000
     });
   }
@@ -242,9 +171,7 @@ export class App {
     this.selectedNode = null;
     this.selectedTypeNode = null;
     this.ruleError = null;
-    // Clear history when switching modes
-    this.proofTreeHistory = [];
-    this.typeInferenceTreeHistory = [];
+    this.treeHistory.clear();
   }
 
   onNodeClicked(node: DerivationNode) {
@@ -285,138 +212,63 @@ export class App {
     this.popupNode = null;
   }
 
-  onPopupDragStart(event: MouseEvent) {
-    this.isDragging = true;
-    this.dragStartX = event.clientX - this.popupX;
-    this.dragStartY = event.clientY - this.popupY;
-    event.preventDefault();
+  onPopupPositionChange(pos: { x: number; y: number }) {
+    this.popupX = pos.x;
+    this.popupY = pos.y;
+    this.popupPosition = { top: `${pos.y}px`, left: `${pos.x}px` };
   }
 
-  onPopupDragMove(event: MouseEvent) {
-    if (this.isDragging) {
-      this.popupX = event.clientX - this.dragStartX;
-      this.popupY = event.clientY - this.dragStartY;
-      this.popupPosition = {
-        top: `${this.popupY}px`,
-        left: `${this.popupX}px`
-      };
-    }
+  onHeaderModeChange(mode: 'auto' | 'interactive') {
+    this.mode = mode;
+    this.parseAndBuild();
   }
 
-  onPopupDragEnd() {
-    this.isDragging = false;
-  }
-
-  // Rule filtering for proof tree
   get filteredConclusionRules(): string[] {
-    return this.filterProofRules(this.conclusionRules, 'conclusion');
+    return this.ruleFilter.filterProofRules(this.conclusionRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredAssumptionRules(): string[] {
-    return this.filterProofRules(this.assumptionRules, 'assumption');
+    return this.ruleFilter.filterProofRules(this.assumptionRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredSpecialRules(): string[] {
-    return this.filterProofRules(this.specialRules, 'special');
+    return this.ruleFilter.filterProofRules(this.specialRules, this.popupNode, this.interactiveSubmode);
   }
 
-  private filterProofRules(rules: string[], kind: 'conclusion' | 'assumption' | 'special'): string[] {
-    if (this.interactiveSubmode !== 'applicable' || !this.popupNode || !('sequent' in this.popupNode)) return rules;
-    const node = this.popupNode as DerivationNode;
-    const s = node.sequent;
-    const hasInConcl = (k: string) => s.conclusions.some(f => f.kind === k as any);
-    const hasInAssump = (k: string) => s.assumptions.some(f => f.kind === k as any);
-
-    return rules.filter(r => {
-      switch (r) {
-        case '→R': return hasInConcl('Implies');
-        case '∧R': return hasInConcl('And');
-        case '∨R': return hasInConcl('Or');
-        case '¬R': return hasInConcl('Not');
-        case '∀R': return hasInConcl('Forall');
-        case '∃R': return hasInConcl('Exists');
-        case '→L': return hasInAssump('Implies');
-        case '∧L': return hasInAssump('And');
-        case '∨L': return hasInAssump('Or');
-        case '¬L': return hasInAssump('Not');
-        case '∀L': return hasInAssump('Forall');
-        case '∃L': return hasInAssump('Exists');
-        case 'WL':
-        case 'WR':
-          return true; // allow weakening heuristically
-        case 'Ax':
-          return true; // axiom always selectable
-        default:
-          return true;
-      }
-    });
-  }
-
-  // Rule filtering for type inference tree
   get filteredBasicRules(): string[] {
-    return this.filterTypeRules(this.basicRules);
+    return this.ruleFilter.filterTypeRules(this.basicRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredAbsRules(): string[] {
-    return this.filterTypeRules(this.absRules);
+    return this.ruleFilter.filterTypeRules(this.absRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredAppRules(): string[] {
-    return this.filterTypeRules(this.appRules);
+    return this.ruleFilter.filterTypeRules(this.appRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredPairRules(): string[] {
-    return this.filterTypeRules(this.pairRules);
+    return this.ruleFilter.filterTypeRules(this.pairRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredDependentRules(): string[] {
-    return this.filterTypeRules(this.dependentRules);
+    return this.ruleFilter.filterTypeRules(this.dependentRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredSumRules(): string[] {
-    return this.filterTypeRules(this.sumRules);
+    return this.ruleFilter.filterTypeRules(this.sumRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredConditionalRules(): string[] {
-    return this.filterTypeRules(this.conditionalRules);
+    return this.ruleFilter.filterTypeRules(this.conditionalRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredNatRules(): string[] {
-    return this.filterTypeRules(this.natRules);
+    return this.ruleFilter.filterTypeRules(this.natRules, this.popupNode, this.interactiveSubmode);
   }
 
   get filteredLetRules(): string[] {
-    return this.filterTypeRules(this.letRules);
-  }
-
-  private filterTypeRules(rules: string[]): string[] {
-    if (this.interactiveSubmode !== 'applicable' || !this.popupNode || !('expression' in this.popupNode)) return rules;
-    const node = this.popupNode as TypeInferenceNode;
-    const expr = node.expression;
-    return rules.filter(r => {
-      switch (r) {
-        case 'Var': return expr.kind === 'Var';
-        case 'Abs': return expr.kind === 'Abs';
-        case 'App': return expr.kind === 'App';
-        case 'Pair': return expr.kind === 'Pair';
-        case 'LetPair': return expr.kind === 'LetPair';
-        case 'Inl': return expr.kind === 'Inl';
-        case 'Inr': return expr.kind === 'Inr';
-        case 'Case': return expr.kind === 'Case';
-        case 'If': return expr.kind === 'If';
-        case 'Let': return expr.kind === 'Let';
-        case 'True': return expr.kind === 'True';
-        case 'False': return expr.kind === 'False';
-        case 'Zero': return expr.kind === 'Zero';
-        case 'Succ': return expr.kind === 'Succ';
-        case 'Pred': return expr.kind === 'Pred';
-        case 'IsZero': return expr.kind === 'IsZero';
-        case 'DependentAbs': return expr.kind === 'DependentAbs';
-        case 'DependentPair': return expr.kind === 'DependentPair';
-        case 'LetDependentPair': return expr.kind === 'LetDependentPair';
-        default: return true;
-      }
-    });
+    return this.ruleFilter.filterTypeRules(this.letRules, this.popupNode, this.interactiveSubmode);
   }
 
   onProofRuleClick(rule: string) {
@@ -469,9 +321,8 @@ export class App {
   applyTypeRuleToNode(event: { node: TypeInferenceNode; rule: string }) {
     const { node, rule } = event;
     
-    // Save current state to history before applying rule
     if (this.typeInferenceTree) {
-      this.typeInferenceTreeHistory.push(this.deepCopyTypeInferenceNode(this.typeInferenceTree));
+      this.treeHistory.pushTypeInferenceState(this.typeInferenceTree);
     }
     
     try {
@@ -486,20 +337,14 @@ export class App {
         this.propagateTypesUpward(node);
         
         if (this.typeInferenceTree) {
-          this.resultExpression = this.typeInference.formatType(this.typeInferenceTree.inferredType);
+          this.resultExpression = this.lambdaToExpression.convertLambdaToExpression(this.typeInferenceTree.expression, this.typeInferenceTree.inferredType);
         }
       } else {
-        // If rule application failed, remove the last history entry
-        if (this.typeInferenceTreeHistory.length > 0) {
-          this.typeInferenceTreeHistory.pop();
-        }
+        this.treeHistory.popTypeInferenceState();
         this.showError('errorRuleCannotBeApplied', { rule });
       }
     } catch (error: any) {
-      // If rule application failed, remove the last history entry
-      if (this.typeInferenceTreeHistory.length > 0) {
-        this.typeInferenceTreeHistory.pop();
-      }
+      this.treeHistory.popTypeInferenceState();
       this.showError('errorApplyingRule', { rule, message: error.message });
     }
 
@@ -531,25 +376,38 @@ export class App {
       const lambda = this.lambdaBuilder.buildLambda(this.proofTree, this.sequent);
       this.lambdaExpr = this.lambdaBuilder.exprToString(lambda);
       this.lambdaExprNode = lambda; // Store the ExprNode for type inference
-      // Build type inference tree for the lambda expression
+      // Build type inference tree for the lambda expression with initial assumptions from sequent
       if (lambda) {
         try {
-          this.typeInferenceTreeForLambda = this.typeInference.buildTypeInferenceTree(lambda);
-        } catch (error) {
-          console.error('Error building type inference tree:', error);
+          const initialAssumptions = this.buildInitialAssumptionsForLambda();
+          this.storedLambdaInitialAssumptions = initialAssumptions;
+          this.typeInferenceTreeForLambda = this.typeInference.buildTypeInferenceTree(lambda, initialAssumptions);
+        } catch {
           this.typeInferenceTreeForLambda = null;
         }
       }
     }
   }
 
+  /** Build map of free variable names to types from sequent assumptions (for proof-generated lambdas). */
+  private buildInitialAssumptionsForLambda(): Map<string, TypeNode> {
+    const assumptions = new Map<string, TypeNode>();
+    if (!this.sequent?.assumptionVars) return assumptions;
+    for (const formula of this.sequent.assumptions) {
+      const varName = this.sequent.assumptionVars.get(formula);
+      if (varName) {
+        assumptions.set(varName, this.formulaType.formulaToType(formula));
+      }
+    }
+    return assumptions;
+  }
+
 
   async applyRuleToNode(event: { node: DerivationNode; rule: string }) {
     const { node, rule } = event;
     
-    // Save current state to history before applying rule
     if (this.proofTree) {
-      this.proofTreeHistory.push(this.deepCopyDerivationNode(this.proofTree));
+      this.treeHistory.pushProofState(this.proofTree);
     }
     
     try {
@@ -562,22 +420,14 @@ export class App {
         node.metadata = applied.metadata;
         this.buildLambda();
       } else {
-        // If rule application failed, remove the last history entry
-        if (this.proofTreeHistory.length > 0) {
-          this.proofTreeHistory.pop();
-        }
+        this.treeHistory.popProofState();
         this.showError('errorRuleCannotBeApplied', { rule });
       }
     } catch (error: any) {
-      // If rule application failed (e.g., user cancelled or validation error), remove the last history entry
-      if (this.proofTreeHistory.length > 0) {
-        this.proofTreeHistory.pop();
-      }
+      this.treeHistory.popProofState();
       const errorMsg = error?.message || 'Rule application failed';
-      this.messageService.add({
-        severity: 'error',
-        summary: this.currentLanguage === 'sk' ? 'Chyba' : 'Error',
-        detail: errorMsg,
+      this.notification.showError(errorMsg, {
+        summary: this.i18n.errorSummary(this.currentLanguage),
         life: 5000
       });
     }
@@ -586,15 +436,8 @@ export class App {
   }
 
   parseAndBuild() {
-    // Clear history when rebuilding
-    this.proofTreeHistory = [];
-    this.typeInferenceTreeHistory = [];
-    
-    // Reset pan and zoom
-    this.treePanX = 0;
-    this.treePanY = 0;
-    this.treeZoom = 1;
-    
+    this.treeHistory.clear();
+    this.treeCanvasResetTrigger++;
     // Reset predicate logic flag (will be recalculated in parseExpressionToLambda)
     this.isPredicateLogic = false;
     
@@ -604,20 +447,17 @@ export class App {
       } else {
         this.parseLambdaToExpression();
       }
-    } catch (e: any) {
-      console.error("Chyba pri parsovaní:", e);
+    } catch (e: unknown) {
       this.proofTree = null;
       this.sequent = null;
       this.lambdaExpr = '';
       this.lambdaExprNode = null;
       this.typeInferenceTreeForLambda = null;
       this.resultExpression = '';
-      const errorMsg = e?.message ? `: ${e.message}` : '';
+      const errorMsg = e instanceof Error ? `: ${e.message}` : '';
       const fullMessage = this.t.errorParsing + errorMsg;
-      this.messageService.add({
-        severity: 'error',
-        summary: this.currentLanguage === 'sk' ? 'Chyba' : 'Error',
-        detail: fullMessage,
+      this.notification.showError(fullMessage, {
+        summary: this.i18n.errorSummary(this.currentLanguage),
         life: 7000
       });
     }
@@ -625,7 +465,6 @@ export class App {
 
   private async parseExpressionToLambda() {
     this.sequent = this.logicParser.parseFormula(this.code);
-    console.log('Parsed Sequent:', this.sequent);
 
     // Check if predicate logic is used
     this.isPredicateLogic = this.containsPredicateLogic(this.sequent);
@@ -637,7 +476,6 @@ export class App {
 
     if (this.mode === 'auto' && !this.isPredicateLogic) {
       this.proofTree = await this.proofBuilder.buildProof(this.sequent);
-      console.log("Tree: ", this.proofTree);
     } else {
       this.proofTree = this.proofBuilder.buildInteractiveRoot(this.sequent);
     }
@@ -684,161 +522,58 @@ export class App {
   private parseLambdaToExpression() {
     try {
       const lambdaExpr = this.lambdaParser.parseLambdaExpression(this.code);
-      
+      // Use stored assumption types from expression→lambda when available (e.g. user pasted the generated lambda)
+      const initialAssumptions = this.storedLambdaInitialAssumptions ?? undefined;
+
       if (this.mode === 'auto') {
-        this.typeInferenceTree = this.typeInference.buildTypeInferenceTree(lambdaExpr);
+        this.typeInferenceTree = this.typeInference.buildTypeInferenceTree(lambdaExpr, initialAssumptions);
       } else {
-        this.typeInferenceTree = this.typeInference.buildInteractiveRoot(lambdaExpr);
+        this.typeInferenceTree = initialAssumptions
+          ? this.typeInference.buildInteractiveRoot(lambdaExpr, initialAssumptions)
+          : this.typeInference.buildInteractiveRoot(lambdaExpr);
       }
       
       if (this.typeInferenceTree) {
-        this.resultExpression = this.typeInference.formatType(this.typeInferenceTree.inferredType);
+        this.resultExpression = this.lambdaToExpression.convertLambdaToExpression(lambdaExpr, this.typeInferenceTree.inferredType);
       }
       
       this.lambdaExpr = this.lambdaParser.formatLambdaExpression(lambdaExpr);
-      
-      console.log('Parsed Lambda:', lambdaExpr);
-      console.log('Type Inference Tree:', this.typeInferenceTree);
-      console.log('Inferred Type:', this.resultExpression);
-    } catch (error: any) {
-      console.error('Error in lambda to expression conversion:', error);
+    } catch (error: unknown) {
       this.resultExpression = '';
       this.lambdaExpr = this.code;
       this.typeInferenceTree = null;
-      const errorMsg = error?.message ? `: ${error.message}` : '';
+      const errorMsg = error instanceof Error ? `: ${error.message}` : '';
       const fullMessage = this.t.errorLambdaConversion + errorMsg;
-      this.messageService.add({
-        severity: 'error',
-        summary: this.currentLanguage === 'sk' ? 'Chyba' : 'Error',
-        detail: fullMessage,
+      this.notification.showError(fullMessage, {
+        summary: this.i18n.errorSummary(this.currentLanguage),
         life: 7000
       });
     }
   }
 
   stepBack() {
-    if (this.conversionMode === 'expression-to-lambda' && this.proofTreeHistory.length > 0) {
-      // Restore previous proof tree state
-      this.proofTree = this.proofTreeHistory.pop() || null;
-      this.buildLambda();
-      this.selectedNode = null;
-      this.ruleError = null;
-    } else if (this.conversionMode === 'lambda-to-expression' && this.typeInferenceTreeHistory.length > 0) {
-      // Restore previous type inference tree state
-      this.typeInferenceTree = this.typeInferenceTreeHistory.pop() || null;
-      if (this.typeInferenceTree) {
-        this.resultExpression = this.typeInference.formatType(this.typeInferenceTree.inferredType);
+    if (this.conversionMode === 'expression-to-lambda') {
+      const restored = this.treeHistory.popProofState();
+      if (restored) {
+        this.proofTree = restored;
+        this.buildLambda();
+        this.selectedNode = null;
+        this.ruleError = null;
       }
-      this.selectedTypeNode = null;
-      this.ruleError = null;
+    } else if (this.conversionMode === 'lambda-to-expression') {
+      const restored = this.treeHistory.popTypeInferenceState();
+      if (restored) {
+        this.typeInferenceTree = restored;
+        if (this.typeInferenceTree) {
+          this.resultExpression = this.lambdaToExpression.convertLambdaToExpression(this.typeInferenceTree.expression, this.typeInferenceTree.inferredType);
+        }
+        this.selectedTypeNode = null;
+        this.ruleError = null;
+      }
     }
   }
 
   get canStepBack(): boolean {
-    if (this.conversionMode === 'expression-to-lambda') {
-      return this.proofTreeHistory.length > 0;
-    } else {
-      return this.typeInferenceTreeHistory.length > 0;
-    }
-  }
-
-  // Deep copy functions for history
-  private deepCopyDerivationNode(node: DerivationNode): DerivationNode {
-    return {
-      rule: node.rule,
-      sequent: {
-        assumptions: JSON.parse(JSON.stringify(node.sequent.assumptions)),
-        conclusions: JSON.parse(JSON.stringify(node.sequent.conclusions))
-      },
-      children: node.children ? node.children.map(child => this.deepCopyDerivationNode(child)) : [],
-      usedFormula: node.usedFormula ? JSON.parse(JSON.stringify(node.usedFormula)) : undefined,
-      id: node.id,
-      ui: node.ui ? { ...node.ui } : undefined
-    };
-  }
-
-  private deepCopyTypeInferenceNode(node: TypeInferenceNode): TypeInferenceNode {
-    // Deep copy assumptions Map
-    const assumptionsCopy = new Map<string, any>();
-    node.assumptions.forEach((value, key) => {
-      assumptionsCopy.set(key, JSON.parse(JSON.stringify(value)));
-    });
-    
-    return {
-      id: node.id,
-      expression: JSON.parse(JSON.stringify(node.expression)),
-      assumptions: assumptionsCopy,
-      inferredType: JSON.parse(JSON.stringify(node.inferredType)),
-      rule: node.rule,
-      children: node.children ? node.children.map(child => this.deepCopyTypeInferenceNode(child)) : [],
-      ui: node.ui ? { ...node.ui } : undefined
-    };
-  }
-
-  onTreeCanvasMouseDown(event: MouseEvent) {
-    // Pan with middle mouse button, or Ctrl/Cmd + left click, or if clicking on canvas background
-    const target = event.target as HTMLElement;
-    const isCanvasBackground = target.classList.contains('tree-canvas') || 
-                               target.classList.contains('tree-canvas-container');
-    const isMiddleButton = event.button === 1;
-    const isModifierKey = (event.ctrlKey || event.metaKey) && event.button === 0;
-    
-    // Don't pan if clicking on interactive elements (buttons, inputs, popups, nodes)
-    const isInteractiveElement = target.closest('button, input, .rule-menu-popup, .conclusion, .sequent-content, .rule-plus-btn, .prediction-inputs');
-    
-    if ((isMiddleButton || isModifierKey) && !isInteractiveElement) {
-      this.isPanning = true;
-      this.panStartX = event.clientX - this.treePanX;
-      this.panStartY = event.clientY - this.treePanY;
-      event.preventDefault();
-      event.stopPropagation();
-    } else if (isCanvasBackground && !isInteractiveElement) {
-      // Only pan on background if no interactive element
-      this.isPanning = true;
-      this.panStartX = event.clientX - this.treePanX;
-      this.panStartY = event.clientY - this.treePanY;
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-
-  onTreeCanvasMouseMove(event: MouseEvent) {
-    if (this.isPanning) {
-      this.treePanX = event.clientX - this.panStartX;
-      this.treePanY = event.clientY - this.panStartY;
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-
-  onTreeCanvasMouseUp(event: MouseEvent) {
-    if (this.isPanning) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    this.isPanning = false;
-  }
-
-  onTreeCanvasWheel(event: WheelEvent) {
-    event.preventDefault();
-    const delta = event.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.1, Math.min(5, this.treeZoom * delta));
-    
-    // Zoom towards mouse position
-    const container = event.currentTarget as HTMLElement;
-    const rect = container.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    
-    // Calculate the point in the transformed coordinate system
-    const worldX = (mouseX - this.treePanX) / this.treeZoom;
-    const worldY = (mouseY - this.treePanY) / this.treeZoom;
-    
-    // Apply new zoom
-    this.treeZoom = newZoom;
-    
-    // Adjust pan to keep the same point under the mouse
-    this.treePanX = mouseX - worldX * this.treeZoom;
-    this.treePanY = mouseY - worldY * this.treeZoom;
+    return this.treeHistory.canStepBack(this.conversionMode);
   }
 }

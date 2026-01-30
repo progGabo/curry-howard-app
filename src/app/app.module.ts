@@ -11,6 +11,10 @@ import { provideMonacoEditor } from 'ngx-monaco-editor-v2';
 import { ProofLambda } from '../components/proof-lambda/proof-lambda';
 import { TypeInferenceTree } from '../components/type-inference-tree/type-inference-tree';
 import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
+import { TreeCanvasComponent } from '../components/tree-canvas/tree-canvas';
+import { RuleMenuPopupComponent } from '../components/rule-menu-popup/rule-menu-popup';
+import { HelpModalComponent } from '../components/help-modal/help-modal';
+import { AppHeaderComponent } from '../components/app-header/app-header';
 import { ButtonModule } from 'primeng/button';
 import { SplitterModule } from 'primeng/splitter';
 import { ToastModule } from 'primeng/toast';
@@ -21,6 +25,7 @@ import { MessageService } from 'primeng/api';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { providePrimeNG } from 'primeng/config';
 import Material from '@primeuix/themes/material';
+import { I18nService } from '../services/i18n.service';
 
 @NgModule({
   declarations: [
@@ -29,7 +34,11 @@ import Material from '@primeuix/themes/material';
     Editor,
     ProofLambda,
     TypeInferenceTree,
-    QuantifierInputModalComponent
+    QuantifierInputModalComponent,
+    TreeCanvasComponent,
+    RuleMenuPopupComponent,
+    HelpModalComponent,
+    AppHeaderComponent
   ],
   imports: [
     BrowserModule,
@@ -44,6 +53,7 @@ import Material from '@primeuix/themes/material';
     DynamicDialogModule
   ],
   providers: [
+    I18nService,
     provideMonacoEditor({
       baseUrl: './assets/monaco',
       defaultOptions: { scrollBeyondLastLine: false }

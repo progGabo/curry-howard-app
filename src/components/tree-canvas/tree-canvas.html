@@ -1,0 +1,18 @@
+<div
+  class="tree-canvas-container"
+  [class.panning]="isPanning"
+  (mousedown)="onMouseDown($event)"
+  (mousemove)="onMouseMove($event)"
+  (mouseup)="onMouseUp($event)"
+  (mouseleave)="onMouseUp($event)"
+  (wheel)="onWheel($event)"
+  (contextmenu)="onContextMenu($event)"
+>
+  <div
+    class="tree-canvas"
+    [style.transform]="transformStyle"
+    [style.transform-origin]="'0 0'"
+  >
+    <ng-content></ng-content>
+  </div>
+</div>

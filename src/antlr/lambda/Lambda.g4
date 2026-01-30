@@ -9,6 +9,7 @@ program
 
 term
   : lamExpr
+  | letDependentPairExpr
   | letPairExpr
   | letExpr
   | ifExpr
@@ -29,6 +30,12 @@ letExpr
 
 letPairExpr
   : LET LBRACK VAR COMMA VAR RBRACK ASSIGN term IN term
+  ;
+
+// let ⟨x, p⟩ = e in body  or  let ⟨x : T, p : P(x)⟩ = e in body  (∃ elimination)
+letDependentPairExpr
+  : LET LANGLE VAR (COLON type)? COMMA VAR (COLON type)? RANGLE ASSIGN term IN term
+  | LET LPAREN VAR (COLON type)? COMMA VAR (COLON type)? RPAREN ASSIGN term IN term
   ;
 
 
@@ -57,7 +64,7 @@ atom
   | ISZERO atom
   | LPAREN term RPAREN
   | LPAREN term COMMA term RPAREN            // pair (t, u)
-  | LANGLE term COMMA term RANGLE            // pair <t, u> or ⟨t, u⟩
+  | LANGLE term (COLON type)? COMMA term (COLON type)? RANGLE   // pair or dependent pair ⟨t, u⟩ or ⟨t : T, u : U⟩
   | INL atom AS type                         // inl t as T
   | INTR atom AS type                        // inr t as T
   ;
@@ -78,6 +85,7 @@ prodType
 
 atomicType
   : TYPEID
+  | VAR
   | BOOL
   | NAT
   | predicateType

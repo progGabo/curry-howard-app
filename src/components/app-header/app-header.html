@@ -1,0 +1,64 @@
+<header class="header">
+  <div class="header-left">
+    <h1 class="app-title">Curry-Howard</h1>
+    <div class="header-divider"></div>
+    <div class="direction-toggle">
+      <button
+        type="button"
+        class="direction-toggle-btn"
+        [class.active]="conversionMode === 'expression-to-lambda'"
+        (click)="onConversionMode('expression-to-lambda')">
+        {{ t.exprToLambda }}
+      </button>
+      <button
+        type="button"
+        class="direction-toggle-btn"
+        [class.active]="conversionMode === 'lambda-to-expression'"
+        (click)="onConversionMode('lambda-to-expression')">
+        {{ t.lambdaToExpr }}
+      </button>
+    </div>
+    <div class="header-divider"></div>
+    <div class="mode-toggle-container">
+      <div class="mode-toggle">
+        <button
+          class="mode-toggle-btn"
+          [class.active]="mode === 'auto'"
+          [disabled]="autoModeDisabled"
+          [title]="autoModeTitle"
+          type="button"
+          (click)="onModeAuto()">
+          {{ t.autoMode }}
+        </button>
+        <button
+          class="mode-toggle-btn"
+          [class.active]="mode === 'interactive'"
+          type="button"
+          (click)="onModeInteractive()">
+          {{ t.interactiveMode }}
+        </button>
+      </div>
+      <div class="submode-dropdown" *ngIf="mode === 'interactive'">
+        <select class="submode-select" [ngModel]="interactiveSubmode" (ngModelChange)="onSubmodeChange($event)">
+          <option value="applicable">{{ t.applicableOnly }}</option>
+          <option value="all">{{ t.allRules }}</option>
+          <option value="predict">{{ t.predictNext }}</option>
+        </select>
+      </div>
+      <p-button
+        *ngIf="mode === 'interactive'"
+        [label]="t.stepBack"
+        styleClass="btn btn-step-back"
+        [disabled]="!canStepBack"
+        (click)="onStepBack()">
+      </p-button>
+    </div>
+  </div>
+  <div class="header-actions">
+    <p-button [icon]="'pi pi-question-circle'" [title]="t.help" styleClass="btn btn-ghost" (click)="onHelpClick()"></p-button>
+    <div class="lang-switch">
+      <p-button label="SK" [severity]="currentLanguage === 'sk' ? 'primary' : 'secondary'" styleClass="btn btn-toggle" (click)="onLanguage('sk')"></p-button>
+      <p-button label="EN" [severity]="currentLanguage === 'en' ? 'primary' : 'secondary'" styleClass="btn btn-toggle" (click)="onLanguage('en')"></p-button>
+    </div>
+  </div>
+</header>

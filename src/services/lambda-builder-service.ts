@@ -42,41 +42,11 @@ export class LambdaBuilderService {
     // Phase 1: Annotation - build context maps
     this.annotate(root, rootSeq);
     
-    // Debug: log proof tree structure
-    console.log('=== Proof Tree Structure ===');
-    this.logProofTree(root, 0);
-    
     // Phase 2: Generation - generate lambda terms
     const raw = this.generate(root);
-    
-    console.log('=== Generated Lambda ===');
-    console.log(this.exprToString(raw));
-    
     return raw;
   }
 
-  private logProofTree(node: DerivationNode, depth: number): void {
-    const indent = '  '.repeat(depth);
-    const seq = this.sequentMap.get(node);
-    const formula = this.formulaMap.get(node);
-    console.log(`${indent}${node.rule}${formula ? ` [${formula.kind}]` : ''}`);
-    if (seq) {
-      const assumptions = seq.assumptions.map(a => this.formulaToString(a)).join(', ');
-      const conclusions = seq.conclusions.map(c => this.formulaToString(c)).join(', ');
-      console.log(`${indent}  ${assumptions} ⊢ ${conclusions}`);
-    }
-    node.children.forEach(child => this.logProofTree(child, depth + 1));
-  }
-
-  private formulaToString(f: FormulaNode): string {
-    switch (f.kind) {
-      case 'Var': return f.name;
-      case 'Implies': return `(${this.formulaToString(f.left)}→${this.formulaToString(f.right)})`;
-      case 'Not': return `¬${this.formulaToString(f.inner)}`;
-      default: return f.kind;
-    }
-  }
-  
   /**
    * Phase 1: Annotate the derivation tree with formulas and sequents
    */
@@ -344,43 +314,28 @@ export class LambdaBuilderService {
           }
         }
         
-        // Check if leftProof is a variable that refers to f.left (P(x))
-        // and if there's an ∃L node that extracted p : P(x), use p instead
-        if (leftProof.kind === 'Var' && leftChild.rule === 'Ax') {
-          const axSeq = this.sequentMap.get(leftChild);
-          if (axSeq) {
-            // Check if f.left is in the assumptions and conclusions
-            const aHit = axSeq.assumptions.find(a => 
-              axSeq.conclusions.some(c => 
-                Equality.formulasEqual(a, c) && Equality.formulasEqual(a, f.left)
-              )
-            );
-            if (aHit) {
-              // Find if there's an ∃L node that extracted p : P(x)
-              const existsNode = this.findExistsNodeForFormula(f.left, node);
-              if (existsNode) {
-                // Get the proof variable from ∃L
-                const existsF = this.formulaMap.get(existsNode);
-                if (existsF && existsF.kind === 'Exists') {
-                  const childSeq = this.sequentMap.get(existsNode.children[0]);
-                  const currentSeq = this.sequentMap.get(existsNode);
-                  if (childSeq && currentSeq) {
-                    const originalAssumptions = currentSeq.assumptions.filter((a: FormulaNode) => a !== existsF);
-                    const substitutedBody = childSeq.assumptions.find((a: FormulaNode) => 
-                      !originalAssumptions.some((orig: FormulaNode) => Equality.formulasEqual(orig, a))
-                    );
-                    if (substitutedBody && Equality.formulasEqual(substitutedBody, f.left)) {
-                      // Use the proof variable from ∃L
-                      const proofVar = this.getVar(substitutedBody, existsNode.children[0]);
-                      leftProof = ExprFactories.var(proofVar);
-                    }
-                  }
+        // If leftProof is a variable and f.left equals an ∃L substituted body, use that ∃L's proof variable (p not p0)
+        if (leftProof.kind === 'Var') {
+          const existsNode = this.findExistsNodeForFormula(f.left, node);
+          if (existsNode) {
+            const existsF = this.formulaMap.get(existsNode);
+            if (existsF && existsF.kind === 'Exists') {
+              const childSeq = this.sequentMap.get(existsNode.children[0]);
+              const currentSeq = this.sequentMap.get(existsNode);
+              if (childSeq && currentSeq) {
+                const originalAssumptions = currentSeq.assumptions.filter((a: FormulaNode) => a !== existsF);
+                const substitutedBody = childSeq.assumptions.find((a: FormulaNode) =>
+                  !originalAssumptions.some((orig: FormulaNode) => Equality.formulasEqual(orig, a))
+                );
+                if (substitutedBody && Equality.formulasEqual(substitutedBody, f.left)) {
+                  const proofVar = this.getVar(substitutedBody, existsNode.children[0]);
+                  leftProof = ExprFactories.var(proofVar);
                 }
               }
             }
           }
         }
-        
+
         const faExpr = ExprFactories.app(fVar, leftProof); // f(leftProof) : B
 
         const rightProofRaw = this.generate(node.children[1]); // Proof of Δ from Γ, B
@@ -588,9 +543,10 @@ export class LambdaBuilderService {
         // Get witness from metadata
         const witness = node.metadata?.witness;
         if (witness) {
-          // Create dependent pair: (witness, proof)
+          // Create dependent pair: (witness, proof). Use quantifier domain type for witnessType
+          // so type inference matches (e.g. x : T in LetDependentPair body).
           const witnessExpr = this.termToExpr(witness);
-          const witnessType = this.formulaType.inferTermType(witness);
+          const witnessType = this.formulaType.inferQuantifierParamType({ variable: f.variable, body: f.body });
           const proofExpr = this.generate(node.children[0]);
           return ExprFactories.dependentPair(witnessExpr, witnessType, proofExpr);
         } else {
@@ -603,7 +559,6 @@ export class LambdaBuilderService {
         const f = this.expect(formula!, 'Exists');
         // Use renamed variable from metadata if available
         const variable = node.metadata?.renamedVariable?.new || f.variable;
-        const childExpr = this.generate(node.children[0]);
         // For ∃L, we extract the witness and proof using let binding
         const witnessType = this.formulaType.inferQuantifierParamType({ variable: f.variable, body: f.body });
         // Get the substituted body (proof) from the child sequent
@@ -618,14 +573,60 @@ export class LambdaBuilderService {
           !originalAssumptions.some((orig: FormulaNode) => Equality.formulasEqual(orig, a))
         );
         if (!substitutedBody) throw new Error('∃L: Substituted body not found in child assumptions');
-        // Get the variable name for the proof
+        // Get the variable name for the proof (bind substitutedBody -> proofVar so child uses same name)
         const proofVar = this.getVar(substitutedBody, node.children[0]);
-        // The proof type is P(x) where x is the witness (dependent type)
-        const proofType = this.formulaType.formulaToType(substitutedBody);
+        // Collect any variable names that were assigned to formulas equal to substitutedBody (e.g. p0 for f.left)
+        const otherVarsForBody = new Set<string>();
+        for (const n of this.allNodes) {
+          const s = this.sequentMap.get(n);
+          if (!s) continue;
+          for (const a of s.assumptions) {
+            if (Equality.formulasEqual(a, substitutedBody)) {
+              const v = this.formulaVarMap.get(a);
+              if (v && v !== proofVar) otherVarsForBody.add(v);
+            }
+          }
+          for (const c of s.conclusions || []) {
+            if (Equality.formulasEqual(c, substitutedBody)) {
+              const v = this.formulaVarMap.get(c);
+              if (v && v !== proofVar) otherVarsForBody.add(v);
+            }
+          }
+        }
+        // Force every formula equal to substitutedBody to use proofVar
+        for (const n of this.allNodes) {
+          const s = this.sequentMap.get(n);
+          if (!s) continue;
+          for (const a of s.assumptions) {
+            if (Equality.formulasEqual(a, substitutedBody)) this.formulaVarMap.set(a, proofVar);
+          }
+          for (const c of s.conclusions || []) {
+            if (Equality.formulasEqual(c, substitutedBody)) this.formulaVarMap.set(c, proofVar);
+          }
+        }
+        // Proof type is P(a) where a is the witness: use body type with witness variable substituted
+        const proofType = this.replaceTypeVarInPredicateType(
+          this.formulaType.formulaToType(f.body),
+          f.variable,
+          variable
+        );
         // Get the variable name for the existential formula (the assumption variable, e.g., "e")
         const existentialVar = this.getVar(f, node);
-        const resultExpr = ExprFactories.letDependentPair(variable, witnessType, proofVar, proofType, ExprFactories.var(existentialVar), childExpr);
-        return resultExpr;
+        let inExpr = this.generate(node.children[0]);
+        // Replace any other variable that was used for the substituted body (e.g. p0) with proofVar in the body
+        for (const otherVar of otherVarsForBody) {
+          inExpr = this.replaceVariableInExpr(inExpr, otherVar, ExprFactories.var(proofVar));
+        }
+        // Fallback: replace any proof-alias variable (e.g. p0, p1) that appears in the body with proofVar
+        const varsInBody = new Set<string>();
+        this.collectVariables(inExpr, varsInBody);
+        for (const name of varsInBody) {
+          if (name !== proofVar && name !== variable && name !== existentialVar &&
+              proofVar.length > 0 && name.startsWith(proofVar) && /^\d+$/.test(name.slice(proofVar.length))) {
+            inExpr = this.replaceVariableInExpr(inExpr, name, ExprFactories.var(proofVar));
+          }
+        }
+        return ExprFactories.letDependentPair(variable, witnessType, proofVar, proofType, ExprFactories.var(existentialVar), inExpr);
       }
 
       case 'WL':
@@ -845,6 +846,26 @@ export class LambdaBuilderService {
       }
     }
     
+    // If f is equal to an ∃L substituted body, use that proof variable (fixes p0 vs p)
+    for (const n of this.allNodes) {
+      if (n.rule === '∃L') {
+        const childSeq = this.sequentMap.get(n.children[0]);
+        const currentSeq = this.sequentMap.get(n);
+        if (!childSeq || !currentSeq) continue;
+        const orig = currentSeq.assumptions.filter((a: FormulaNode) => a !== this.formulaMap.get(n));
+        const sub = childSeq.assumptions.find((a: FormulaNode) =>
+          !orig.some((o: FormulaNode) => Equality.formulasEqual(o, a))
+        );
+        if (sub && Equality.formulasEqual(sub, f)) {
+          v = this.formulaVarMap.get(sub);
+          if (v) {
+            this.formulaVarMap.set(f, v);
+            return v;
+          }
+        }
+      }
+    }
+
     // Fallback: generate new name
     v = preferred || this.variableNaming.getVariableName(f);
     // For predicates, lowercase the variable name (P -> p)
@@ -1177,9 +1198,14 @@ export class LambdaBuilderService {
         this.boundVarContext = oldContextForDisplay;
         return `λ${e.param}: ${this.typeToText(e.paramType)}. ${bodyStr}`;
       case 'DependentPair':
-        return `⟨${this.exprToString(e.witness)}, ${this.exprToString(e.proof)}⟩`;
-      case 'LetDependentPair':
-        return `let ⟨${e.x}, ${e.p}⟩ = ${this.exprToString(e.pair)} in ${this.exprToString(e.inExpr)}`;
+        return `⟨${this.exprToString(e.witness)} : ${this.typeToText(e.witnessType)}, ${this.exprToString(e.proof)}⟩`;
+      case 'LetDependentPair': {
+        const oldCtx = this.boundVarContext;
+        this.boundVarContext = { eigenVar: e.x, boundVar: e.x };
+        const out = `let ⟨${e.x} : ${this.typeToText(e.xType)}, ${e.p} : ${this.typeToText(e.pType)}⟩ = ${this.exprToString(e.pair)} in ${this.exprToString(e.inExpr)}`;
+        this.boundVarContext = oldCtx;
+        return out;
+      }
       default: return '-';
     }
   }

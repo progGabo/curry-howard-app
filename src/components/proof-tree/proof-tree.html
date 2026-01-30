@@ -1,10 +1,10 @@
-<div class="main" *ngIf="root">
+<div class="main" *ngIf="root as r">
   <div class="proof-node">
     
     <!-- Children (if any) -->
-    <div class="children" *ngIf="root.children?.length">
+    <div class="children" *ngIf="r.children?.length">
       <app-proof-tree
-        *ngFor="let child of root.children"
+        *ngFor="let child of r.children"
         [root]="child"
         [mode]="mode"
         [interactiveSubmode]="interactiveSubmode"
@@ -45,18 +45,18 @@
     >
       <!-- Plus button for interactive mode - only show if no rule has been applied yet -->
       <button 
-        *ngIf="mode === 'interactive' && !root.children?.length && root.rule !== 'Ax'"
+        *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Ax'"
         class="rule-plus-btn"
         (click)="onPlusButtonClick($event)"
         title="Add rule"
       >
         <span class="plus-icon">+</span>
       </button>
-      <span class="rule" *ngIf="root.children?.length || root.rule === 'Ax'">
-        {{ root.rule }}
+      <span class="rule" *ngIf="r.children?.length || r.rule === 'Ax'">
+        {{ r.rule }}
       </span>
       <div class="sequent-content">
-        {{ formatSequent(root.sequent) }}
+        {{ formatSequent(r.sequent) }}
       </div>
     </div>
 

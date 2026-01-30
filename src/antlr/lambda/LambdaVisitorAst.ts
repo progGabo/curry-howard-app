@@ -10,6 +10,7 @@ export interface LambdaVisitor<T> {
   visitLamExpr(ctx: any): T;
   visitLetExpr(ctx: any): T;
   visitLetPairExpr(ctx: any): T;
+  visitLetDependentPairExpr(ctx: any): T;
   visitIfExpr(ctx: any): T;
   visitCaseExpr(ctx: any): T;
   visitAppExpr(ctx: any): T;
@@ -28,6 +29,7 @@ import {
   LamExprContext,
   LetExprContext,
   LetPairExprContext,
+  LetDependentPairExprContext,
   IfExprContext,
   CaseExprContext,
   AppExprContext,
@@ -45,6 +47,84 @@ import { ExprFactories, TypeFactories } from "../../utils/ast-factories.js";
 
 // Voliteľná pomocná anotácia pozície
 export interface Span { start: number; end: number; }
+
+/** Returns true if the type contains a TypeVar with the given name (e.g. x in P(x)). */
+function typeContainsVar(type: TypeNode, varName: string): boolean {
+  switch (type.kind) {
+    case "TypeVar":
+      return type.name === varName;
+    case "Func":
+      return typeContainsVar(type.from, varName) || typeContainsVar(type.to, varName);
+    case "Prod":
+    case "Sum":
+      return typeContainsVar(type.left, varName) || typeContainsVar(type.right, varName);
+    case "PredicateType":
+      return type.argTypes.some((t) => typeContainsVar(t, varName));
+    case "DependentFunc":
+    case "DependentProd":
+      return typeContainsVar(type.paramType, varName) || typeContainsVar(type.bodyType, varName);
+    default:
+      return false;
+  }
+}
+
+/** Returns true if any type annotation in the expression references the given variable (e.g. body has \p:P(x). ...). */
+function exprBodyTypeReferencesVar(expr: ExprNode, varName: string): boolean {
+  switch (expr.kind) {
+    case "Abs":
+    case "DependentAbs":
+      return typeContainsVar(expr.paramType, varName) || exprBodyTypeReferencesVar(expr.body, varName);
+    case "App":
+      return exprBodyTypeReferencesVar(expr.fn, varName) || exprBodyTypeReferencesVar(expr.arg, varName);
+    case "Pair":
+      return exprBodyTypeReferencesVar(expr.left, varName) || exprBodyTypeReferencesVar(expr.right, varName);
+    case "Inl":
+    case "Inr":
+      return typeContainsVar(expr.asType, varName) || exprBodyTypeReferencesVar(expr.expr, varName);
+    case "Case":
+      return (
+        typeContainsVar(expr.leftType, varName) ||
+        typeContainsVar(expr.rightType, varName) ||
+        exprBodyTypeReferencesVar(expr.expr, varName) ||
+        exprBodyTypeReferencesVar(expr.leftBranch, varName) ||
+        exprBodyTypeReferencesVar(expr.rightBranch, varName)
+      );
+    case "Let":
+      return exprBodyTypeReferencesVar(expr.value, varName) || exprBodyTypeReferencesVar(expr.inExpr, varName);
+    case "LetPair":
+      return exprBodyTypeReferencesVar(expr.pair, varName) || exprBodyTypeReferencesVar(expr.inExpr, varName);
+    case "LetDependentPair":
+      return (
+        typeContainsVar((expr as any).xType, varName) ||
+        typeContainsVar((expr as any).pType, varName) ||
+        exprBodyTypeReferencesVar((expr as any).pair, varName) ||
+        exprBodyTypeReferencesVar(expr.inExpr, varName)
+      );
+    case "If":
+      return (
+        exprBodyTypeReferencesVar(expr.cond, varName) ||
+        exprBodyTypeReferencesVar(expr.thenBranch, varName) ||
+        exprBodyTypeReferencesVar(expr.elseBranch, varName)
+      );
+    case "DependentPair":
+      return (
+        typeContainsVar((expr as any).witnessType, varName) ||
+        exprBodyTypeReferencesVar((expr as any).witness, varName) ||
+        exprBodyTypeReferencesVar((expr as any).proof, varName)
+      );
+    case "Succ":
+    case "Pred":
+    case "IsZero":
+      return exprBodyTypeReferencesVar(expr.expr, varName);
+    case "Var":
+    case "True":
+    case "False":
+    case "Zero":
+      return false;
+    default:
+      return false;
+  }
+}
 
 // Pomocné: získať span z ľubovoľného ctx
 function spanOf(ctx: { start: any; stop: any }): Span {
@@ -97,11 +177,16 @@ export class AstBuilder
     if (!ctx) {
       throw new Error("Term context is null");
     }
-    // term : lamExpr | letPairExpr | letExpr | ifExpr | caseExpr | appExpr ;
+    // term : lamExpr | letDependentPairExpr | letPairExpr | letExpr | ...
     if (ctx.lamExpr()) {
       const lamCtx = ctx.lamExpr();
       if (!lamCtx) throw new Error("LamExpr context is null");
       return this.visitLamExpr(lamCtx);
+    }
+    if (ctx.letDependentPairExpr()) {
+      const letDepCtx = ctx.letDependentPairExpr();
+      if (!letDepCtx) throw new Error("LetDependentPairExpr context is null");
+      return this.visitLetDependentPairExpr(letDepCtx);
     }
     if (ctx.letPairExpr()) {
       const letPairCtx = ctx.letPairExpr();
@@ -131,14 +216,16 @@ export class AstBuilder
   }
 
   // ---------- λ-abstraction ----------
+  // Use DependentAbs when the body's type depends on the parameter (e.g. \x:T. \p:P(x). p)
   visitLamExpr(ctx: LamExprContext): ExprNode {
-    // LAMBDA VAR COLON type DOT term
-    return ExprFactories.abs(
-      ctx.VAR()!.getText(),
-      this.visitType(ctx.type()!) as TypeNode,
-      this.visit(ctx.term()!) as ExprNode,
-      spanOf(ctx)
-    );
+    const param = ctx.VAR()!.getText();
+    const paramType = this.visitType(ctx.type()!) as TypeNode;
+    const body = this.visit(ctx.term()!) as ExprNode;
+    const span = spanOf(ctx);
+    if (exprBodyTypeReferencesVar(body, param)) {
+      return ExprFactories.dependentAbs(param, paramType, body, span);
+    }
+    return ExprFactories.abs(param, paramType, body, span);
   }
 
   // ---------- let ----------
@@ -162,6 +249,18 @@ export class AstBuilder
       this.visit(ctx.term(1)!) as ExprNode,
       spanOf(ctx)
     );
+  }
+
+  // ---------- let dependent pair (∃ elimination) ----------
+  visitLetDependentPairExpr(ctx: LetDependentPairExprContext): ExprNode {
+    // LET LANGLE VAR (COLON type)? COMMA VAR (COLON type)? RANGLE ASSIGN term IN term  (or LPAREN variant)
+    const x = ctx.VAR(0)!.getText();
+    const p = ctx.VAR(1)!.getText();
+    const pair = this.visit(ctx.term(0)!) as ExprNode;
+    const inExpr = this.visit(ctx.term(1)!) as ExprNode;
+    const xType = ctx.type_(0) ? (this.visitType(ctx.type_(0)!) as TypeNode) : TypeFactories.typeVar("?");
+    const pType = ctx.type_(1) ? (this.visitType(ctx.type_(1)!) as TypeNode) : TypeFactories.typeVar("?");
+    return ExprFactories.letDependentPair(x, xType, p, pType, pair, inExpr, spanOf(ctx));
   }
 
   // ---------- if-then-else ----------
@@ -267,22 +366,25 @@ export class AstBuilder
       );
     }
 
-    // < term , term > or ⟨ term , term ⟩  -- pár s uhlovými zátvorkami
+    // < term , term > or ⟨ term : type?, term : type? ⟩  -- pár alebo dependent pair
     if (((ctx as any).LANGLE && (ctx as any).LANGLE()) || ((ctx as any).RANGLE && (ctx as any).RANGLE())) {
       const terms = ctx.term();
       if (terms && terms.length === 2 && ctx.COMMA()) {
-        return ExprFactories.pair(
-          this.visit(terms[0]!) as ExprNode,
-          this.visit(terms[1]!) as ExprNode,
-          spanOf(ctx)
-        );
+        const first = this.visit(terms[0]!) as ExprNode;
+        const second = this.visit(terms[1]!) as ExprNode;
+        const type0 = (ctx as any).type_ && (ctx as any).type_(0);
+        if (type0) {
+          const witnessType = this.visitType(type0) as TypeNode;
+          return ExprFactories.dependentPair(first, witnessType, second, spanOf(ctx));
+        }
+        return ExprFactories.pair(first, second, spanOf(ctx));
       }
     }
 
     // INL atom AS type
     if (ctx.INL()) {
       const atomCtx = ctx.atom();
-      const typeCtx = ctx.type();
+      const typeCtx = (ctx as any).type_(0);
       if (!atomCtx || !typeCtx) {
         throw new Error("INL requires an atom expression and a type");
       }
@@ -296,7 +398,7 @@ export class AstBuilder
     // INR atom AS type
     if ((ctx as any).INR && (ctx as any).INR()) {
       const atomCtx = ctx.atom();
-      const typeCtx = ctx.type();
+      const typeCtx = (ctx as any).type_(0);
       if (!atomCtx || !typeCtx) {
         throw new Error("INR requires an atom expression and a type");
       }
@@ -309,7 +411,7 @@ export class AstBuilder
     // Ak máš token pomenovaný INTR v gramatike:
     if ((ctx as any).INTR && (ctx as any).INTR()) {
       const atomCtx = ctx.atom();
-      const typeCtx = ctx.type();
+      const typeCtx = (ctx as any).type_(0);
       if (!atomCtx || !typeCtx) {
         throw new Error("INTR requires an atom expression and a type");
       }
@@ -354,9 +456,13 @@ export class AstBuilder
   }
 
   visitAtomicType(ctx: AtomicTypeContext): TypeNode {
-    // TYPEID | BOOL | NAT | predicateType | ( type )
+    // TYPEID | VAR | BOOL | NAT | predicateType | ( type )
     if (ctx.TYPEID()) {
       return TypeFactories.typeVar(ctx.TYPEID()!.getText());
+    }
+    // VAR: variable as type (e.g. x in P(x) for dependent types)
+    if (ctx.VAR()) {
+      return TypeFactories.typeVar(ctx.VAR()!.getText());
     }
     if (ctx.BOOL()) {
       return TypeFactories.bool();
@@ -373,23 +479,27 @@ export class AstBuilder
   }
 
   visitPredicateType(ctx: any): TypeNode {
-    // TYPEID LPAREN typeList? RPAREN
+    // TYPEID LPAREN typeList? RPAREN  -- generated parser uses type_() not type()
     const name = ctx.TYPEID()!.getText();
     const argTypes: TypeNode[] = [];
     if (ctx.typeList()) {
       const typeListCtx = ctx.typeList();
-      for (let i = 0; i < typeListCtx.type().length; i++) {
-        argTypes.push(this.visitType(typeListCtx.type(i)!) as TypeNode);
+      const typeList = typeListCtx.type_ ? typeListCtx.type_() : [];
+      for (let i = 0; i < (Array.isArray(typeList) ? typeList.length : 0); i++) {
+        const t = typeListCtx.type_(i);
+        if (t) argTypes.push(this.visitType(t) as TypeNode);
       }
     }
     return TypeFactories.predicate(name, argTypes);
   }
 
   visitTypeList(ctx: any): TypeNode[] {
-    // typeList : type (COMMA type)* ;
+    // typeList : type (COMMA type)* ;  -- generated method is type_() not type()
+    const typeList = ctx.type_ ? ctx.type_() : [];
     const types: TypeNode[] = [];
-    for (let i = 0; i < ctx.type().length; i++) {
-      types.push(this.visitType(ctx.type(i)!) as TypeNode);
+    for (let i = 0; i < (Array.isArray(typeList) ? typeList.length : 0); i++) {
+      const t = ctx.type_(i);
+      if (t) types.push(this.visitType(t) as TypeNode);
     }
     return types;
   }

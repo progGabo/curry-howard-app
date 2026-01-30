@@ -5,12 +5,62 @@ import { FormulaNode, SequentNode } from '../models/formula-node';
 @Injectable({ providedIn: 'root' })
 export class LambdaToExpressionService {
 
-  convertLambdaToExpression(lambdaExpr: ExprNode): string {
+  /**
+   * Convert a lambda term to its logical type (formula).
+   * When inferredType is provided, returns the type as formula (e.g. Σ (x : T), Q(x) for ∃x Q(x)).
+   * Otherwise returns a term-like string (legacy).
+   */
+  convertLambdaToExpression(lambdaExpr: ExprNode, inferredType?: TypeNode): string {
     try {
+      if (inferredType) {
+        return this.convertTypeToLogicalFormula(inferredType);
+      }
       return this.convertExprToFormula(lambdaExpr);
     } catch (error) {
       console.error('Error converting lambda to expression:', error);
       throw new Error(`Failed to convert lambda expression: ${error}`);
+    }
+  }
+
+  /**
+   * Convert a type (e.g. from type inference) to a logical formula string.
+   * DependentProd → Σ (x : T), Q(x) (existential); DependentFunc → ∀x:T. body.
+   */
+  convertTypeToLogicalFormula(type: TypeNode): string {
+    switch (type.kind) {
+      case 'TypeVar':
+        return type.name;
+      case 'Bool':
+        return 'Bool';
+      case 'Nat':
+        return 'Nat';
+      case 'Func':
+        const fromF = this.convertTypeToLogicalFormula(type.from);
+        const toF = this.convertTypeToLogicalFormula(type.to);
+        const fromParens = type.from.kind === 'Func' || type.from.kind === 'Prod' || type.from.kind === 'Sum';
+        const toParens = type.to.kind === 'Func' || type.to.kind === 'Prod' || type.to.kind === 'Sum';
+        return `${fromParens ? `(${fromF})` : fromF} → ${toParens ? `(${toF})` : toF}`;
+      case 'Prod':
+        const leftF = this.convertTypeToLogicalFormula(type.left);
+        const rightF = this.convertTypeToLogicalFormula(type.right);
+        return `${leftF} ∧ ${rightF}`;
+      case 'Sum':
+        const sumL = this.convertTypeToLogicalFormula(type.left);
+        const sumR = this.convertTypeToLogicalFormula(type.right);
+        return `${sumL} ∨ ${sumR}`;
+      case 'PredicateType':
+        const predArgs = type.argTypes.map(t => this.convertTypeToLogicalFormula(t)).join(', ');
+        return `${type.name}(${predArgs})`;
+      case 'DependentFunc':
+        const dfParam = this.convertTypeToLogicalFormula(type.paramType);
+        const dfBody = this.convertTypeToLogicalFormula(type.bodyType);
+        return `∀${type.param}:${dfParam}. ${dfBody}`;
+      case 'DependentProd':
+        // ∃x Q(x)
+        const dpBody = this.convertTypeToLogicalFormula(type.bodyType);
+        return `∃${type.param}. ${dpBody}`;
+      default:
+        return `[${(type as any).kind}]`;
     }
   }
 
@@ -27,7 +77,7 @@ export class LambdaToExpressionService {
       case 'App':
         const fnFormula = this.convertExprToFormula(expr.fn);
         const argFormula = this.convertExprToFormula(expr.arg);
-        const needsParens = expr.fn.kind === 'Abs' || expr.fn.kind === 'App';
+        const needsParens = expr.fn.kind === 'Abs' || expr.fn.kind === 'DependentAbs' || expr.fn.kind === 'App';
         return needsParens ? `(${fnFormula}) ${argFormula}` : `${fnFormula} ${argFormula}`;
       
       case 'Pair':
@@ -87,6 +137,24 @@ export class LambdaToExpressionService {
         const pairBody = this.convertExprToFormula(expr.inExpr);
         return `let [${expr.x}, ${expr.y}] = ${pairValue} in ${pairBody}`;
       
+      case 'DependentAbs':
+        // ∀x:T. body (predicate logic)
+        const depParamType = this.convertTypeToFormula(expr.paramType);
+        const depBodyFormula = this.convertExprToFormula(expr.body);
+        return `∀${expr.param}:${depParamType}. ${depBodyFormula}`;
+      
+      case 'DependentPair':
+        // ⟨witness, proof⟩ (∃ introduction)
+        const witFormula = this.convertExprToFormula(expr.witness);
+        const proofFormula = this.convertExprToFormula(expr.proof);
+        return `⟨${witFormula}, ${proofFormula}⟩`;
+      
+      case 'LetDependentPair':
+        // let ⟨x, p⟩ = pair in body (∃ elimination)
+        const dpPair = this.convertExprToFormula(expr.pair);
+        const dpBody = this.convertExprToFormula(expr.inExpr);
+        return `let ⟨${expr.x}, ${expr.p}⟩ = ${dpPair} in ${dpBody}`;
+      
       default:
         return `[${(expr as any).kind}]`;
     }
@@ -115,6 +183,17 @@ export class LambdaToExpressionService {
         const sumLeft = this.convertTypeToFormula(type.left);
         const sumRight = this.convertTypeToFormula(type.right);
         return `${sumLeft} ∨ ${sumRight}`;
+      case 'PredicateType':
+        const predArgs = type.argTypes.map(t => this.convertTypeToFormula(t)).join(', ');
+        return `${type.name}(${predArgs})`;
+      case 'DependentFunc':
+        const dfFrom = this.convertTypeToFormula(type.paramType);
+        const dfTo = this.convertTypeToFormula(type.bodyType);
+        return `(${type.param}: ${dfFrom}) → ${dfTo}`;
+      case 'DependentProd':
+        const dpFrom = this.convertTypeToFormula(type.paramType);
+        const dpTo = this.convertTypeToFormula(type.bodyType);
+        return `∃${type.param}. ${dpTo}`;
       default:
         return `[${(type as any).kind}]`;
     }
@@ -135,8 +214,7 @@ export class LambdaToExpressionService {
   }
 
   private createFormulaFromLambda(expr: ExprNode): FormulaNode {
-    // This is a placeholder implementation
-    // In reality, you'd need to implement the full Curry-Howard correspondence
+    // Curry-Howard: lambda term ↔ proof, type ↔ formula
     switch (expr.kind) {
       case 'Var':
         return { kind: 'Var', name: expr.name };
@@ -145,6 +223,13 @@ export class LambdaToExpressionService {
           kind: 'Implies',
           left: this.createFormulaFromLambda({ kind: 'Var', name: expr.param } as ExprNode),
           right: this.createFormulaFromLambda(expr.body)
+        };
+      case 'DependentAbs':
+        // ∀x. body (predicate logic)
+        return {
+          kind: 'Forall',
+          variable: expr.param,
+          body: this.createFormulaFromLambda(expr.body)
         };
       case 'App':
         return {
@@ -158,6 +243,15 @@ export class LambdaToExpressionService {
           left: this.createFormulaFromLambda(expr.left),
           right: this.createFormulaFromLambda(expr.right)
         };
+      case 'DependentPair':
+        // ∃x. (proof type) — proof of existential
+        return {
+          kind: 'Exists',
+          variable: 'x',
+          body: this.createFormulaFromLambda(expr.proof)
+        };
+      case 'LetDependentPair':
+        return this.createFormulaFromLambda(expr.inExpr);
       case 'True':
         return { kind: 'True' };
       case 'False':

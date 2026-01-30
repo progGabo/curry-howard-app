@@ -11,10 +11,15 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "experimentalDecorators": true,
+    "baseUrl": "./",
     "paths": {
-      "proof-tree": [
-        "./dist/proof-tree"
-      ]
+      "proof-tree": ["./dist/proof-tree"],
+      "@app/*": ["src/app/*"],
+      "@services/*": ["src/services/*"],
+      "@models/*": ["src/models/*"],
+      "@utils/*": ["src/utils/*"],
+      "@constants/*": ["src/constants/*"],
+      "@components/*": ["src/components/*"]
     },
     "importHelpers": true,
     "target": "ES2022",

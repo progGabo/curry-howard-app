@@ -1,4 +1,4 @@
-// Generated from Lambda.g4 by ANTLR 4.13.1
+// Generated from src/antlr/lambda/Lambda.g4 by ANTLR 4.13.1
 
 import { AbstractParseTreeVisitor } from "antlr4ng";
 
@@ -8,6 +8,7 @@ import { TermContext } from "./LambdaParser.js";
 import { LamExprContext } from "./LambdaParser.js";
 import { LetExprContext } from "./LambdaParser.js";
 import { LetPairExprContext } from "./LambdaParser.js";
+import { LetDependentPairExprContext } from "./LambdaParser.js";
 import { IfExprContext } from "./LambdaParser.js";
 import { CaseExprContext } from "./LambdaParser.js";
 import { AppExprContext } from "./LambdaParser.js";
@@ -58,6 +59,12 @@ export class LambdaVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      * @return the visitor result
      */
     visitLetPairExpr?: (ctx: LetPairExprContext) => Result;
+    /**
+     * Visit a parse tree produced by `LambdaParser.letDependentPairExpr`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitLetDependentPairExpr?: (ctx: LetDependentPairExprContext) => Result;
     /**
      * Visit a parse tree produced by `LambdaParser.ifExpr`.
      * @param ctx the parse tree

@@ -1,75 +1,18 @@
-<header class="header">
-  <div class="header-left">
-    <h1 class="app-title">Curry-Howard</h1>
-    <div class="header-divider"></div>
-    <div class="direction-toggle">
-      <button
-        type="button"
-        class="direction-toggle-btn"
-        [class.active]="conversionMode === 'expression-to-lambda'"
-        (click)="switchMode('expression-to-lambda')">
-        {{ t.exprToLambda }}
-      </button>
-      <button
-        type="button"
-        class="direction-toggle-btn"
-        [class.active]="conversionMode === 'lambda-to-expression'"
-        (click)="switchMode('lambda-to-expression')">
-        {{ t.lambdaToExpr }}
-      </button>
-    </div>
-    
-    <!-- Divider -->
-    <div class="header-divider"></div>
-    
-    <!-- Mode Toggle Switch -->
-    <div class="mode-toggle-container">
-      <div class="mode-toggle">
-        <button 
-          class="mode-toggle-btn"
-          [class.active]="mode === 'auto'"
-          [disabled]="isPredicateLogic && conversionMode === 'expression-to-lambda'"
-          [title]="isPredicateLogic && conversionMode === 'expression-to-lambda' ? (currentLanguage === 'sk' ? 'Auto mód nie je dostupný pre predikátovú logiku' : 'Auto mode is not available for predicate logic') : ''"
-          (click)="mode = 'auto'; parseAndBuild()">
-          {{ t.autoMode }}
-        </button>
-        <button 
-          class="mode-toggle-btn"
-          [class.active]="mode === 'interactive'"
-          (click)="mode = 'interactive'; parseAndBuild()">
-          {{ t.interactiveMode }}
-        </button>
-      </div>
-      
-      <!-- Interactive Submode Dropdown -->
-      <div class="submode-dropdown" *ngIf="mode === 'interactive'">
-        <select class="submode-select" [(ngModel)]="interactiveSubmode">
-          <option value="applicable">{{ t.applicableOnly }}</option>
-          <option value="all">{{ t.allRules }}</option>
-          <option value="predict">{{ t.predictNext }}</option>
-        </select>
-      </div>
-      
-      <!-- Step Back Button -->
-      <p-button 
-        *ngIf="mode === 'interactive'"
-        [label]="t.stepBack" 
-        styleClass="btn btn-step-back" 
-        [disabled]="!canStepBack"
-        (click)="stepBack()">
-      </p-button>
-    </div>
-  </div>
-
-  <div class="header-actions">
-    <p-button [icon]="'pi pi-question-circle'" [label]="t.help" (click)="helpVisible = true" styleClass="btn btn-ghost"></p-button>
-
-    <div class="lang-switch">
-      <p-button label="SK" [severity]="currentLanguage === 'sk' ? 'primary' : 'secondary'" (click)="currentLanguage = 'sk'" styleClass="btn btn-toggle"></p-button>
-      <p-button label="EN" [severity]="currentLanguage === 'en' ? 'primary' : 'secondary'" (click)="currentLanguage = 'en'" styleClass="btn btn-toggle"></p-button>
-    </div>
-  </div>
-</header>
+<app-header
+  [conversionMode]="conversionMode"
+  [mode]="mode"
+  [interactiveSubmode]="interactiveSubmode"
+  [isPredicateLogic]="isPredicateLogic"
+  [canStepBack]="canStepBack"
+  [currentLanguage]="currentLanguage"
+  [t]="t"
+  (conversionModeChange)="switchMode($event)"
+  (modeChange)="onHeaderModeChange($event)"
+  (submodeChange)="interactiveSubmode = $event"
+  (stepBack)="stepBack()"
+  (helpClick)="helpVisible = true"
+  (languageChange)="currentLanguage = $event"
+></app-header>
 
 <!-- Slide Panel Toggle Button -->
 <button class="slide-panel-toggle" (click)="slidePanelVisible = !slidePanelVisible" [class.active]="slidePanelVisible">
@@ -138,7 +81,7 @@
                   {{ t.proofTree }}
                 </button>
                 <button 
-                  *ngIf="lambdaExprNode && typeInferenceTreeForLambda"
+                  *ngIf="lambdaExprNode"
                   class="tab-button" 
                   [class.active]="activeTab === 'typeInference'"
                   (click)="activeTab = 'typeInference'"
@@ -148,93 +91,54 @@
               </div>
               <div class="tabs-content">
                 <div *ngIf="activeTab === 'proof'" class="tab-panel">
-                  <div 
-                    class="tree-canvas-container"
-                    (mousedown)="onTreeCanvasMouseDown($event)"
-                    (mousemove)="onTreeCanvasMouseMove($event)"
-                    (mouseup)="onTreeCanvasMouseUp($event)"
-                    (mouseleave)="onTreeCanvasMouseUp($event)"
-                    (wheel)="onTreeCanvasWheel($event)"
-                    (contextmenu)="$event.preventDefault()"
-                  >
-                    <div 
-                      class="tree-canvas"
-                      [style.transform]="'translate(' + treePanX + 'px, ' + treePanY + 'px) scale(' + treeZoom + ')'"
-                      [style.transform-origin]="'0 0'"
-                    >
-                      <app-proof-tree
-                        [root]="proofTree"
-                        [mode]="mode"
-                        [interactiveSubmode]="interactiveSubmode"
-                        [currentLanguage]="currentLanguage"
-                        [selectedNode]="selectedNode"
-                        [predictionRuleRequest]="predictionRuleRequest"
-                        (nodeClicked)="onNodeClicked($event)"
-                        (plusButtonClicked)="onProofPlusButtonClicked($event)"
-                        (ruleSelected)="applyRuleToNode($event)"
-                      ></app-proof-tree>
-                    </div>
-                  </div>
+                  <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger">
+                    <app-proof-tree
+                      [root]="proofTree"
+                      [mode]="mode"
+                      [interactiveSubmode]="interactiveSubmode"
+                      [currentLanguage]="currentLanguage"
+                      [selectedNode]="selectedNode"
+                      [predictionRuleRequest]="predictionRuleRequest"
+                      (nodeClicked)="onNodeClicked($event)"
+                      (plusButtonClicked)="onProofPlusButtonClicked($event)"
+                      (ruleSelected)="applyRuleToNode($event)"
+                    ></app-proof-tree>
+                  </app-tree-canvas>
                 </div>
-                <div *ngIf="activeTab === 'typeInference' && lambdaExprNode && typeInferenceTreeForLambda" class="tab-panel">
-                  <div 
-                    class="tree-canvas-container"
-                    (mousedown)="onTreeCanvasMouseDown($event)"
-                    (mousemove)="onTreeCanvasMouseMove($event)"
-                    (mouseup)="onTreeCanvasMouseUp($event)"
-                    (mouseleave)="onTreeCanvasMouseUp($event)"
-                    (wheel)="onTreeCanvasWheel($event)"
-                    (contextmenu)="$event.preventDefault()"
-                  >
-                    <div 
-                      class="tree-canvas"
-                      [style.transform]="'translate(' + treePanX + 'px, ' + treePanY + 'px) scale(' + treeZoom + ')'"
-                      [style.transform-origin]="'0 0'"
-                    >
-                      <app-type-inference-tree
-                        [root]="typeInferenceTreeForLambda"
-                        [mode]="'auto'"
-                        [interactiveSubmode]="'all'"
-                        [selectedNode]="null"
-                        [currentLanguage]="currentLanguage"
-                      ></app-type-inference-tree>
-                    </div>
+                <div *ngIf="activeTab === 'typeInference' && lambdaExprNode" class="tab-panel">
+                  <div *ngIf="!typeInferenceTreeForLambda" class="type-inference-error">
+                    {{ currentLanguage === 'sk' ? 'Strom typu sa nepodarilo zostaviť (napr. chýbajúce typy predpokladov).' : 'Type inference tree could not be built (e.g. missing assumption types).' }}
                   </div>
+                  <app-tree-canvas *ngIf="typeInferenceTreeForLambda" [resetTrigger]="treeCanvasResetTrigger">
+                    <app-type-inference-tree
+                      [root]="typeInferenceTreeForLambda"
+                      [mode]="'auto'"
+                      [interactiveSubmode]="'all'"
+                      [selectedNode]="null"
+                      [currentLanguage]="currentLanguage"
+                    ></app-type-inference-tree>
+                  </app-tree-canvas>
                 </div>
               </div>
             </div>
           </div>
           
           <div *ngIf="conversionMode === 'lambda-to-expression'">
-            <div 
-              class="tree-canvas-container"
-              (mousedown)="onTreeCanvasMouseDown($event)"
-              (mousemove)="onTreeCanvasMouseMove($event)"
-              (mouseup)="onTreeCanvasMouseUp($event)"
-              (mouseleave)="onTreeCanvasMouseUp($event)"
-              (wheel)="onTreeCanvasWheel($event)"
-              (contextmenu)="$event.preventDefault()"
-            >
-              <div 
-                class="tree-canvas"
-                [style.transform]="'translate(' + treePanX + 'px, ' + treePanY + 'px) scale(' + treeZoom + ')'"
-                [style.transform-origin]="'0 0'"
-              >
-                <div class="type-inference-section">
-                  <app-type-inference-tree
-                    [root]="typeInferenceTree"
-                    [mode]="mode"
-                    [interactiveSubmode]="interactiveSubmode"
-                    [selectedNode]="selectedTypeNode"
-                    [predictionRuleRequest]="predictionTypeRuleRequest"
-                    [currentLanguage]="currentLanguage"
-                    (nodeClicked)="onTypeNodeClicked($event)"
-                    (plusButtonClicked)="onTypePlusButtonClicked($event)"
-                    (ruleSelected)="applyTypeRuleToNode($event)"
-                  ></app-type-inference-tree>
-                </div>
+            <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger">
+              <div class="type-inference-section">
+                <app-type-inference-tree
+                  [root]="typeInferenceTree"
+                  [mode]="mode"
+                  [interactiveSubmode]="interactiveSubmode"
+                  [selectedNode]="selectedTypeNode"
+                  [predictionRuleRequest]="predictionTypeRuleRequest"
+                  [currentLanguage]="currentLanguage"
+                  (nodeClicked)="onTypeNodeClicked($event)"
+                  (plusButtonClicked)="onTypePlusButtonClicked($event)"
+                  (ruleSelected)="applyTypeRuleToNode($event)"
+                ></app-type-inference-tree>
               </div>
-            </div>
+            </app-tree-canvas>
           </div>
           
         </div>
@@ -245,215 +149,35 @@
 
 <p-toast></p-toast>
 
-<!-- Rule Menu Popup - Moved outside tree components -->
-<div
-  class="rule-menu-popup"
-  *ngIf="popupVisible"
-  [ngStyle]="popupPosition"
-  (mousemove)="onPopupDragMove($event)"
-  (mouseup)="onPopupDragEnd()"
-  (mouseleave)="onPopupDragEnd()"
->
-  <div class="popup-header" (mousedown)="onPopupDragStart($event)">
-    <span class="drag-handle">☰ Drag to move</span>
-    <button class="close-btn" (click)="closePopup()">×</button>
-  </div>
+<app-rule-menu-popup
+  [visible]="popupVisible"
+  [popupX]="popupX"
+  [popupY]="popupY"
+  [conversionMode]="conversionMode"
+  [filteredConclusionRules]="filteredConclusionRules"
+  [filteredAssumptionRules]="filteredAssumptionRules"
+  [filteredSpecialRules]="filteredSpecialRules"
+  [filteredBasicRules]="filteredBasicRules"
+  [filteredAbsRules]="filteredAbsRules"
+  [filteredAppRules]="filteredAppRules"
+  [filteredPairRules]="filteredPairRules"
+  [filteredDependentRules]="filteredDependentRules"
+  [filteredSumRules]="filteredSumRules"
+  [filteredConditionalRules]="filteredConditionalRules"
+  [filteredNatRules]="filteredNatRules"
+  [filteredLetRules]="filteredLetRules"
+  (proofRuleClick)="onProofRuleClick($event)"
+  (typeRuleClick)="onTypeRuleClick($event)"
+  (close)="closePopup()"
+  (positionChange)="onPopupPositionChange($event)"
+></app-rule-menu-popup>
 
-  <!-- Proof Tree Rules -->
-  <div *ngIf="conversionMode === 'expression-to-lambda'">
-    <h4>Pravidlá pre záver</h4>
-    <div class="rule-group">
-      <button *ngFor="let rule of filteredConclusionRules" (click)="onProofRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-
-    <h4>Pravidlá pre predpoklad</h4>
-    <div class="rule-group">
-      <button *ngFor="let rule of filteredAssumptionRules" (click)="onProofRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-
-    <h4>Špeciálne</h4>
-    <div class="rule-group special">
-      <button *ngFor="let rule of filteredSpecialRules" (click)="onProofRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-  </div>
-
-  <!-- Type Inference Rules -->
-  <div *ngIf="conversionMode === 'lambda-to-expression'">
-    <h4>Basic</h4>
-    <div class="rule-group" *ngIf="filteredBasicRules.length">
-      <button *ngFor="let rule of filteredBasicRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-
-    <h4>Functions</h4>
-    <div class="rule-group" *ngIf="filteredAbsRules.length || filteredAppRules.length">
-      <button *ngFor="let rule of filteredAbsRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-      <button *ngFor="let rule of filteredAppRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-
-    <h4>Pairs & Sums</h4>
-    <div class="rule-group" *ngIf="filteredPairRules.length || filteredSumRules.length">
-      <button *ngFor="let rule of filteredPairRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-      <button *ngFor="let rule of filteredSumRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-
-    <h4>Dependent (∀ / ∃)</h4>
-    <div class="rule-group" *ngIf="filteredDependentRules.length">
-      <button *ngFor="let rule of filteredDependentRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-
-    <h4>Control Flow</h4>
-    <div class="rule-group" *ngIf="filteredConditionalRules.length || filteredLetRules.length">
-      <button *ngFor="let rule of filteredConditionalRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-      <button *ngFor="let rule of filteredLetRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-
-    <h4>Naturals</h4>
-    <div class="rule-group" *ngIf="filteredNatRules.length">
-      <button *ngFor="let rule of filteredNatRules" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Help Modal -->
-<div class="help-modal" *ngIf="helpVisible" (click)="helpVisible = false">
-  <div class="help-modal__dialog" (click)="$event.stopPropagation()">
-    <div class="help-modal__header">
-      <h3>{{ t.helpTitle }}</h3>
-      <button class="modal-close" (click)="helpVisible = false">✕</button>
-    </div>
-    <div class="help-modal__body">
-      <div class="tutorial-content" *ngIf="currentLanguage === 'sk'">
-        <h4>Úvod</h4>
-        <p>Táto aplikácia demonštruje Curry-Howardov izomorfizmus, ktorý spája logiku a typy v programovaní. Môžete prevádzať medzi logickými výrazmi a lambda výrazmi.</p>
-        
-        <h4>Dva režimy prevodu</h4>
-        <ul>
-          <li><strong>Výraz → Lambda:</strong> Zadajte logický výraz a aplikácia vygeneruje zodpovedajúci lambda výraz a dôkazový strom.</li>
-          <li><strong>Lambda → Výraz:</strong> Zadajte lambda výraz a aplikácia určí jeho typ.</li>
-        </ul>
-        
-        <h4>Použitie aplikácie</h4>
-        <ol>
-          <li><strong>Vyberte režim:</strong> Použite tlačidlá "Výraz → Lambda" alebo "Lambda → Výraz" v hlavičke.</li>
-          <li><strong>Zadajte výraz:</strong> Napíšte logický výraz alebo lambda výraz do editora vľavo.</li>
-          <li><strong>Príklady:</strong> Môžete použiť rozbaľovací zoznam príkladov na rýchle testovanie.</li>
-          <li><strong>Generovanie:</strong> Kliknite na tlačidlo "Generuj dôkaz" alebo "Konvertuj lambda".</li>
-          <li><strong>Výsledok:</strong> V pravej časti sa zobrazí dôkazový strom alebo typ výrazu.</li>
-        </ol>
-        
-        <h4>Režimy práce</h4>
-        <ul>
-          <li><strong>Auto mód:</strong> Aplikácia automaticky vygeneruje celý dôkaz.</li>
-          <li><strong>Interaktívny mód:</strong> Môžete manuálne aplikovať pravidlá:
-            <ul>
-              <li><strong>Iba použiteľné:</strong> Zobrazí len pravidlá, ktoré možno aplikovať.</li>
-              <li><strong>Všetky pravidlá:</strong> Zobrazí všetky dostupné pravidlá.</li>
-              <li><strong>Predpovedať ďalší:</strong> Môžete predpovedať nasledujúce kroky.</li>
-            </ul>
-          </li>
-        </ul>
-        
-        <h4>Práca s dôkazovým stromom</h4>
-        <ul>
-          <li>Kliknite na uzol v strome pre výber.</li>
-          <li>Kliknite na tlačidlo "+" pri uzle pre zobrazenie dostupných pravidiel.</li>
-          <li>V interaktívnom režime môžete použiť tlačidlo "Krok späť" pre vrátenie sa.</li>
-        </ul>
-        
-        <h4>Syntax výrazov</h4>
-        <ul>
-          <li><strong>Konjunkcia:</strong> &&</li>
-          <li><strong>Disjunkcia:</strong> ||</li>
-          <li><strong>Implikácia:</strong> =></li>
-          <li><strong>Negácia:</strong> !</li>
-          <li><strong>Univerzálny kvantifikátor:</strong> forall</li>
-          <li><strong>Existenčný kvantifikátor:</strong> exists</li>
-          <li><strong>Turnstile (sekvent):</strong> |-</li>
-          <li><strong>Lambda abstrakcia:</strong> \\</li>
-        </ul>
-      </div>
-      
-      <div class="tutorial-content" *ngIf="currentLanguage === 'en'">
-        <h4>Introduction</h4>
-        <p>This application demonstrates the Curry-Howard isomorphism, which connects logic and types in programming. You can convert between logical expressions and lambda expressions.</p>
-        
-        <h4>Two conversion modes</h4>
-        <ul>
-          <li><strong>Expression → Lambda:</strong> Enter a logical expression and the app will generate the corresponding lambda expression and proof tree.</li>
-          <li><strong>Lambda → Expression:</strong> Enter a lambda expression and the app will determine its type.</li>
-        </ul>
-        
-        <h4>How to use</h4>
-        <ol>
-          <li><strong>Select mode:</strong> Use the "Expression → Lambda" or "Lambda → Expression" buttons in the header.</li>
-          <li><strong>Enter expression:</strong> Type a logical or lambda expression into the editor on the left.</li>
-          <li><strong>Examples:</strong> You can use the dropdown list of examples for quick testing.</li>
-          <li><strong>Generate:</strong> Click the "Generate proof" or "Convert lambda" button.</li>
-          <li><strong>Result:</strong> The proof tree or expression type will be displayed on the right side.</li>
-        </ol>
-        
-        <h4>Work modes</h4>
-        <ul>
-          <li><strong>Auto mode:</strong> The app automatically generates the entire proof.</li>
-          <li><strong>Interactive mode:</strong> You can manually apply rules:
-            <ul>
-              <li><strong>Applicable only:</strong> Shows only rules that can be applied.</li>
-              <li><strong>All rules:</strong> Shows all available rules.</li>
-              <li><strong>Predict next:</strong> You can predict the next steps.</li>
-            </ul>
-          </li>
-        </ul>
-        
-        <h4>Working with proof tree</h4>
-        <ul>
-          <li>Click on a node in the tree to select it.</li>
-          <li>Click the "+" button next to a node to show available rules.</li>
-          <li>In interactive mode, you can use the "Step Back" button to go back.</li>
-        </ul>
-        
-        <h4>Expression syntax</h4>
-        <ul>
-          <li><strong>Conjunction:</strong> &&</li>
-          <li><strong>Disjunction:</strong> ||</li>
-          <li><strong>Implication:</strong> =></li>
-          <li><strong>Negation:</strong> !</li>
-          <li><strong>Universal quantifier:</strong> forall</li>
-          <li><strong>Existential quantifier:</strong> exists</li>
-          <li><strong>Turnstile (sequent):</strong> |-</li>
-          <li><strong>Lambda abstraction:</strong> \\</li>
-        </ul>
-      </div>
-    </div>
-    <div class="help-modal__footer">
-      <p-button [label]="t.close" (click)="helpVisible = false" styleClass="btn btn-primary"></p-button>
-    </div>
-  </div>
-  <div class="help-modal__backdrop"></div>
-</div>
+<app-help-modal
+  [visible]="helpVisible"
+  [currentLanguage]="currentLanguage"
+  [t]="t"
+  (close)="helpVisible = false"
+></app-help-modal>
 
 <footer class="footer">
   <div class="footer-inner">

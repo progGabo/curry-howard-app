@@ -1,6 +1,9 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { DerivationNode, FormulaNode, SequentNode, TermNode } from '../../models/formula-node';
-import { MessageService } from 'primeng/api';
+import { CONCLUSION_RULES, ASSUMPTION_RULES, SPECIAL_RULES } from '../../constants/rules';
+import { I18nService } from '../../services/i18n.service';
+import { NotificationService } from '../../services/notification.service';
+import type { AppTranslations } from '../../services/i18n.service';
 
 @Component({
   selector: 'app-proof-tree',
@@ -15,11 +18,12 @@ export class ProofTree implements OnChanges {
   @Output() nodeClicked = new EventEmitter<DerivationNode>();
   @Output() plusButtonClicked = new EventEmitter<{ node: DerivationNode, x: number, y: number }>();
   @Input() root!: DerivationNode | null;
-  
-  conclusionRules = ['→R', '∧R', '∨R', '¬R', '∀R', '∃R'];
-  assumptionRules = ['→L', '∧L', '∨L', '¬L', '∀L', '∃L'];
-  specialRules = ['WR', 'WL', 'Ax'];
-  @Output() ruleSelected = new EventEmitter<{ node: DerivationNode, rule: string }>();  
+
+  conclusionRules = [...CONCLUSION_RULES];
+  assumptionRules = [...ASSUMPTION_RULES];
+  specialRules = [...SPECIAL_RULES];
+
+  @Output() ruleSelected = new EventEmitter<{ node: DerivationNode, rule: string }>();
   @Input() selectedNode: DerivationNode | null = null;
   @Input() predictionRuleRequest: { node: DerivationNode, rule: string } | null = null;
 
@@ -28,42 +32,15 @@ export class ProofTree implements OnChanges {
   userPredictions: string[] = [];
   predictError: string | null = null;
 
-  private translations = {
-    sk: {
-      errorRuleCannotBeAppliedToSequent: 'Toto pravidlo sa nedá aplikovať na tento sekvent.',
-      errorFillAllFields: 'Prosím vyplňte všetky polia.',
-      errorInvalidSequentFormat: 'Neplatný formát sekventu. Použite formát: "A, B ⊢ C, D"',
-      errorExpectedSequents: 'Očakávané {expected} sekvent(ov), získané {got}.',
-      errorIncorrectAtPosition: 'Nesprávne na pozícii {position}! Očakávané: {expected}',
-      errorCannotApplyRule: 'Toto pravidlo sa nedá aplikovať na aktuálny sekvent.'
-    },
-    en: {
-      errorRuleCannotBeAppliedToSequent: 'This rule cannot be applied to this sequent.',
-      errorFillAllFields: 'Please fill all prediction fields.',
-      errorInvalidSequentFormat: 'Invalid sequent format. Use format: "A, B ⊢ C, D"',
-      errorExpectedSequents: 'Expected {expected} sequent(s), got {got}.',
-      errorIncorrectAtPosition: 'Incorrect at position {position}! Expected: {expected}',
-      errorCannotApplyRule: 'Cannot apply this rule to the current sequent.'
-    }
-  };
+  constructor(
+    private i18n: I18nService,
+    private notification: NotificationService
+  ) {}
 
-  constructor(private messageService: MessageService) {}
-
-  private showError(key: string, params?: { [key: string]: string | number }) {
-    const t = this.translations[this.currentLanguage];
-    let message = t[key as keyof typeof t] as string || key;
-    
-    // Replace parameters in message
-    if (params) {
-      Object.keys(params).forEach(param => {
-        message = message.replace(`{${param}}`, String(params[param]));
-      });
-    }
-    
-    this.messageService.add({
-      severity: 'error',
-      summary: this.currentLanguage === 'sk' ? 'Chyba' : 'Error',
-      detail: message,
+  private showError(key: keyof AppTranslations, params?: { [key: string]: string | number }) {
+    const message = this.i18n.translate(this.currentLanguage, key, params);
+    this.notification.showError(message, {
+      summary: this.i18n.errorSummary(this.currentLanguage),
       life: 7000
     });
   }

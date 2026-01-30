@@ -134,9 +134,6 @@ export class ProofTreeBuilderService {
       assumptions: [...gamma, impl.right],
       conclusions: [...sequent.conclusions]
     };
-    console.log('→L LEFT premise:', leftPremise);
-    console.log('→L RIGHT premise:', rightPremise);
-    console.log('LEFT.child:', isInteractive ? this.buildInteractiveRoot(leftPremise) : this.applyRules(leftPremise));
     const leftChild = isInteractive ? this.buildInteractiveRoot(leftPremise) : await this.applyRules(leftPremise);
     const rightChild = isInteractive ? this.buildInteractiveRoot(rightPremise) : await this.applyRules(rightPremise);
     return {
@@ -899,7 +896,6 @@ export class ProofTreeBuilderService {
   }
 
   async applyRuleManually(sequent: SequentNode, rule: string, isInteractive = true, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode | null> {
-    console.log('applyRules input sequent:', sequent);
     switch (rule) {
       case '→R': {
         const impl = sequent.conclusions.find(f => f.kind === 'Implies');

@@ -126,12 +126,14 @@ export class TreeUtils {
     return count;
   }
 
-  // Get all free variables
+  // Get all free variables (covers all ExprNode kinds including DependentAbs, DependentPair, LetDependentPair)
   static getFreeVars(expr: ExprNode, bound: Set<string> = new Set()): Set<string> {
     switch (expr.kind) {
       case 'Var':
         return bound.has(expr.name) ? new Set() : new Set([expr.name]);
       case 'Abs':
+        return this.getFreeVars(expr.body, new Set([...bound, expr.param]));
+      case 'DependentAbs':
         return this.getFreeVars(expr.body, new Set([...bound, expr.param]));
       case 'App':
         return new Set([
@@ -147,6 +149,16 @@ export class TreeUtils {
         return new Set([
           ...this.getFreeVars(expr.pair, bound),
           ...this.getFreeVars(expr.inExpr, new Set([...bound, expr.x, expr.y]))
+        ]);
+      case 'DependentPair':
+        return new Set([
+          ...this.getFreeVars(expr.witness, bound),
+          ...this.getFreeVars(expr.proof, bound)
+        ]);
+      case 'LetDependentPair':
+        return new Set([
+          ...this.getFreeVars(expr.pair, bound),
+          ...this.getFreeVars(expr.inExpr, new Set([...bound, expr.x, expr.p]))
         ]);
       case 'Inl':
       case 'Inr':
@@ -172,6 +184,10 @@ export class TreeUtils {
       case 'Pred':
       case 'IsZero':
         return this.getFreeVars(expr.expr, bound);
+      case 'True':
+      case 'False':
+      case 'Zero':
+        return new Set();
       default:
         return new Set();
     }

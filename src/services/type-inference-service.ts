@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { ExprNode, TypeNode } from '../models/lambda-node';
 import { FormulaNode } from '../models/formula-node';
+import { TypeFactories } from '../utils/ast-factories';
+import { TreeUtils } from '../utils/tree-utils';
 
 // Type inference tree node
 export interface TypeInferenceNode {
@@ -19,8 +21,14 @@ export interface TypeInferenceNode {
 @Injectable({ providedIn: 'root' })
 export class TypeInferenceService {
 
-  buildTypeInferenceTree(lambdaExpr: ExprNode): TypeInferenceNode {
-    const assumptions = new Map<string, TypeNode>();
+  buildTypeInferenceTree(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
+    let assumptions = initialAssumptions ? new Map(initialAssumptions) : new Map<string, TypeNode>();
+    const freeVars = TreeUtils.getFreeVars(lambdaExpr);
+    for (const v of freeVars) {
+      if (!assumptions.has(v)) {
+        assumptions.set(v, TypeFactories.typeVar('?'));
+      }
+    }
     return this.inferType(lambdaExpr, assumptions);
   }
 
@@ -144,7 +152,12 @@ export class TypeInferenceService {
       if (!this.typesEqual(fnType.paramType, argInference.inferredType)) {
         throw new Error('Type mismatch in application');
       }
-      resultType = fnType.bodyType;
+      // Substitute the bound variable with the witness in the body type (e.g. P(x)→Q(x) becomes P(a)→Q(a))
+      const witnessName = expr.arg.kind === 'Var' ? expr.arg.name : fnType.param;
+      resultType = this.substituteInType(fnType.bodyType, fnType.param, TypeFactories.typeVar(witnessName));
+    } else if (fnType.kind === 'TypeVar' && fnType.name === '?') {
+      // Placeholder for free variables in lambda→expression: allow application, result unknown
+      resultType = TypeFactories.typeVar('?');
     } else {
       throw new Error('Application of non-function type');
     }
@@ -156,6 +169,54 @@ export class TypeInferenceService {
       assumptions: new Map(assumptions),
       children: [fnInference, argInference]
     };
+  }
+
+  /**
+   * Substitute a type variable by name in a type (e.g. x → a so P(x)→Q(x) becomes P(a)→Q(a)).
+   * Used when eliminating a universal quantifier with a witness.
+   */
+  private substituteInType(type: TypeNode, paramName: string, replacement: TypeNode): TypeNode {
+    switch (type.kind) {
+      case 'TypeVar':
+        return type.name.toLowerCase() === paramName.toLowerCase() ? replacement : type;
+      case 'Func':
+        return TypeFactories.func(
+          this.substituteInType(type.from, paramName, replacement),
+          this.substituteInType(type.to, paramName, replacement)
+        );
+      case 'Prod':
+        return TypeFactories.prod(
+          this.substituteInType(type.left, paramName, replacement),
+          this.substituteInType(type.right, paramName, replacement)
+        );
+      case 'Sum':
+        return TypeFactories.sum(
+          this.substituteInType(type.left, paramName, replacement),
+          this.substituteInType(type.right, paramName, replacement)
+        );
+      case 'PredicateType':
+        return TypeFactories.predicate(
+          type.name,
+          type.argTypes.map(t => this.substituteInType(t, paramName, replacement))
+        );
+      case 'DependentFunc':
+        return TypeFactories.dependentFunc(
+          type.param,
+          this.substituteInType(type.paramType, paramName, replacement),
+          this.substituteInType(type.bodyType, paramName, replacement)
+        );
+      case 'DependentProd':
+        return TypeFactories.dependentProd(
+          type.param,
+          this.substituteInType(type.paramType, paramName, replacement),
+          this.substituteInType(type.bodyType, paramName, replacement)
+        );
+      case 'Bool':
+      case 'Nat':
+        return type;
+      default:
+        return type;
+    }
   }
 
   private inferPair(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
@@ -310,15 +371,16 @@ export class TypeInferenceService {
     if (expr.kind !== 'DependentPair') throw new Error('Expected DependentPair expression');
     
     const witnessInference = this.inferType(expr.witness, assumptions);
-    if (!this.typesEqual(witnessInference.inferredType, expr.witnessType)) {
+    const witnessMatches = this.typesEqual(witnessInference.inferredType, expr.witnessType);
+    if (!witnessMatches && !(witnessInference.inferredType.kind === 'TypeVar' && witnessInference.inferredType.name === '?')) {
       throw new Error('Witness type mismatch in dependent pair');
     }
     
     const proofInference = this.inferType(expr.proof, assumptions);
-    
+    const paramName = expr.witness.kind === 'Var' ? expr.witness.name : 'x';
     const resultType: TypeNode = {
       kind: 'DependentProd',
-      param: 'x',
+      param: paramName,
       paramType: expr.witnessType,
       bodyType: proofInference.inferredType
     };
@@ -336,11 +398,12 @@ export class TypeInferenceService {
     if (expr.kind !== 'LetDependentPair') throw new Error('Expected LetDependentPair expression');
     
     const pairInference = this.inferType(expr.pair, assumptions);
-    
-    if (pairInference.inferredType.kind !== 'DependentProd') {
+    const pairType = pairInference.inferredType;
+    const isPlaceholder = pairType.kind === 'TypeVar' && pairType.name === '?';
+    if (pairType.kind !== 'DependentProd' && !isPlaceholder) {
       throw new Error('LetDependentPair requires a dependent product type');
     }
-    
+    // When pair has placeholder ? (free variable in lambda→expression), use let-binding types for body context
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.x, expr.xType);
     newAssumptions.set(expr.p, expr.pType);
@@ -499,9 +562,15 @@ export class TypeInferenceService {
     }
   }
 
-  buildInteractiveRoot(lambdaExpr: ExprNode): TypeInferenceNode {
-    const assumptions = new Map<string, TypeNode>();
-    
+  buildInteractiveRoot(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
+    const assumptions = initialAssumptions ? new Map(initialAssumptions) : new Map<string, TypeNode>();
+    const freeVars = TreeUtils.getFreeVars(lambdaExpr);
+    for (const v of freeVars) {
+      if (!assumptions.has(v)) {
+        assumptions.set(v, TypeFactories.typeVar('?'));
+      }
+    }
+
     let baseType: TypeNode;
     try {
       if (lambdaExpr.kind === 'Abs') {
@@ -626,7 +695,8 @@ export class TypeInferenceService {
           if (fnType.kind === 'Func') {
             node.inferredType = fnType.to;
           } else if (fnType.kind === 'DependentFunc') {
-            node.inferredType = fnType.bodyType;
+            const witnessName = expr.arg.kind === 'Var' ? expr.arg.name : fnType.param;
+            node.inferredType = this.substituteInType(fnType.bodyType, fnType.param, TypeFactories.typeVar(witnessName));
           } else if (fnType.kind !== 'TypeVar') {
             node.inferredType = { kind: 'TypeVar', name: '?' };
           }
@@ -647,9 +717,11 @@ export class TypeInferenceService {
         
       case 'DependentPair':
         if (node.children.length === 2) {
+          const witness = (expr as any).witness;
+          const paramName = witness.kind === 'Var' ? witness.name : 'x';
           node.inferredType = {
             kind: 'DependentProd',
-            param: 'x',
+            param: paramName,
             paramType: (expr as any).witnessType,
             bodyType: node.children[1].inferredType
           };

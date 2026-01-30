@@ -1,0 +1,98 @@
+.help-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.6);
+  z-index: 1;
+}
+
+.help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.help-modal__dialog {
+  position: relative;
+  width: min(900px, 92vw);
+  max-height: 80vh;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+.help-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1rem 0.5rem 1rem;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.help-modal__body {
+  padding: 1.5rem;
+  overflow: auto;
+  min-height: 200px;
+  max-height: calc(80vh - 150px);
+}
+
+.tutorial-content {
+  line-height: 1.6;
+}
+
+.tutorial-content h4 {
+  margin: 1.5rem 0 0.75rem 0;
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.tutorial-content h4:first-child {
+  margin-top: 0;
+}
+
+.tutorial-content p {
+  margin: 0.5rem 0 1rem 0;
+  color: #475569;
+}
+
+.tutorial-content ul,
+.tutorial-content ol {
+  margin: 0.5rem 0 1rem 1.5rem;
+  color: #475569;
+}
+
+.tutorial-content li {
+  margin: 0.5rem 0;
+}
+
+.tutorial-content ul ul {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.tutorial-content strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.help-modal__footer {
+  padding: 0.75rem 1rem 1rem 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+}

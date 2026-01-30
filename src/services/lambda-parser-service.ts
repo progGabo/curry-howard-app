@@ -102,16 +102,20 @@ export class LambdaParserService {
         throw new Error("Lambda expression cannot be empty");
       }
       
-      // Preprocess: convert angle brackets to parentheses for pairs
-      // This is a temporary workaround until the ANTLR parser is regenerated
-      // to support angle brackets natively
-      let processedCode = lambdaCode;
-      // Convert <x, y> to (x, y) for pairs
-      // We need to be careful to only convert angle brackets that are used for pairs
-      // Pattern: < followed by term, comma, term, >
-      processedCode = processedCode.replace(/<([^<>]+),([^<>]+)>/g, '($1,$2)');
-      // Also handle Unicode angle brackets ⟨ and ⟩
-      processedCode = processedCode.replace(/⟨([^⟨⟩]+),([^⟨⟩]+)⟩/g, '($1,$2)');
+      // Normalize Unicode symbols to ASCII so the lexer recognizes them
+      let processedCode = lambdaCode
+        .replace(/\u03BB/g, '\\')   // λ (Greek lambda) -> \
+        .replace(/\u2192/g, '->')   // → -> ->
+        .replace(/\u21D4/g, '=>')   // ⇒ -> =>
+        .replace(/\u00D7/g, '*')   // × -> *
+        .replace(/\u2295/g, '+')   // ⊕ -> +
+        .replace(/\u27E8/g, '<')   // ⟨ -> <
+        .replace(/\u27E9/g, '>');  // ⟩ -> >
+      // Convert <x, y> to (x, y) only when there are no type annotations ( : )
+      // Otherwise keep angle brackets so grammar parses LANGLE term COLON type COMMA term RANGLE
+      processedCode = processedCode.replace(/<([^<>]+),([^<>]+)>/g, (_match, g1, g2) =>
+        (g1.includes(' : ') || g2.includes(' : ')) ? `<${g1},${g2}>` : `(${g1},${g2})`
+      );
       
       const inputStream = CharStream.fromString(processedCode);
       const lexer = new LambdaLexer(inputStream);
@@ -171,7 +175,7 @@ export class LambdaParserService {
         const fnStr = this.formatExpr(expr.fn);
         const argStr = this.formatExpr(expr.arg);
         // Add parentheses if needed for precedence
-        const needsParens = expr.arg.kind === 'Abs' || expr.arg.kind === 'App';
+        const needsParens = expr.arg.kind === 'Abs' || expr.arg.kind === 'DependentAbs' || expr.arg.kind === 'App';
         return `${fnStr} ${needsParens ? `(${argStr})` : argStr}`;
       
       case 'Let':

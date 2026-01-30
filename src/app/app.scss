@@ -277,6 +277,7 @@
   flex: 1 1 auto;
   height: calc(100vh - var(--header-h) - var(--footer-h));
   min-height: 500px;
+  border: none;
 }
 
 
@@ -297,6 +298,7 @@
   overflow: hidden;
   gap: 0.75rem;
   padding: 1rem;
+  border: none;
 }
 
 .editor-panel > app-proof-lambda {
@@ -500,6 +502,7 @@
   overflow: hidden;
   padding: 1rem;
   background: #FFFFFF;
+  border: none;
 }
 
 .tree-panel {
@@ -580,6 +583,7 @@
 ::ng-deep .main-splitter .p-splitter-panel {
   overflow: hidden;
   position: relative;
+  border: none !important;
 }
 
 ::ng-deep .main-splitter .p-splitter-gutter {
@@ -773,7 +777,7 @@
   justify-content: center;
   align-items: flex-start;
   border-radius: 10px;
-  border: 1px solid #E2E8F0;
+  border: none;
   padding: 0.75rem;
   background: #F1F5F9;
   overflow: visible;
@@ -793,6 +797,12 @@
 .tree-panel app-proof-tree {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.type-inference-error {
+  padding: 1rem;
+  color: var(--p-danger-500, #c00);
+  font-size: 0.95rem;
 }
 
 .type-inference-section {

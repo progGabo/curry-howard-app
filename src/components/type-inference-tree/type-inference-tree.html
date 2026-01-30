@@ -1,10 +1,10 @@
-<div class="main" *ngIf="root">
+<div class="main" *ngIf="root as r">
   <div class="inference-node">
     
     <!-- Children (if any) -->
-    <div class="children" *ngIf="root.children?.length">
+    <div class="children" *ngIf="r.children?.length">
       <app-type-inference-tree
-        *ngFor="let child of root.children"
+        *ngFor="let child of r.children"
         [root]="child"
         [mode]="mode"
         [interactiveSubmode]="interactiveSubmode"
@@ -45,20 +45,20 @@
     >
       <!-- Plus button for interactive mode - only show if no rule has been applied yet -->
       <button 
-        *ngIf="root && mode === 'interactive' && !root.children?.length && root.rule !== 'Var' && root.rule !== 'True' && root.rule !== 'False' && root.rule !== 'Zero'"
+        *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Var' && r.rule !== 'True' && r.rule !== 'False' && r.rule !== 'Zero'"
         class="rule-plus-btn"
         (click)="onPlusButtonClick($event)"
         title="Add rule"
       >
         <span class="plus-icon">+</span>
       </button>
-      <span class="rule" *ngIf="root && (root.children?.length || root.rule === 'Var' || root.rule === 'True' || root.rule === 'False' || root.rule === 'Zero')">
-        {{ root.rule }}
+      <span class="rule" *ngIf="r.children?.length || r.rule === 'Var' || r.rule === 'True' || r.rule === 'False' || r.rule === 'Zero'">
+        {{ r.rule }}
       </span>
-      <div class="inference-content" *ngIf="root">
-        <div class="expression">{{ formatExpression(root.expression) }}</div>
+      <div class="inference-content">
+        <div class="expression">{{ formatExpression(r.expression) }}</div>
         <div class="type-separator">:</div>
-        <div class="type">{{ formatType(root.inferredType) }}</div>
+        <div class="type">{{ formatType(r.inferredType) }}</div>
       </div>
     </div>
 

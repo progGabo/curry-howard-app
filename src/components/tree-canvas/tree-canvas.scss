@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.tree-canvas-container {
+  width: 100%;
+  height: 42rem;
+  overflow: hidden;
+  position: relative;
+  border-radius: 10px;
+  background: #f1f5f9;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.tree-canvas-container.panning {
+  cursor: grabbing !important;
+}
+
+.tree-canvas-container:not(.panning) {
+  cursor: default;
+}
+
+.tree-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: fit-content;
+  min-height: fit-content;
+}
+
+.tree-canvas app-proof-tree,
+.tree-canvas app-type-inference-tree {
+  display: inline-block;
+}
+
+.tree-canvas .type-inference-section {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}

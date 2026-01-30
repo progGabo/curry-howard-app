@@ -1,4 +1,4 @@
-// Generated from Lambda.g4 by ANTLR 4.13.1
+// Generated from src/antlr/lambda/Lambda.g4 by ANTLR 4.13.1
 
 import { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";
 
@@ -8,6 +8,7 @@ import { TermContext } from "./LambdaParser.js";
 import { LamExprContext } from "./LambdaParser.js";
 import { LetExprContext } from "./LambdaParser.js";
 import { LetPairExprContext } from "./LambdaParser.js";
+import { LetDependentPairExprContext } from "./LambdaParser.js";
 import { IfExprContext } from "./LambdaParser.js";
 import { CaseExprContext } from "./LambdaParser.js";
 import { AppExprContext } from "./LambdaParser.js";
@@ -75,6 +76,16 @@ export class LambdaListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitLetPairExpr?: (ctx: LetPairExprContext) => void;
+    /**
+     * Enter a parse tree produced by `LambdaParser.letDependentPairExpr`.
+     * @param ctx the parse tree
+     */
+    enterLetDependentPairExpr?: (ctx: LetDependentPairExprContext) => void;
+    /**
+     * Exit a parse tree produced by `LambdaParser.letDependentPairExpr`.
+     * @param ctx the parse tree
+     */
+    exitLetDependentPairExpr?: (ctx: LetDependentPairExprContext) => void;
     /**
      * Enter a parse tree produced by `LambdaParser.ifExpr`.
      * @param ctx the parse tree

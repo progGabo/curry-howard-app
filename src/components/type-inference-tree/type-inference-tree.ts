@@ -2,7 +2,19 @@ import { Component, Input, Output, EventEmitter, OnChanges } from '@angular/core
 import { TypeInferenceNode } from '../../services/type-inference-service';
 import { ExprNode } from '../../models/lambda-node';
 import { LambdaParserService } from '../../services/lambda-parser-service';
-import { MessageService } from 'primeng/api';
+import {
+  BASIC_RULES,
+  ABS_RULES,
+  APP_RULES,
+  PAIR_RULES,
+  SUM_RULES,
+  CONDITIONAL_RULES,
+  NAT_RULES,
+  LET_RULES
+} from '../../constants/rules';
+import { I18nService } from '../../services/i18n.service';
+import { NotificationService } from '../../services/notification.service';
+import type { AppTranslations } from '../../services/i18n.service';
 
 @Component({
   selector: 'app-type-inference-tree',
@@ -21,60 +33,28 @@ export class TypeInferenceTree implements OnChanges {
   @Output() plusButtonClicked = new EventEmitter<{ node: TypeInferenceNode, x: number, y: number }>();
   @Output() ruleSelected = new EventEmitter<{ node: TypeInferenceNode, rule: string }>();
 
-  private translations = {
-    sk: {
-      errorFillAllFields: 'Prosím vyplňte všetky polia.',
-      errorInvalidExpression: 'Neplatný výraz',
-      errorInvalidExpressionAtPosition: 'Neplatný výraz',
-      errorIncorrectAtPosition: 'Neplatny výraz',
-      errorCannotApplyRule: 'Toto pravidlo sa nedá aplikovať na tento výraz.',
-      errorExpectedCount: 'Očakávané {expected} predikcií, získané {got}.'
-    },
-    en: {
-      errorFillAllFields: 'Please fill all fields.',
-      errorInvalidExpression: 'Invalid expression',
-      errorInvalidExpressionAtPosition: 'Invalid expression',
-      errorIncorrectAtPosition: 'Invalid expression',
-      errorCannotApplyRule: 'This rule cannot be applied to this expression.',
-      errorExpectedCount: 'Expected {expected} prediction(s), got {got}.'
-    }
-  };
+  basicRules = [...BASIC_RULES];
+  absRules = [...ABS_RULES];
+  appRules = [...APP_RULES];
+  pairRules = [...PAIR_RULES];
+  sumRules = [...SUM_RULES];
+  conditionalRules = [...CONDITIONAL_RULES];
+  natRules = [...NAT_RULES];
+  letRules = [...LET_RULES];
 
   constructor(
     private lambdaParser: LambdaParserService,
-    private messageService: MessageService
+    private i18n: I18nService,
+    private notification: NotificationService
   ) {}
 
-  private get t() {
-    return this.translations[this.currentLanguage];
-  }
-
-  private showError(key: string, params?: { [key: string]: string | number }) {
-    let message = this.t[key as keyof typeof this.t] || key;
-    
-    // Replace parameters in message
-    if (params) {
-      Object.keys(params).forEach(param => {
-        message = message.replace(`{${param}}`, String(params[param]));
-      });
-    }
-    
-    this.messageService.add({
-      severity: 'error',
-      summary: this.currentLanguage === 'sk' ? 'Chyba' : 'Error',
-      detail: message,
+  private showError(key: keyof AppTranslations, params?: { [key: string]: string | number }) {
+    const message = this.i18n.translate(this.currentLanguage, key, params);
+    this.notification.showError(message, {
+      summary: this.i18n.errorSummary(this.currentLanguage),
       life: 5000
     });
   }
-
-  basicRules = ['Var', 'True', 'False', 'Zero'];
-  absRules = ['Abs'];
-  appRules = ['App'];
-  pairRules = ['Pair', 'LetPair'];
-  sumRules = ['Inl', 'Inr', 'Case'];
-  conditionalRules = ['If'];
-  natRules = ['Succ', 'Pred', 'IsZero'];
-  letRules = ['Let'];
 
 
   get isSelected(): boolean {
@@ -152,11 +132,11 @@ export class TypeInferenceTree implements OnChanges {
       return 0;
     }
     // Rules with 1 child
-    if (['Abs', 'Succ', 'Pred', 'IsZero', 'Inl', 'Inr'].includes(rule)) {
+    if (['Abs', 'DependentAbs', 'Succ', 'Pred', 'IsZero', 'Inl', 'Inr'].includes(rule)) {
       return 1;
     }
     // Rules with 2 children
-    if (['App', 'Pair', 'Let', 'LetPair', 'If'].includes(rule)) {
+    if (['App', 'Pair', 'Let', 'LetPair', 'If', 'DependentPair', 'LetDependentPair'].includes(rule)) {
       return 2;
     }
     // Rules with 3 children
@@ -307,6 +287,24 @@ export class TypeInferenceTree implements OnChanges {
           return [expr.expr];
         }
         break;
+      
+      case 'DependentAbs':
+        if (expr.kind === 'DependentAbs') {
+          return [expr.body];
+        }
+        break;
+      
+      case 'DependentPair':
+        if (expr.kind === 'DependentPair') {
+          return [expr.witness, expr.proof];
+        }
+        break;
+      
+      case 'LetDependentPair':
+        if (expr.kind === 'LetDependentPair') {
+          return [expr.pair, expr.inExpr];
+        }
+        break;
     }
     
     return [];
@@ -403,6 +401,29 @@ export class TypeInferenceTree implements OnChanges {
       case 'Zero':
         return actual.kind === expected.kind;
       
+      case 'DependentAbs':
+        if (actual.kind === 'DependentAbs') {
+          return expected.param === actual.param &&
+                 this.compareExpressions(expected.body, actual.body);
+        }
+        return false;
+      
+      case 'DependentPair':
+        if (actual.kind === 'DependentPair') {
+          return this.compareExpressions(expected.witness, actual.witness) &&
+                 this.compareExpressions(expected.proof, actual.proof);
+        }
+        return false;
+      
+      case 'LetDependentPair':
+        if (actual.kind === 'LetDependentPair') {
+          return expected.x === actual.x &&
+                 expected.p === actual.p &&
+                 this.compareExpressions(expected.pair, actual.pair) &&
+                 this.compareExpressions(expected.inExpr, actual.inExpr);
+        }
+        return false;
+      
       default:
         return false;
     }
@@ -441,7 +462,7 @@ export class TypeInferenceTree implements OnChanges {
       case 'App':
         const fnStr = this.formatExpr(expr.fn);
         const argStr = this.formatExpr(expr.arg);
-        const needsParens = expr.arg.kind === 'Abs' || expr.arg.kind === 'App';
+        const needsParens = expr.arg.kind === 'Abs' || expr.arg.kind === 'DependentAbs' || expr.arg.kind === 'App';
         return `${fnStr} ${needsParens ? `(${argStr})` : argStr}`;
       case 'Pair':
         return `(${this.formatExpr(expr.left)}, ${this.formatExpr(expr.right)})`;
@@ -474,7 +495,7 @@ export class TypeInferenceTree implements OnChanges {
       case 'DependentPair':
         return `⟨${this.formatExpr(expr.witness)}, ${this.formatExpr(expr.proof)}⟩`;
       case 'LetDependentPair':
-        return `let (${expr.x}: ${this.formatType(expr.xType)}) = ${this.formatExpr(expr.pair)} in ${this.formatExpr(expr.inExpr)}`;
+        return `let ⟨${expr.x}, ${expr.p}⟩ = ${this.formatExpr(expr.pair)} in ${this.formatExpr(expr.inExpr)}`;
       default:
         return `[${expr.kind}]`;
     }
