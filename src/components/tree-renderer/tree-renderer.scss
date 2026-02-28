@@ -1,0 +1,161 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tree-node {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.children {
+  display: inline-flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 5rem;
+  margin-bottom: 1rem;
+}
+
+.conclusion {
+  position: relative;
+  display: inline-block;
+  font-weight: 600;
+  font-size: 1.6rem;
+  padding-top: 1.2rem;
+}
+
+.conclusion::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #111;
+}
+
+.conclusion.nd.leaf::before {
+  display: none;
+}
+
+.conclusion.nd {
+  --nd-line-width: 100%;
+}
+
+.conclusion.nd::before {
+  left: 50%;
+  width: var(--nd-line-width);
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.conclusion.selected {
+  background: #ddf;
+}
+
+.rule {
+  position: absolute;
+  top: -0.15rem;
+  left: 100%;
+  margin-left: 0.6rem;
+  background: #fff;
+  padding: 0 0.35rem;
+  white-space: nowrap;
+  font-size: 1.15rem;
+  color: #1A7F7F;
+}
+
+.conclusion.nd .rule {
+  left: calc(50% + (var(--nd-line-width) / 2));
+  margin-left: 0.35rem;
+}
+
+.rule-plus-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: -1.8rem;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #4b5563;
+  border-radius: 3px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.rule-plus-btn:hover {
+  background: #f3f4f6;
+  border-color: #374151;
+  transform: scale(1.1);
+}
+
+.rule-plus-btn:active {
+  transform: scale(0.95);
+  background: #e5e7eb;
+}
+
+.plus-icon {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
+  line-height: 1;
+  user-select: none;
+}
+
+.rule-plus-btn:hover .plus-icon {
+  color: #374151;
+}
+
+.sequent-content {
+  display: inline-block;
+  width: fit-content;
+  color: #1f2937;
+  font-weight: 500;
+  padding: 0.15rem 0.3rem;
+  background: #f8fafc;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.sequent-content :deep(.katex-display) {
+  display: inline-block;
+  margin: 0;
+}
+
+.inference-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.expression {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.type-separator {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.type {
+  color: #059669;
+  font-weight: 600;
+  background: #ecfdf5;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+

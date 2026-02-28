@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { DerivationNode } from '../models/formula-node';
+import { NdNode } from '../models/nd-node';
 import { TypeInferenceNode } from './type-inference-service';
 
 type InteractiveSubmode = 'applicable' | 'all' | 'predict';
@@ -11,7 +12,7 @@ export class RuleFilterService {
    */
   filterProofRules(
     rules: readonly string[],
-    popupNode: DerivationNode | TypeInferenceNode | null,
+    popupNode: DerivationNode | NdNode | TypeInferenceNode | null,
     interactiveSubmode: InteractiveSubmode
   ): string[] {
     if (interactiveSubmode !== 'applicable' || !popupNode || !('sequent' in popupNode)) {
@@ -57,12 +58,64 @@ export class RuleFilterService {
     });
   }
 
+  filterNdRules(
+    rules: readonly string[],
+    popupNode: DerivationNode | NdNode | TypeInferenceNode | null,
+    interactiveSubmode: InteractiveSubmode
+  ): string[] {
+    if (interactiveSubmode !== 'applicable' || !popupNode || !('judgement' in popupNode)) {
+      return [...rules];
+    }
+
+    const node = popupNode as NdNode;
+    const goal = node.judgement.goal;
+    const context = node.judgement.context;
+    const hasInContext = (k: string) => context.some((f) => f.kind === (k as never));
+
+    return rules.filter((rule) => {
+      switch (rule) {
+        case '⊤I':
+          return goal.kind === 'True';
+        case '⊥E':
+          return true;
+        case '¬I':
+          return goal.kind === 'Not';
+        case '¬E':
+          return goal.kind === 'False' && hasInContext('Not');
+        case '∧I':
+          return goal.kind === 'And';
+        case '∧E1':
+        case '∧E2':
+          return hasInContext('And');
+        case '∨I1':
+        case '∨I2':
+          return goal.kind === 'Or';
+        case '∨E':
+          return hasInContext('Or');
+        case '→I':
+          return goal.kind === 'Implies';
+        case '→E':
+          return hasInContext('Implies');
+        case '∀I':
+          return goal.kind === 'Forall';
+        case '∀E':
+          return hasInContext('Forall');
+        case '∃I':
+          return goal.kind === 'Exists';
+        case '∃E':
+          return hasInContext('Exists');
+        default:
+          return true;
+      }
+    });
+  }
+
   /**
    * Filter type inference rules by applicability to the current expression when submode is 'applicable'.
    */
   filterTypeRules(
     rules: readonly string[],
-    popupNode: DerivationNode | TypeInferenceNode | null,
+    popupNode: DerivationNode | NdNode | TypeInferenceNode | null,
     interactiveSubmode: InteractiveSubmode
   ): string[] {
     if (interactiveSubmode !== 'applicable' || !popupNode || !('expression' in popupNode)) {

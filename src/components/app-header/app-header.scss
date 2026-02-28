@@ -131,6 +131,30 @@
   border: none;
 }
 
+.workflow-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.workflow-primary-toggle {
+  @extend .direction-toggle;
+}
+
+.workflow-secondary-toggle {
+  @extend .direction-toggle;
+  transform: translateX(-10px);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.workflow-secondary-toggle--visible {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .direction-toggle-btn {
   padding: 0.5rem 1rem;
   border: none;

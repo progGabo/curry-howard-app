@@ -40,7 +40,7 @@ export class FormulaTypeService {
       case 'Not':
         return TypeFactories.func(
           this.formulaToType(f.inner, useDependentTypes),
-          TypeFactories.typeVar('⊥')
+          TypeFactories.bottom()
         );
       
       case 'Paren':
@@ -78,8 +78,9 @@ export class FormulaTypeService {
         return TypeFactories.predicate(f.name, argTypes);
       
       case 'True':
-      case 'False':
         return TypeFactories.bool();
+      case 'False':
+        return TypeFactories.bottom();
       
       default:
         throw new Error(`formulaToType: unsupported formula kind: ${(f as any).kind}`);

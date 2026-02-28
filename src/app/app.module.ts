@@ -15,6 +15,9 @@ import { TreeCanvasComponent } from '../components/tree-canvas/tree-canvas';
 import { RuleMenuPopupComponent } from '../components/rule-menu-popup/rule-menu-popup';
 import { HelpModalComponent } from '../components/help-modal/help-modal';
 import { AppHeaderComponent } from '../components/app-header/app-header';
+import { NaturalDeductionTreeComponent } from '../components/natural-deduction-tree/natural-deduction-tree';
+import { TreeRendererComponent } from '../components/tree-renderer/tree-renderer';
+import { KatexDirective } from '../directives/katex.directive';
 import { ButtonModule } from 'primeng/button';
 import { SplitterModule } from 'primeng/splitter';
 import { ToastModule } from 'primeng/toast';
@@ -38,7 +41,9 @@ import { I18nService } from '../services/i18n.service';
     TreeCanvasComponent,
     RuleMenuPopupComponent,
     HelpModalComponent,
-    AppHeaderComponent
+    AppHeaderComponent,
+    NaturalDeductionTreeComponent,
+    TreeRendererComponent
   ],
   imports: [
     BrowserModule,
@@ -46,6 +51,7 @@ import { I18nService } from '../services/i18n.service';
     RouterOutlet,
     FormsModule,
     MonacoEditorModule.forRoot(),
+    KatexDirective,
     ButtonModule,
     SplitterModule,
     ToastModule,

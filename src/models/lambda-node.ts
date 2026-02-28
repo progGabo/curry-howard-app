@@ -5,6 +5,7 @@ export interface Span { start: number; end: number; }
 export type TypeNode =
   | { id?: number; span?: Span; kind: 'TypeVar'; name: string }     // TYPEID
   | { id?: number; span?: Span; kind: 'Bool' }                       // BOOL
+  | { id?: number; span?: Span; kind: 'Bottom' }                     // ⊥ (logical falsehood)
   | { id?: number; span?: Span; kind: 'Nat' }                        // NAT
   | { id?: number; span?: Span; kind: 'Func'; from: TypeNode; to: TypeNode } // A -> B
   | { id?: number; span?: Span; kind: 'Prod'; left: TypeNode; right: TypeNode } // A * B
@@ -29,6 +30,8 @@ export type ExprNode =
 
   // páry: (t, u) a let [x, y] = p in q
   | { id?: number; span?: Span; kind: 'Pair'; left: ExprNode; right: ExprNode }
+  | { id?: number; span?: Span; kind: 'Fst'; pair: ExprNode }
+  | { id?: number; span?: Span; kind: 'Snd'; pair: ExprNode }
   | { id?: number; span?: Span; kind: 'LetPair'; x: string; y: string; pair: ExprNode; inExpr: ExprNode }
 
   // sumy: inl t as T | inr t as U
@@ -55,8 +58,9 @@ export type ExprNode =
 
   // Dependent types for quantifiers
   | { id?: number; span?: Span; kind: 'DependentAbs'; param: string; paramType: TypeNode; body: ExprNode } // λx:T. t (dependent)
-  | { id?: number; span?: Span; kind: 'DependentPair'; witness: ExprNode; witnessType: TypeNode; proof: ExprNode } // (w, p) for ∃
+  | { id?: number; span?: Span; kind: 'DependentPair'; witness: ExprNode; witnessType: TypeNode; proof: ExprNode; proofType?: TypeNode } // (w, p) for ∃
   | { id?: number; span?: Span; kind: 'LetDependentPair'; x: string; xType: TypeNode; p: string; pType: TypeNode; pair: ExprNode; inExpr: ExprNode } // let ⟨x, p⟩ = ... in ...
+  | { id?: number; span?: Span; kind: 'Abort'; expr: ExprNode; targetType: TypeNode }
 
   // voliteľné: všeobecná askripcia (len ak pridáš do gramatiky)
   // | { id?: number; span?: Span; kind: 'Annot'; expr: ExprNode; type: TypeNode }

@@ -2,21 +2,57 @@
   <div class="header-left">
     <h1 class="app-title">Curry-Howard</h1>
     <div class="header-divider"></div>
-    <div class="direction-toggle">
-      <button
-        type="button"
-        class="direction-toggle-btn"
-        [class.active]="conversionMode === 'expression-to-lambda'"
-        (click)="onConversionMode('expression-to-lambda')">
-        {{ t.exprToLambda }}
-      </button>
-      <button
-        type="button"
-        class="direction-toggle-btn"
-        [class.active]="conversionMode === 'lambda-to-expression'"
-        (click)="onConversionMode('lambda-to-expression')">
-        {{ t.lambdaToExpr }}
-      </button>
+    <div class="workflow-nav">
+      <div class="workflow-primary-toggle">
+        <button
+          type="button"
+          class="direction-toggle-btn"
+          [class.active]="headerSection === 'curry-howard'"
+          (click)="onHeaderSection('curry-howard')">
+          {{ t.curryHoward }}
+        </button>
+        <button
+          type="button"
+          class="direction-toggle-btn"
+          [class.active]="headerSection === 'proofs'"
+          (click)="onHeaderSection('proofs')">
+          {{ t.proofs }}
+        </button>
+      </div>
+      <div class="workflow-secondary-toggle" [class.workflow-secondary-toggle--visible]="true">
+        <ng-container *ngIf="headerSection === 'curry-howard'; else proofsOptions">
+          <button
+            type="button"
+            class="direction-toggle-btn"
+            [class.active]="headerOption === 'ch-expression-to-lambda'"
+            (click)="onHeaderOption('ch-expression-to-lambda')">
+            {{ t.exprToLambda }}
+          </button>
+          <button
+            type="button"
+            class="direction-toggle-btn"
+            [class.active]="headerOption === 'ch-lambda-to-expression'"
+            (click)="onHeaderOption('ch-lambda-to-expression')">
+            {{ t.lambdaToExpr }}
+          </button>
+        </ng-container>
+        <ng-template #proofsOptions>
+          <button
+            type="button"
+            class="direction-toggle-btn"
+            [class.active]="headerOption === 'proofs-sequent'"
+            (click)="onHeaderOption('proofs-sequent')">
+            {{ t.sequentCalculus }}
+          </button>
+          <button
+            type="button"
+            class="direction-toggle-btn"
+            [class.active]="headerOption === 'proofs-natural-deduction'"
+            (click)="onHeaderOption('proofs-natural-deduction')">
+            {{ t.naturalDeduction }}
+          </button>
+        </ng-template>
+      </div>
     </div>
     <div class="header-divider"></div>
     <div class="mode-toggle-container">

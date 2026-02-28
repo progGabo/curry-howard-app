@@ -31,6 +31,7 @@ export interface SequentNode {
 export interface DerivationNode {
   rule: string;
   sequent: SequentNode;
+  sequentLatex?: string;
   children: DerivationNode[];
   usedFormula?: FormulaNode;
   // Metadata for lambda generation

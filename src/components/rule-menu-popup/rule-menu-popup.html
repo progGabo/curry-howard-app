@@ -1,82 +1,216 @@
-<div
-  class="rule-menu-popup"
-  *ngIf="visible"
-  [ngStyle]="popupPosition"
-  (mousemove)="onDragMove($event)"
-  (mouseup)="onDragEnd()"
-  (mouseleave)="onDragEnd()"
->
-  <div class="popup-header" (mousedown)="onDragStart($event)">
-    <span class="drag-handle">☰ Drag to move</span>
-    <button class="close-btn" type="button" (click)="onClose()">×</button>
-  </div>
+<div class="rule-menu-wrapper" *ngIf="visible">
+  <div class="backdrop" (click)="onClose()"></div>
+  <div
+    class="rule-menu-popup"
+    [ngStyle]="popupPosition"
+    (mousemove)="onDragMove($event)"
+    (mouseup)="onDragEnd()"
+    (mouseleave)="onDragEnd()"
+  >
+  <div class="popup-content">
+    <!-- Expression to Lambda Mode -->
+    <div *ngIf="conversionMode === 'expression-to-lambda'" class="rules-container">
+      <!-- Conclusion Rules -->
+      <div class="rule-section" *ngIf="filteredConclusionRules.length">
+        <div class="section-title">{{ t.conclusionRules }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredConclusionRules" 
+            type="button" 
+            (click)="onProofRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ displayProofRule(rule) }}
+          </button>
+        </div>
+      </div>
 
-  <div *ngIf="conversionMode === 'expression-to-lambda'">
-    <h4>Pravidlá pre záver</h4>
-    <div class="rule-group">
-      <button *ngFor="let rule of filteredConclusionRules" type="button" (click)="onProofRuleClick(rule)">
-        {{ rule }}
-      </button>
+      <!-- Assumption Rules -->
+      <div class="rule-section" *ngIf="filteredAssumptionRules.length">
+        <div class="section-title">{{ t.assumptionRules }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredAssumptionRules" 
+            type="button" 
+            (click)="onProofRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ displayProofRule(rule) }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Special Rules -->
+      <div class="rule-section" *ngIf="filteredSpecialRules.length">
+        <div class="section-title">{{ t.specialRules }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredSpecialRules" 
+            type="button" 
+            (click)="onProofRuleClick(rule)"
+            class="rule-btn special"
+          >
+            {{ displayProofRule(rule) }}
+          </button>
+        </div>
+      </div>
     </div>
-    <h4>Pravidlá pre predpoklad</h4>
-    <div class="rule-group">
-      <button *ngFor="let rule of filteredAssumptionRules" type="button" (click)="onProofRuleClick(rule)">
-        {{ rule }}
-      </button>
+
+    <!-- Lambda to Expression Mode -->
+    <div *ngIf="conversionMode === 'lambda-to-expression'" class="rules-container">
+      <div class="rule-section" *ngIf="filteredBasicRules.length">
+        <div class="section-title">{{ t.basicRules }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredBasicRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rule-section" *ngIf="filteredAbsRules.length || filteredAppRules.length">
+        <div class="section-title">{{ t.functions }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredAbsRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+          <button 
+            *ngFor="let rule of filteredAppRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rule-section" *ngIf="filteredPairRules.length || filteredSumRules.length">
+        <div class="section-title">{{ t.pairsAndSums }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredPairRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+          <button 
+            *ngFor="let rule of filteredSumRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rule-section" *ngIf="filteredDependentRules.length">
+        <div class="section-title">{{ t.dependentTypes }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredDependentRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rule-section" *ngIf="filteredConditionalRules.length || filteredLetRules.length">
+        <div class="section-title">{{ t.controlFlow }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredConditionalRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+          <button 
+            *ngFor="let rule of filteredLetRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rule-section" *ngIf="filteredNatRules.length">
+        <div class="section-title">{{ t.naturals }}</div>
+        <div class="rule-buttons">
+          <button 
+            *ngFor="let rule of filteredNatRules" 
+            type="button" 
+            (click)="onTypeRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ rule }}
+          </button>
+        </div>
+      </div>
     </div>
-    <h4>Špeciálne</h4>
-    <div class="rule-group special">
-      <button *ngFor="let rule of filteredSpecialRules" type="button" (click)="onProofRuleClick(rule)">
-        {{ rule }}
-      </button>
+
+    <!-- Natural Deduction Mode -->
+    <div *ngIf="conversionMode === 'natural-deduction'" class="rules-container">
+      <div class="rule-section" *ngIf="filteredNdIntroRules.length">
+        <div class="section-title">{{ t.introRules }}</div>
+        <div class="rule-buttons">
+          <button
+            *ngFor="let rule of filteredNdIntroRules"
+            type="button"
+            (click)="onProofRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ displayProofRule(rule) }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rule-section" *ngIf="filteredNdElimRules.length">
+        <div class="section-title">{{ t.eliminationRules }}</div>
+        <div class="rule-buttons">
+          <button
+            *ngFor="let rule of filteredNdElimRules"
+            type="button"
+            (click)="onProofRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ displayProofRule(rule) }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rule-section" *ngIf="filteredNdQuantifierRules.length">
+        <div class="section-title">{{ t.quantifierRules }}</div>
+        <div class="rule-buttons">
+          <button
+            *ngFor="let rule of filteredNdQuantifierRules"
+            type="button"
+            (click)="onProofRuleClick(rule)"
+            class="rule-btn"
+          >
+            {{ displayProofRule(rule) }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-
-  <div *ngIf="conversionMode === 'lambda-to-expression'">
-    <h4>Basic</h4>
-    <div class="rule-group" *ngIf="filteredBasicRules.length">
-      <button *ngFor="let rule of filteredBasicRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-    <h4>Functions</h4>
-    <div class="rule-group" *ngIf="filteredAbsRules.length || filteredAppRules.length">
-      <button *ngFor="let rule of filteredAbsRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-      <button *ngFor="let rule of filteredAppRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-    <h4>Pairs &amp; Sums</h4>
-    <div class="rule-group" *ngIf="filteredPairRules.length || filteredSumRules.length">
-      <button *ngFor="let rule of filteredPairRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-      <button *ngFor="let rule of filteredSumRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-    <h4>Dependent (∀ / ∃)</h4>
-    <div class="rule-group" *ngIf="filteredDependentRules.length">
-      <button *ngFor="let rule of filteredDependentRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-    <h4>Control Flow</h4>
-    <div class="rule-group" *ngIf="filteredConditionalRules.length || filteredLetRules.length">
-      <button *ngFor="let rule of filteredConditionalRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-      <button *ngFor="let rule of filteredLetRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
-    <h4>Naturals</h4>
-    <div class="rule-group" *ngIf="filteredNatRules.length">
-      <button *ngFor="let rule of filteredNatRules" type="button" (click)="onTypeRuleClick(rule)">
-        {{ rule }}
-      </button>
-    </div>
   </div>
 </div>

@@ -1241,8 +1241,15 @@ export class LambdaBuilderService {
         // Capitalize the first letter of type variable names
         return t.name.charAt(0).toUpperCase() + t.name.slice(1);
       case 'Bool': return 'Bool';
+      case 'Bottom': return '⊥';
       case 'Nat': return 'Nat';
-      case 'Func': return `(${this.typeToText(t.from)} → ${this.typeToText(t.to)})`;
+      case 'Func': {
+        const from = this.typeToText(t.from);
+        const to = this.typeToText(t.to);
+        const fromNeedsParens = this.needsParensForArrowSide(t.from, 'left');
+        const toNeedsParens = this.needsParensForArrowSide(t.to, 'right');
+        return `${fromNeedsParens ? `(${from})` : from} → ${toNeedsParens ? `(${to})` : to}`;
+      }
       case 'Prod': return `(${this.typeToText(t.left)} × ${this.typeToText(t.right)})`;
       case 'Sum': return `(${this.typeToText(t.left)} + ${this.typeToText(t.right)})`;
       case 'PredicateType':
@@ -1251,8 +1258,20 @@ export class LambdaBuilderService {
       case 'DependentFunc':
         return `(${t.param}: ${this.typeToText(t.paramType)}) → ${this.typeToText(t.bodyType)}`;
       case 'DependentProd':
-        return `(${t.param}: ${this.typeToText(t.paramType)}) × ${this.typeToText(t.bodyType)}`;
+        return `∃${t.param}:${this.typeToText(t.paramType)}. ${this.typeToText(t.bodyType)}`;
       default: return 'Unknown';
     }
+  }
+
+  private isNegationType(type: TypeNode): boolean {
+    return type.kind === 'Func' && type.to.kind === 'Bottom';
+  }
+
+  private needsParensForArrowSide(type: TypeNode, side: 'left' | 'right'): boolean {
+    if (this.isNegationType(type)) return false;
+    if (type.kind === 'Prod' || type.kind === 'Sum') return true;
+    if (type.kind === 'DependentFunc' || type.kind === 'DependentProd') return true;
+    if (type.kind === 'Func') return side === 'left' || side === 'right';
+    return false;
   }
 }

@@ -9,8 +9,17 @@ export const CONCLUSION_RULES = ['→R', '∧R', '∨R', '¬R', '∀R', '∃R'] 
 /** Assumption rules for sequent calculus (left side) */
 export const ASSUMPTION_RULES = ['→L', '∧L', '∨L', '¬L', '∀L', '∃L'] as const;
 
-/** Special rules (weakening, axiom) */
-export const SPECIAL_RULES = ['WR', 'WL', 'Ax'] as const;
+/** Special rules (weakening, identity) */
+export const SPECIAL_RULES = ['WR', 'WL', 'id'] as const;
+
+/** Natural deduction introduction rules */
+export const ND_INTRO_RULES = ['⊤I', '¬I', '∧I', '∨I1', '∨I2', '→I'] as const;
+
+/** Natural deduction elimination rules */
+export const ND_ELIM_RULES = ['⊥E', '¬E', '∧E1', '∧E2', '∨E', '→E'] as const;
+
+/** Natural deduction quantifier rules */
+export const ND_QUANTIFIER_RULES = ['∀I', '∀E', '∃I', '∃E'] as const;
 
 /** Type inference: basic constants */
 export const BASIC_RULES = ['Var', 'True', 'False', 'Zero'] as const;

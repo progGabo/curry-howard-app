@@ -8,6 +8,10 @@
   (wheel)="onWheel($event)"
   (contextmenu)="onContextMenu($event)"
 >
+  <div class="canvas-overlay-layer">
+    <ng-content select="[canvas-overlay]"></ng-content>
+  </div>
+
   <div
     class="tree-canvas"
     [style.transform]="transformStyle"

@@ -16,15 +16,15 @@ import {
   ConstantContext,
   FunctionAppContext,
   TermListContext
-} from './PredicateLogicParser';
+} from './LogicParser';
 
-import { PredicateLogicVisitor } from './PredicateLogicVisitor';
+import { LogicVisitor } from './LogicVisitor';
 import { AbstractParseTreeVisitor } from 'antlr4ng';
 import { FormulaNode, SequentNode, TermNode } from '../../models/formula-node';
 
-export class PredicateLogicAstVisitor
+export class LogicAstVisitor
   extends AbstractParseTreeVisitor<any>
-  implements PredicateLogicVisitor<any> {
+  implements LogicVisitor<any> {
 
   protected override defaultResult(): any {
     return undefined;
@@ -127,18 +127,17 @@ export class PredicateLogicAstVisitor
     if (ctx.predicate()) {
       return this.visit(ctx.predicate()!);
     } else if (ctx.LOWERID()) {
-      // Lowercase identifier as propositional variable (atom)
       return {
         kind: 'Var',
         name: ctx.LOWERID()!.getText()
       };
-    } else if (ctx.ATOM()) {
+    } else if (ctx.PRED()) {
       return {
         kind: 'Var',
-        name: ctx.ATOM()!.getText()
+        name: ctx.PRED()!.getText()
       };
     } else {
-      return this.visit(ctx.formula()!); // parentheses
+      return this.visit(ctx.formula()!);
     }
   }
 
@@ -164,7 +163,6 @@ export class PredicateLogicAstVisitor
     } else if (ctx.functionApp()) {
       return this.visit(ctx.functionApp()!);
     } else {
-      // parentheses
       return this.visit(ctx.term()!);
     }
   }
@@ -193,4 +191,3 @@ export class PredicateLogicAstVisitor
     };
   }
 }
-

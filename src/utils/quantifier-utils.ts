@@ -64,6 +64,17 @@ export function parseTerm(input: string): TermNode | null {
   return null;
 }
 
+export function termToText(term: TermNode): string {
+  switch (term.kind) {
+    case 'TermVar':
+      return term.name;
+    case 'TermConst':
+      return term.name;
+    case 'TermFunc':
+      return `${term.name}(${term.args.map((arg) => termToText(arg)).join(',')})`;
+  }
+}
+
 /**
  * Get all free variables in a formula.
  * Returns a Set of variable names that occur free in the formula.
@@ -140,6 +151,70 @@ export function freeVarsTerm(t: TermNode): Set<string> {
   return freeVars;
 }
 
+export function freeTermSymbolsTerm(t: TermNode): Set<string> {
+  const symbols = new Set<string>();
+
+  const visit = (term: TermNode): void => {
+    switch (term.kind) {
+      case 'TermVar':
+      case 'TermConst':
+        symbols.add(term.name);
+        break;
+      case 'TermFunc':
+        term.args.forEach(visit);
+        break;
+    }
+  };
+
+  visit(t);
+  return symbols;
+}
+
+export function freeTermSymbolsFormula(formula: FormulaNode): Set<string> {
+  const symbols = new Set<string>();
+
+  const visit = (f: FormulaNode): void => {
+    switch (f.kind) {
+      case 'Predicate':
+        f.args.forEach((arg) => {
+          for (const symbol of freeTermSymbolsTerm(arg)) {
+            symbols.add(symbol);
+          }
+        });
+        break;
+      case 'Implies':
+      case 'And':
+      case 'Or':
+        visit(f.left);
+        visit(f.right);
+        break;
+      case 'Forall':
+      case 'Exists':
+        visit(f.body);
+        break;
+      case 'Not':
+      case 'Paren':
+        visit(f.inner);
+        break;
+      default:
+        break;
+    }
+  };
+
+  visit(formula);
+  return symbols;
+}
+
+export function freeTermSymbolsInFormulas(formulas: FormulaNode[]): Set<string> {
+  const symbols = new Set<string>();
+  for (const formula of formulas) {
+    for (const symbol of freeTermSymbolsFormula(formula)) {
+      symbols.add(symbol);
+    }
+  }
+  return symbols;
+}
+
 /**
  * Capture-avoiding substitution: A[t/x]
  * Substitutes term t for variable x in formula A, avoiding variable capture.
@@ -152,89 +227,69 @@ export function substituteFormula(
   x: string,
   t: TermNode
 ): FormulaNode {
-  // Get free variables in the substitution term
   const tFreeVars = freeVarsTerm(t);
-  
-  function subst(f: FormulaNode, bound: Set<string>, counter: { value: number }): FormulaNode {
-    switch (f.kind) {
+
+  const subst = (formula: FormulaNode): FormulaNode => {
+    switch (formula.kind) {
       case 'Var':
-        // In predicate logic, propositional variables (Var) are not substituted
-        // Substitution only affects terms within predicates
-        return f;
-        
-      case 'Forall':
-      case 'Exists': {
-        const boundVar = f.variable;
-        let newBoundVar = boundVar;
-        let newBound = new Set(bound);
-        
-        // Check if we need to alpha-rename to avoid capture
-        if (boundVar === x) {
-          // x is bound here, no substitution needed
-          newBound.add(boundVar);
-          return {
-            ...f,
-            body: subst(f.body, newBound, counter)
-          };
-        }
-        
-        // Check if t contains a variable that would be captured
-        if (tFreeVars.has(boundVar)) {
-          // Need to alpha-rename
-          const freshVar = generateFreshVar(boundVar, newBound, counter);
-          newBoundVar = freshVar;
-          newBound.add(freshVar);
-          // Rename bound variable in body
-          const renamedBody = renameVariableInFormula(f.body, boundVar, freshVar);
-          return {
-            ...f,
-            variable: freshVar,
-            body: subst(renamedBody, newBound, counter)
-          };
-        } else {
-          newBound.add(boundVar);
-          return {
-            ...f,
-            body: subst(f.body, newBound, counter)
-          };
-        }
-      }
-      
-      case 'Implies':
+      case 'True':
+      case 'False':
+        return formula;
+      case 'Predicate':
         return {
-          ...f,
-          left: subst(f.left, bound, counter),
-          right: subst(f.right, bound, counter)
+          ...formula,
+          args: formula.args.map((arg) => substituteTerm(arg, x, t))
         };
-        
+      case 'Implies':
       case 'And':
       case 'Or':
         return {
-          ...f,
-          left: subst(f.left, bound, counter),
-          right: subst(f.right, bound, counter)
+          ...formula,
+          left: subst(formula.left),
+          right: subst(formula.right)
         };
-        
       case 'Not':
       case 'Paren':
         return {
-          ...f,
-          inner: subst(f.inner, bound, counter)
+          ...formula,
+          inner: subst(formula.inner)
         };
-        
-      case 'Predicate':
+      case 'Forall':
+      case 'Exists': {
+        const binder = formula.variable;
+
+        if (binder === x) {
+          return formula;
+        }
+
+        if (!tFreeVars.has(binder)) {
+          return {
+            ...formula,
+            body: subst(formula.body)
+          };
+        }
+
+        const used = new Set<string>([
+          ...freeVarsFormula(formula.body),
+          ...freeVarsTerm(t),
+          x,
+          binder
+        ]);
+        const fresh = generateFreshVar(`${binder}_`, used);
+        const alphaRenamedBody = renameBoundVariableInFormula(formula.body, binder, fresh);
+
         return {
-          ...f,
-          args: f.args.map(arg => substituteTerm(arg, x, t))
+          ...formula,
+          variable: fresh,
+          body: substituteFormula(alphaRenamedBody, x, t)
         };
-        
-      case 'True':
-      case 'False':
-        return f;
+      }
+      default:
+        return formula;
     }
-  }
-  
-  return subst(f, new Set(), { value: 0 });
+  };
+
+  return subst(f);
 }
 
 /**
@@ -314,6 +369,49 @@ function renameVariableInFormula(f: FormulaNode, oldVar: string, newVar: string)
   }
 }
 
+function renameBoundVariableInFormula(f: FormulaNode, oldVar: string, newVar: string): FormulaNode {
+  switch (f.kind) {
+    case 'Var':
+    case 'True':
+    case 'False':
+      return f;
+    case 'Predicate':
+      return {
+        ...f,
+        args: f.args.map((arg) => renameVariableInTerm(arg, oldVar, newVar))
+      };
+    case 'Implies':
+    case 'And':
+    case 'Or':
+      return {
+        ...f,
+        left: renameBoundVariableInFormula(f.left, oldVar, newVar),
+        right: renameBoundVariableInFormula(f.right, oldVar, newVar)
+      };
+    case 'Not':
+    case 'Paren':
+      return {
+        ...f,
+        inner: renameBoundVariableInFormula(f.inner, oldVar, newVar)
+      };
+    case 'Forall':
+    case 'Exists':
+      if (f.variable === oldVar) {
+        return {
+          ...f,
+          variable: newVar,
+          body: renameBoundVariableInFormula(f.body, oldVar, newVar)
+        };
+      }
+      return {
+        ...f,
+        body: renameBoundVariableInFormula(f.body, oldVar, newVar)
+      };
+    default:
+      return f;
+  }
+}
+
 /**
  * Rename a variable in a term.
  */
@@ -336,15 +434,13 @@ function renameVariableInTerm(t: TermNode, oldVar: string, newVar: string): Term
 /**
  * Generate a fresh variable name that doesn't conflict with existing variables.
  */
-function generateFreshVar(base: string, existing: Set<string>, counter: { value: number }): string {
-  let candidate = base;
+function generateFreshVar(base: string, existing: Set<string>): string {
   let suffix = 0;
-  
+  let candidate = `${base}${suffix}`;
   while (existing.has(candidate)) {
+    suffix += 1;
     candidate = `${base}${suffix}`;
-    suffix++;
   }
-  
   return candidate;
 }
 

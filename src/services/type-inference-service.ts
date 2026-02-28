@@ -85,9 +85,33 @@ export class TypeInferenceService {
       case 'LetDependentPair':
         return this.inferLetDependentPair(expr, assumptions);
       
+      case 'Abort':
+        return this.inferAbort(expr, assumptions);
+      
       default:
         throw new Error(`Unsupported expression kind: ${(expr as any).kind}`);
     }
+  }
+
+  private inferAbort(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'Abort') throw new Error('Expected Abort expression');
+
+    const sourceInference = this.inferType(expr.expr, assumptions);
+    const sourceType = sourceInference.inferredType;
+    const isBottom = sourceType.kind === 'Bottom';
+    const isPlaceholder = sourceType.kind === 'TypeVar' && sourceType.name === '?';
+
+    if (!isBottom && !isPlaceholder) {
+      throw new Error('Abort requires a proof of ⊥');
+    }
+
+    return {
+      rule: 'Abort',
+      expression: expr,
+      inferredType: expr.targetType,
+      assumptions: new Map(assumptions),
+      children: [sourceInference]
+    };
   }
 
   private inferVar(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
@@ -178,7 +202,7 @@ export class TypeInferenceService {
   private substituteInType(type: TypeNode, paramName: string, replacement: TypeNode): TypeNode {
     switch (type.kind) {
       case 'TypeVar':
-        return type.name.toLowerCase() === paramName.toLowerCase() ? replacement : type;
+        return type.name === paramName ? replacement : type;
       case 'Func':
         return TypeFactories.func(
           this.substituteInType(type.from, paramName, replacement),
@@ -212,6 +236,7 @@ export class TypeInferenceService {
           this.substituteInType(type.bodyType, paramName, replacement)
         );
       case 'Bool':
+      case 'Bottom':
       case 'Nat':
         return type;
       default:
@@ -371,18 +396,32 @@ export class TypeInferenceService {
     if (expr.kind !== 'DependentPair') throw new Error('Expected DependentPair expression');
     
     const witnessInference = this.inferType(expr.witness, assumptions);
-    const witnessMatches = this.typesEqual(witnessInference.inferredType, expr.witnessType);
+    const witnessType = (expr.witnessType.kind === 'TypeVar' && expr.witnessType.name === '?')
+      ? witnessInference.inferredType
+      : expr.witnessType;
+    const witnessMatches = this.typesEqual(witnessInference.inferredType, witnessType);
     if (!witnessMatches && !(witnessInference.inferredType.kind === 'TypeVar' && witnessInference.inferredType.name === '?')) {
       throw new Error('Witness type mismatch in dependent pair');
     }
-    
-    const proofInference = this.inferType(expr.proof, assumptions);
+
+    let proofAssumptions = new Map(assumptions);
+    if (expr.proofType) {
+      proofAssumptions = this.refineApplicationHeadForExpectedResult(expr.proof, proofAssumptions, expr.proofType);
+    }
+
+    const proofInference = this.inferType(expr.proof, proofAssumptions);
+    if (expr.proofType) {
+      const proofMatches = this.typesEqual(proofInference.inferredType, expr.proofType);
+      if (!proofMatches && !(proofInference.inferredType.kind === 'TypeVar' && proofInference.inferredType.name === '?')) {
+        throw new Error('Proof type mismatch in dependent pair');
+      }
+    }
     const paramName = expr.witness.kind === 'Var' ? expr.witness.name : 'x';
     const resultType: TypeNode = {
       kind: 'DependentProd',
       param: paramName,
-      paramType: expr.witnessType,
-      bodyType: proofInference.inferredType
+      paramType: witnessType,
+      bodyType: expr.proofType ?? proofInference.inferredType
     };
 
     return {
@@ -394,10 +433,54 @@ export class TypeInferenceService {
     };
   }
 
+  private refineApplicationHeadForExpectedResult(expr: ExprNode, assumptions: Map<string, TypeNode>, expectedResult: TypeNode): Map<string, TypeNode> {
+    const refined = new Map(assumptions);
+    const args: ExprNode[] = [];
+    let head: ExprNode = expr;
+
+    while (head.kind === 'App') {
+      args.unshift(head.arg);
+      head = head.fn;
+    }
+
+    if (head.kind !== 'Var' || args.length === 0) {
+      return refined;
+    }
+
+    const headType = refined.get(head.name);
+    if (!(headType && headType.kind === 'TypeVar' && headType.name === '?')) {
+      return refined;
+    }
+
+    const argTypes = args.map((arg) => this.inferType(arg, refined).inferredType);
+    const inferredFnType = argTypes.reduceRight<TypeNode>(
+      (resultType, argumentType) => TypeFactories.func(argumentType, resultType),
+      expectedResult
+    );
+
+    refined.set(head.name, inferredFnType);
+    return refined;
+  }
+
   private inferLetDependentPair(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
     if (expr.kind !== 'LetDependentPair') throw new Error('Expected LetDependentPair expression');
-    
-    const pairInference = this.inferType(expr.pair, assumptions);
+
+    const expectedPairType: TypeNode = {
+      kind: 'DependentProd',
+      param: expr.x,
+      paramType: expr.xType,
+      bodyType: expr.pType
+    };
+
+    const pairAssumptions = new Map(assumptions);
+    if (expr.pair.kind === 'Var') {
+      const currentPairType = pairAssumptions.get(expr.pair.name);
+      if (currentPairType && currentPairType.kind === 'TypeVar' && currentPairType.name === '?') {
+        pairAssumptions.set(expr.pair.name, expectedPairType);
+      }
+    }
+
+    const pairInference = this.inferType(expr.pair, pairAssumptions);
     const pairType = pairInference.inferredType;
     const isPlaceholder = pairType.kind === 'TypeVar' && pairType.name === '?';
     if (pairType.kind !== 'DependentProd' && !isPlaceholder) {
@@ -408,14 +491,31 @@ export class TypeInferenceService {
     newAssumptions.set(expr.x, expr.xType);
     newAssumptions.set(expr.p, expr.pType);
     const bodyInference = this.inferType(expr.inExpr, newAssumptions);
+    const closedResultType = this.closeLetDependentPairResultType(expr, bodyInference.inferredType);
 
     return {
       rule: 'LetDependentPair',
       expression: expr,
-      inferredType: bodyInference.inferredType,
+      inferredType: closedResultType,
       assumptions: new Map(assumptions),
       children: [pairInference, bodyInference]
     };
+  }
+
+  private closeLetDependentPairResultType(expr: Extract<ExprNode, { kind: 'LetDependentPair' }>, bodyType: TypeNode): TypeNode {
+    const projectionBase = this.getProjectionBaseName(expr.pair);
+    const witnessProjection = TypeFactories.typeVar(`fst(${projectionBase})`);
+    const proofProjectionType = this.substituteInType(expr.pType, expr.x, witnessProjection);
+
+    const withoutProofBinder = this.substituteInType(bodyType, expr.p, proofProjectionType);
+    return this.substituteInType(withoutProofBinder, expr.x, witnessProjection);
+  }
+
+  private getProjectionBaseName(expr: ExprNode): string {
+    if (expr.kind === 'Var') {
+      return expr.name;
+    }
+    return 'pair';
   }
 
   private inferIf(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
@@ -496,6 +596,7 @@ export class TypeInferenceService {
       case 'TypeVar':
         return t1.name === (t2 as any).name;
       case 'Bool':
+      case 'Bottom':
       case 'Nat':
         return true;
       case 'Func':
@@ -525,18 +626,26 @@ export class TypeInferenceService {
   }
 
   formatType(type: TypeNode): string {
+    if (type.kind === 'Func' && this.isNegationType(type)) {
+      const inner = this.formatType(type.from);
+      const wrappedInner = this.needsParensForNegation(type.from) ? `(${inner})` : inner;
+      return `¬${wrappedInner}`;
+    }
+
     switch (type.kind) {
       case 'TypeVar':
         return type.name;
       case 'Bool':
         return 'Bool';
+      case 'Bottom':
+        return '⊥';
       case 'Nat':
         return 'Nat';
       case 'Func':
         const fromStr = this.formatType(type.from);
         const toStr = this.formatType(type.to);
-        const fromNeedsParens = type.from.kind === 'Func' || type.from.kind === 'Prod' || type.from.kind === 'Sum';
-        const toNeedsParens = type.to.kind === 'Func' || type.to.kind === 'Prod' || type.to.kind === 'Sum';
+        const fromNeedsParens = this.needsParensForArrowSide(type.from, 'left');
+        const toNeedsParens = this.needsParensForArrowSide(type.to, 'right');
         return `${fromNeedsParens ? `(${fromStr})` : fromStr} → ${toNeedsParens ? `(${toStr})` : toStr}`;
       case 'Prod':
         const leftStr = this.formatType(type.left);
@@ -556,10 +665,26 @@ export class TypeInferenceService {
       case 'DependentProd':
         const dpParamStr = this.formatType(type.paramType);
         const dpBodyStr = this.formatType(type.bodyType);
-        return `(${type.param}: ${dpParamStr}) × ${dpBodyStr}`;
+        return `∃${type.param}:${dpParamStr}. ${dpBodyStr}`;
       default:
         return `[${(type as any).kind}]`;
     }
+  }
+
+  private isNegationType(type: TypeNode): boolean {
+    return type.kind === 'Func' && type.to.kind === 'Bottom';
+  }
+
+  private needsParensForNegation(type: TypeNode): boolean {
+    return type.kind === 'Func' || type.kind === 'Prod' || type.kind === 'Sum' || type.kind === 'DependentFunc' || type.kind === 'DependentProd';
+  }
+
+  private needsParensForArrowSide(type: TypeNode, side: 'left' | 'right'): boolean {
+    if (this.isNegationType(type)) return false;
+    if (type.kind === 'Prod' || type.kind === 'Sum') return true;
+    if (type.kind === 'DependentFunc' || type.kind === 'DependentProd') return true;
+    if (type.kind === 'Func') return side === 'left' || side === 'right';
+    return false;
   }
 
   buildInteractiveRoot(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
@@ -719,19 +844,30 @@ export class TypeInferenceService {
         if (node.children.length === 2) {
           const witness = (expr as any).witness;
           const paramName = witness.kind === 'Var' ? witness.name : 'x';
+          const declaredWitnessType = (expr as any).witnessType as TypeNode;
+          const childWitnessType = node.children[0].inferredType;
+          const paramType = (declaredWitnessType.kind === 'TypeVar' && declaredWitnessType.name === '?')
+            ? childWitnessType
+            : declaredWitnessType;
           node.inferredType = {
             kind: 'DependentProd',
             param: paramName,
-            paramType: (expr as any).witnessType,
+            paramType,
             bodyType: node.children[1].inferredType
           };
         }
         break;
         
       case 'LetPair':
-      case 'LetDependentPair':
         if (node.children.length >= 2) {
           node.inferredType = node.children[node.children.length - 1].inferredType;
+        }
+        break;
+
+      case 'LetDependentPair':
+        if (node.children.length >= 2 && expr.kind === 'LetDependentPair') {
+          const bodyType = node.children[node.children.length - 1].inferredType;
+          node.inferredType = this.closeLetDependentPairResultType(expr, bodyType);
         }
         break;
         
@@ -907,11 +1043,17 @@ export class TypeInferenceService {
 
   private inferDependentPairInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
     if (expr.kind !== 'DependentPair') throw new Error('Expected DependentPair expression');
+
+    const declaredWitnessType = expr.witnessType;
+    const initialWitnessType =
+      declaredWitnessType.kind === 'TypeVar' && declaredWitnessType.name === '?'
+        ? { kind: 'TypeVar', name: '?' } as TypeNode
+        : declaredWitnessType;
     
     const witnessChild: TypeInferenceNode = {
       rule: '∅',
       expression: expr.witness,
-      inferredType: expr.witnessType,
+      inferredType: initialWitnessType,
       assumptions: new Map(assumptions),
       children: []
     };
@@ -924,13 +1066,18 @@ export class TypeInferenceService {
       children: []
     };
 
+    const paramType =
+      declaredWitnessType.kind === 'TypeVar' && declaredWitnessType.name === '?'
+        ? witnessChild.inferredType
+        : declaredWitnessType;
+
     return {
       rule: 'DependentPair',
       expression: expr,
       inferredType: {
         kind: 'DependentProd',
         param: 'x',
-        paramType: expr.witnessType,
+        paramType,
         bodyType: proofChild.inferredType
       },
       assumptions: new Map(assumptions),

@@ -27,18 +27,26 @@ export class LambdaToExpressionService {
    * DependentProd → Σ (x : T), Q(x) (existential); DependentFunc → ∀x:T. body.
    */
   convertTypeToLogicalFormula(type: TypeNode): string {
+    if (type.kind === 'Func' && this.isNegationType(type)) {
+      const inner = this.convertTypeToLogicalFormula(type.from);
+      const wrappedInner = this.needsParensForNegation(type.from) ? `(${inner})` : inner;
+      return `¬${wrappedInner}`;
+    }
+
     switch (type.kind) {
       case 'TypeVar':
         return type.name;
       case 'Bool':
         return 'Bool';
+      case 'Bottom':
+        return '⊥';
       case 'Nat':
         return 'Nat';
       case 'Func':
         const fromF = this.convertTypeToLogicalFormula(type.from);
         const toF = this.convertTypeToLogicalFormula(type.to);
-        const fromParens = type.from.kind === 'Func' || type.from.kind === 'Prod' || type.from.kind === 'Sum';
-        const toParens = type.to.kind === 'Func' || type.to.kind === 'Prod' || type.to.kind === 'Sum';
+        const fromParens = this.needsParensForArrowSide(type.from, 'left');
+        const toParens = this.needsParensForArrowSide(type.to, 'right');
         return `${fromParens ? `(${fromF})` : fromF} → ${toParens ? `(${toF})` : toF}`;
       case 'Prod':
         const leftF = this.convertTypeToLogicalFormula(type.left);
@@ -56,9 +64,10 @@ export class LambdaToExpressionService {
         const dfBody = this.convertTypeToLogicalFormula(type.bodyType);
         return `∀${type.param}:${dfParam}. ${dfBody}`;
       case 'DependentProd':
-        // ∃x Q(x)
+        // ∃x:T. Q(x)
+        const dpParamType = this.convertTypeToLogicalFormula(type.paramType);
         const dpBody = this.convertTypeToLogicalFormula(type.bodyType);
-        return `∃${type.param}. ${dpBody}`;
+        return `∃${type.param}:${dpParamType}. ${dpBody}`;
       default:
         return `[${(type as any).kind}]`;
     }
@@ -161,19 +170,26 @@ export class LambdaToExpressionService {
   }
 
   private convertTypeToFormula(type: TypeNode): string {
+    if (type.kind === 'Func' && this.isNegationType(type)) {
+      const inner = this.convertTypeToFormula(type.from);
+      const wrappedInner = this.needsParensForNegation(type.from) ? `(${inner})` : inner;
+      return `¬${wrappedInner}`;
+    }
+
     switch (type.kind) {
       case 'TypeVar':
         return type.name;
       case 'Bool':
         return 'Bool';
+      case 'Bottom':
+        return '⊥';
       case 'Nat':
         return 'Nat';
       case 'Func':
         const fromFormula = this.convertTypeToFormula(type.from);
         const toFormula = this.convertTypeToFormula(type.to);
-        // Add parentheses for complex types
-        const fromNeedsParens = type.from.kind === 'Func' || type.from.kind === 'Prod' || type.from.kind === 'Sum';
-        const toNeedsParens = type.to.kind === 'Func' || type.to.kind === 'Prod' || type.to.kind === 'Sum';
+        const fromNeedsParens = this.needsParensForArrowSide(type.from, 'left');
+        const toNeedsParens = this.needsParensForArrowSide(type.to, 'right');
         return `${fromNeedsParens ? `(${fromFormula})` : fromFormula} → ${toNeedsParens ? `(${toFormula})` : toFormula}`;
       case 'Prod':
         const leftFormula = this.convertTypeToFormula(type.left);
@@ -193,10 +209,26 @@ export class LambdaToExpressionService {
       case 'DependentProd':
         const dpFrom = this.convertTypeToFormula(type.paramType);
         const dpTo = this.convertTypeToFormula(type.bodyType);
-        return `∃${type.param}. ${dpTo}`;
+        return `∃${type.param}:${dpFrom}. ${dpTo}`;
       default:
         return `[${(type as any).kind}]`;
     }
+  }
+
+  private isNegationType(type: TypeNode): boolean {
+    return type.kind === 'Func' && type.to.kind === 'Bottom';
+  }
+
+  private needsParensForNegation(type: TypeNode): boolean {
+    return type.kind === 'Func' || type.kind === 'Prod' || type.kind === 'Sum' || type.kind === 'DependentFunc' || type.kind === 'DependentProd';
+  }
+
+  private needsParensForArrowSide(type: TypeNode, side: 'left' | 'right'): boolean {
+    if (this.isNegationType(type)) return false;
+    if (type.kind === 'Prod' || type.kind === 'Sum') return true;
+    if (type.kind === 'DependentFunc' || type.kind === 'DependentProd') return true;
+    if (type.kind === 'Func') return side === 'left' || side === 'right';
+    return false;
   }
 
   // Helper method to create a sequent from a lambda expression

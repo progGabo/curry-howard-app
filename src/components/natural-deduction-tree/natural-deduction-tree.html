@@ -1,0 +1,51 @@
+<div class="main" *ngIf="root as r">
+  <div class="tree-node">
+    <div class="children" *ngIf="r.premises?.length">
+      <app-natural-deduction-tree
+        *ngFor="let premise of r.premises"
+        [root]="premise"
+        [mode]="mode"
+        [selectedNode]="selectedNode"
+        [currentLanguage]="currentLanguage"
+        [ndPredictionRequest]="ndPredictionRequest"
+        (nodeClicked)="nodeClicked.emit($event)"
+        (plusButtonClicked)="plusButtonClicked.emit($event)"
+        (ndPredictionConfirm)="ndPredictionConfirm.emit($event)"
+        (ndPredictionCancel)="ndPredictionCancel.emit()"
+      ></app-natural-deduction-tree>
+    </div>
+
+    <div class="prediction-inputs" *ngIf="hasPendingPrediction(r) && ndPredictionRequest">
+      <div class="prediction-inputs-wrapper-row">
+        <div class="prediction-input-wrapper" *ngFor="let prediction of ndPredictionRequest.userPredictions; let i = index">
+          <input
+            type="text"
+            class="prediction-input-field"
+            [value]="localPredictionInputs[i] || ''"
+            (input)="onPredictionInput(i, $event)"
+            (keyup.enter)="onPredictionConfirm()"
+            (keydown)="onPredictionKeyDown($event)"
+            [placeholder]="predictionPlaceholder(i)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="conclusion" [class.selected]="selectedNode === r" [class.leaf]="!r.premises.length" (click)="onNodeClick(r)">
+      <span class="rule" *ngIf="r.rule !== '∅'">
+        {{ getRuleLabel(r) }}<sup *ngIf="getDischargeLabel(r)">{{ getDischargeLabel(r) }}</sup>
+      </span>
+
+      <button
+        *ngIf="canShowPlusButton(r)"
+        class="rule-plus-btn"
+        (click)="onPlusButtonClick(r, $event)"
+        [title]="addRuleTitle"
+      >
+        <span class="plus-icon">+</span>
+      </button>
+
+      <div class="sequent-content" [appKatex]="r.formulaLatex || ''"></div>
+    </div>
+  </div>
+</div>

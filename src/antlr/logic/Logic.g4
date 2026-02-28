@@ -1,21 +1,21 @@
-grammar PredicateLogic;
+grammar Logic;
 
 sequent
     : assumptions? TURNSTILE conclusion? EOF
     ;
 
 assumptions
-    : formula (',' formula)*
+    : formula (COMMA formula)*
     ;
 
 conclusion
-    : formula (',' formula)*
+    : formula (COMMA formula)*
     ;
 
 formula
-    : implication
-    | forall
+    : forall
     | exists
+    | implication
     ;
 
 forall
@@ -46,7 +46,8 @@ negation
 atom
     : LPAREN formula RPAREN
     | predicate
-    | LOWERID  // Propositional variables (atoms) - lowercase identifiers
+    | LOWERID
+    | PRED
     ;
 
 predicate
@@ -76,11 +77,11 @@ functionApp
     : LOWERID LPAREN termList? RPAREN
     ;
 
-TURNSTILE: '⊢' | '|-';
-IMPL: '⇒' | '=>';
-AND: '∧' | '&&';
-OR: '∨' | '||';
-NOT: '¬' | '!';
+TURNSTILE: '⊢' | '├' | '|-';
+IMPL: '⇒' | '→' | '=>';
+AND: '∧' | '⋀' | '&&';
+OR: '∨' | '⋁' | '||';
+NOT: '¬' | '∼' | '~' | '!';
 FORALL: '∀' | 'forall' | 'Forall';
 EXISTS: '∃' | 'exists' | 'Exists';
 DOT: '.';
@@ -88,11 +89,7 @@ LPAREN: '(';
 RPAREN: ')';
 COMMA: ',';
 
-// Predicates: uppercase identifiers
 PRED: [A-Z][a-zA-Z0-9_]*;
-
-// Lowercase identifiers (propositional variables/atoms, term variables, constants, functions)
 LOWERID: [a-z][a-zA-Z0-9_]*;
 
 WS: [ \t\r\n]+ -> skip;
-

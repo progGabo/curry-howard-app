@@ -366,18 +366,17 @@ export class AstBuilder
       );
     }
 
-    // < term , term > or ⟨ term : type?, term : type? ⟩  -- pár alebo dependent pair
+    // < term , term > or ⟨ term : type?, term : type? ⟩  -- dependent pair (∃ intro)
     if (((ctx as any).LANGLE && (ctx as any).LANGLE()) || ((ctx as any).RANGLE && (ctx as any).RANGLE())) {
       const terms = ctx.term();
       if (terms && terms.length === 2 && ctx.COMMA()) {
         const first = this.visit(terms[0]!) as ExprNode;
         const second = this.visit(terms[1]!) as ExprNode;
         const type0 = (ctx as any).type_ && (ctx as any).type_(0);
-        if (type0) {
-          const witnessType = this.visitType(type0) as TypeNode;
-          return ExprFactories.dependentPair(first, witnessType, second, spanOf(ctx));
-        }
-        return ExprFactories.pair(first, second, spanOf(ctx));
+        const type1 = (ctx as any).type_ && (ctx as any).type_(1);
+        const witnessType = type0 ? (this.visitType(type0) as TypeNode) : TypeFactories.typeVar('?');
+        const proofType = type1 ? (this.visitType(type1) as TypeNode) : undefined;
+        return ExprFactories.dependentPair(first, witnessType, second, spanOf(ctx), proofType);
       }
     }
 
@@ -458,7 +457,11 @@ export class AstBuilder
   visitAtomicType(ctx: AtomicTypeContext): TypeNode {
     // TYPEID | VAR | BOOL | NAT | predicateType | ( type )
     if (ctx.TYPEID()) {
-      return TypeFactories.typeVar(ctx.TYPEID()!.getText());
+      const name = ctx.TYPEID()!.getText();
+      if (name === 'Bottom') {
+        return TypeFactories.bottom();
+      }
+      return TypeFactories.typeVar(name);
     }
     // VAR: variable as type (e.g. x in P(x) for dependent types)
     if (ctx.VAR()) {

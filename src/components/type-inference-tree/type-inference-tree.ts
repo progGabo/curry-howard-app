@@ -15,6 +15,7 @@ import {
 import { I18nService } from '../../services/i18n.service';
 import { NotificationService } from '../../services/notification.service';
 import type { AppTranslations } from '../../services/i18n.service';
+import { applySymbolShortcut } from '../../utils/symbol-shortcuts';
 
 @Component({
   selector: 'app-type-inference-tree',
@@ -42,11 +43,27 @@ export class TypeInferenceTree implements OnChanges {
   natRules = [...NAT_RULES];
   letRules = [...LET_RULES];
 
+  rendererExpression = (expression: ExprNode): string => this.formatExpression(expression);
+  rendererType = (type: any): string => this.formatType(type);
+
+  canShowPlusButton = (node: TypeInferenceNode): boolean => {
+    if (this.mode !== 'interactive') return false;
+    return !node.children?.length && node.rule !== 'Var' && node.rule !== 'True' && node.rule !== 'False' && node.rule !== 'Zero';
+  };
+
+  canShowRule = (node: TypeInferenceNode): boolean => {
+    return !!node.children?.length || node.rule === 'Var' || node.rule === 'True' || node.rule === 'False' || node.rule === 'Zero';
+  };
+
   constructor(
     private lambdaParser: LambdaParserService,
     private i18n: I18nService,
     private notification: NotificationService
   ) {}
+
+  get t() {
+    return this.i18n.t(this.currentLanguage);
+  }
 
   private showError(key: keyof AppTranslations, params?: { [key: string]: string | number }) {
     const message = this.i18n.translate(this.currentLanguage, key, params);
@@ -59,12 +76,6 @@ export class TypeInferenceTree implements OnChanges {
 
   get isSelected(): boolean {
     return this.selectedNode === this.root;
-  }
-
-  onNodeClick(event: MouseEvent) {
-    if (this.mode === 'interactive' && this.root) {
-      this.nodeClicked.emit(this.root);
-    }
   }
 
   onPlusButtonClick(event: MouseEvent) {
@@ -152,7 +163,16 @@ export class TypeInferenceTree implements OnChanges {
 
   onPredictionInput(event: Event, index: number) {
     const target = event.target as HTMLInputElement;
-    this.userPredictions[index] = target.value;
+    const cursor = target.selectionStart ?? target.value.length;
+    const transformed = applySymbolShortcut(target.value, cursor);
+    this.userPredictions[index] = transformed.text;
+
+    if (transformed.changed) {
+      target.value = transformed.text;
+      queueMicrotask(() => {
+        target.setSelectionRange(transformed.cursor, transformed.cursor);
+      });
+    }
   }
 
   onKeyDown(event: KeyboardEvent) {
@@ -435,20 +455,6 @@ export class TypeInferenceTree implements OnChanges {
     }
   }
 
-  onChildNodeClicked(node: TypeInferenceNode) {
-    this.nodeClicked.emit(node);
-  }
-
-  onChildPlusButtonClicked(event: { node: TypeInferenceNode, x: number, y: number }) {
-    this.plusButtonClicked.emit(event);
-  }
-
-  onChildRuleSelected(event: { node: TypeInferenceNode, rule: string }) {
-    this.ruleSelected.emit(event);
-  }
-
-
-
   formatExpression(expr: any): string {
     return this.formatExpr(expr);
   }
@@ -506,19 +512,27 @@ export class TypeInferenceTree implements OnChanges {
   }
 
   formatType(type: any): string {
+    if (type?.kind === 'Func' && this.isNegationType(type)) {
+      const inner = this.formatType(type.from);
+      const wrappedInner = this.needsParensForNegation(type.from) ? `(${inner})` : inner;
+      return `¬${wrappedInner}`;
+    }
+
     switch (type.kind) {
       case 'TypeVar':
         // Capitalize the first letter of type variable names
         return type.name.charAt(0).toUpperCase() + type.name.slice(1);
       case 'Bool':
         return 'Bool';
+      case 'Bottom':
+        return '⊥';
       case 'Nat':
         return 'Nat';
       case 'Func':
         const fromStr = this.formatType(type.from);
         const toStr = this.formatType(type.to);
-        const fromNeedsParens = type.from.kind === 'Func' || type.from.kind === 'Prod' || type.from.kind === 'Sum';
-        const toNeedsParens = type.to.kind === 'Func' || type.to.kind === 'Prod' || type.to.kind === 'Sum';
+        const fromNeedsParens = this.needsParensForArrowSide(type.from, 'left');
+        const toNeedsParens = this.needsParensForArrowSide(type.to, 'right');
         return `${fromNeedsParens ? `(${fromStr})` : fromStr} → ${toNeedsParens ? `(${toStr})` : toStr}`;
       case 'Prod':
         const leftStr = this.formatType(type.left);
@@ -534,10 +548,26 @@ export class TypeInferenceTree implements OnChanges {
       case 'DependentFunc':
         return `(${type.param}: ${this.formatType(type.paramType)}) -> ${this.formatType(type.bodyType)}`;
       case 'DependentProd':
-        return `(${type.param}: ${this.formatType(type.paramType)}) * ${this.formatType(type.bodyType)}`;
+        return `∃${type.param}:${this.formatType(type.paramType)}. ${this.formatType(type.bodyType)}`;
       default:
         return `[${type.kind}]`;
     }
+  }
+
+  private isNegationType(type: any): boolean {
+    return type?.kind === 'Func' && type?.to?.kind === 'Bottom';
+  }
+
+  private needsParensForNegation(type: any): boolean {
+    return type?.kind === 'Func' || type?.kind === 'Prod' || type?.kind === 'Sum' || type?.kind === 'DependentFunc' || type?.kind === 'DependentProd';
+  }
+
+  private needsParensForArrowSide(type: any, side: 'left' | 'right'): boolean {
+    if (this.isNegationType(type)) return false;
+    if (type?.kind === 'Prod' || type?.kind === 'Sum') return true;
+    if (type?.kind === 'DependentFunc' || type?.kind === 'DependentProd') return true;
+    if (type?.kind === 'Func') return side === 'left' || side === 'right';
+    return false;
   }
 
 }

@@ -3,7 +3,9 @@ import { DerivationNode, FormulaNode, SequentNode, TermNode } from '../../models
 import { CONCLUSION_RULES, ASSUMPTION_RULES, SPECIAL_RULES } from '../../constants/rules';
 import { I18nService } from '../../services/i18n.service';
 import { NotificationService } from '../../services/notification.service';
+import { FormulaRenderService } from '../../services/formula-render.service';
 import type { AppTranslations } from '../../services/i18n.service';
+import { applySymbolShortcut } from '../../utils/symbol-shortcuts';
 
 @Component({
   selector: 'app-proof-tree',
@@ -32,10 +34,27 @@ export class ProofTree implements OnChanges {
   userPredictions: string[] = [];
   predictError: string | null = null;
 
+  rendererSequentLatex = (sequent: SequentNode): string => this.sequentToLatex(sequent);
+  rendererRuleLabel = (node: DerivationNode): string => this.displayRuleLabel(node.rule);
+
+  canShowPlusButton = (node: DerivationNode): boolean => {
+    if (this.mode !== 'interactive') return false;
+    return !node.children?.length && node.rule !== 'Ax' && node.rule !== 'id' && node.rule !== 'ID';
+  };
+
+  canShowRule = (node: DerivationNode): boolean => {
+    return !!node.children?.length || node.rule === 'Ax' || node.rule === 'id' || node.rule === 'ID';
+  };
+
   constructor(
     private i18n: I18nService,
-    private notification: NotificationService
+    private notification: NotificationService,
+    private formulaRender: FormulaRenderService
   ) {}
+
+  get t() {
+    return this.i18n.t(this.currentLanguage);
+  }
 
   private showError(key: keyof AppTranslations, params?: { [key: string]: string | number }) {
     const message = this.i18n.translate(this.currentLanguage, key, params);
@@ -47,17 +66,17 @@ export class ProofTree implements OnChanges {
 
   onRuleClick(rule: string) {
     if (this.interactiveSubmode === 'predict') {
-      // Special handling for Ax rule - it has 0 children, so apply directly if valid
-      if (rule === 'Ax') {
+      // Special handling for identity rule - it has 0 children, so apply directly if valid
+      if (rule === 'Ax' || rule === 'id' || rule === 'ID') {
         if (this.root && this.isAxiom(this.root.sequent)) {
-          // Ax is valid, apply it directly (no prediction needed)
+          // identity is valid, apply directly (no prediction needed)
           this.apply(rule);
           if (this.root) {
             this.nodeClicked.emit(this.root);
           }
           return;
         } else {
-          // Ax cannot be applied to this sequent
+          // identity cannot be applied to this sequent
           this.showError('errorRuleCannotBeAppliedToSequent');
           this.pendingRule = null;
           this.pendingRuleNode = null;
@@ -108,7 +127,16 @@ export class ProofTree implements OnChanges {
 
   onPredictionInput(event: Event, index: number) {
     const target = event.target as HTMLInputElement;
-    this.userPredictions[index] = target.value;
+    const cursor = target.selectionStart ?? target.value.length;
+    const transformed = applySymbolShortcut(target.value, cursor);
+    this.userPredictions[index] = transformed.text;
+
+    if (transformed.changed) {
+      target.value = transformed.text;
+      queueMicrotask(() => {
+        target.setSelectionRange(transformed.cursor, transformed.cursor);
+      });
+    }
   }
 
   onKeyDown(event: KeyboardEvent) {
@@ -179,16 +207,6 @@ export class ProofTree implements OnChanges {
     }
   }
 
-  onNodeClick(event: MouseEvent) {
-    if (this.mode === 'interactive' && this.root) {
-      if (this.selectedNode === this.root) {
-        this.selectedNode = null;
-      } else {
-        this.nodeClicked.emit(this.root);
-      }
-    }
-  }
-
   onPlusButtonClick(event: MouseEvent) {
     event.stopPropagation();
     if (this.mode === 'interactive' && this.root) {
@@ -212,8 +230,17 @@ export class ProofTree implements OnChanges {
   
   apply(rule: string) {
     if (this.root) {
-      this.ruleSelected.emit({ node: this.root, rule });
+      const normalizedRule = rule === 'id' || rule === 'ID' ? 'Ax' : rule;
+      this.ruleSelected.emit({ node: this.root, rule: normalizedRule });
     }
+  }
+
+  displayRuleLabel(rule: string): string {
+    return rule === 'Ax' || rule === 'id' ? 'ID' : rule;
+  }
+
+  sequentToLatex(sequent: SequentNode): string {
+    return this.formulaRender.sequentToLatex(sequent);
   }
 
   formatSequent(sequent: { assumptions: FormulaNode[]; conclusions: FormulaNode[] }): string {
@@ -468,6 +495,8 @@ export class ProofTree implements OnChanges {
       }
       
       case 'Ax':
+      case 'id':
+      case 'ID':
         return [];
       
       default:

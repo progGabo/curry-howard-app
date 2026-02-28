@@ -1,4 +1,5 @@
 import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
+import type * as monaco from 'monaco-editor';
 
 @Component({
   selector: 'app-editor',
@@ -7,11 +8,24 @@ import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from
   styleUrl: './editor.scss'
 })
 export class Editor implements OnChanges {
-  @Input() conversionMode: 'expression-to-lambda' | 'lambda-to-expression' = 'expression-to-lambda';
+  @Input() conversionMode: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction' = 'expression-to-lambda';
   @Input() presetCode: string | null = null;
   @Output() formulaEntered = new EventEmitter<string>();
 
   code: string = '';
+  private editorInstance: monaco.editor.IStandaloneCodeEditor | null = null;
+  private applyingShortcut = false;
+  private readonly symbolShortcuts: Record<string, string> = {
+    '\\impl': '⇒',
+    '\\and': '∧',
+    '\\or': '∨',
+    '\\not': '¬',
+    '\\forall': '∀',
+    '\\exists': '∃',
+    '\\turnstile': '⊢',
+    '\\vdash': '⊢',
+    '\\lambda': 'λ'
+  };
   fontSize: number = 16;
   fontSizeStep = 2;
   minFontSize = 8;
@@ -24,8 +38,9 @@ export class Editor implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['presetCode']) {
-      if (this.presetCode !== null && this.presetCode !== undefined) {
-        this.code = this.presetCode;
+      const incomingCode = this.presetCode ?? '';
+      if (incomingCode !== this.code) {
+        this.code = incomingCode;
       }
     }
     if (changes['conversionMode']) {
@@ -35,6 +50,9 @@ export class Editor implements OnChanges {
 
   private buildEditorOptions() {
     const lineHeight = Math.round(this.fontSize * 1.35);
+    const placeholder = this.conversionMode === 'lambda-to-expression'
+      ? 'λx:Bool. λy:Bool. x'
+      : 'p ⇒ q ⇒ p ∧ q';
     return {
       theme: 'vs',
       language: 'plaintext',
@@ -44,7 +62,8 @@ export class Editor implements OnChanges {
       wordWrap: 'on',
       lineNumbers: 'on',
       fontSize: this.fontSize,
-      lineHeight
+      lineHeight,
+      placeholder: placeholder
     };
   }
 
@@ -67,14 +86,67 @@ export class Editor implements OnChanges {
   }
 
   private updatePlaceholder() {
+    // Only set code if there's a presetCode
     if (this.presetCode) {
       this.code = this.presetCode;
-    } else if (this.conversionMode === 'expression-to-lambda') {
-      this.code = 'p => q => p && q';
     } else {
-      this.code = 'λx:Bool. λy:Bool. x';
+      // Keep code empty - placeholder will be shown in editorOptions
+      this.code = '';
     }
     this.editorOptions = { ...this.buildEditorOptions() };
+  }
+
+  onEditorInit(editor: monaco.editor.IStandaloneCodeEditor) {
+    this.editorInstance = editor;
+    editor.onDidChangeModelContent(() => {
+      this.applyTypingShortcut();
+    });
+  }
+
+  private applyTypingShortcut() {
+    if (this.applyingShortcut || !this.editorInstance) {
+      return;
+    }
+
+    const model = this.editorInstance.getModel();
+    const position = this.editorInstance.getPosition();
+    if (!model || !position) {
+      return;
+    }
+
+    const cursorOffset = model.getOffsetAt(position);
+    const textBeforeCursor = model.getValue().slice(0, cursorOffset);
+    const match = textBeforeCursor.match(/\\[a-zA-Z]+$/);
+    if (!match) {
+      return;
+    }
+
+    const typedShortcut = match[0].toLowerCase();
+    const symbol = this.symbolShortcuts[typedShortcut];
+    if (!symbol) {
+      return;
+    }
+
+    const startOffset = cursorOffset - match[0].length;
+    const startPosition = model.getPositionAt(startOffset);
+
+    this.applyingShortcut = true;
+    this.editorInstance.executeEdits('symbol-shortcut', [
+      {
+        range: {
+          startLineNumber: startPosition.lineNumber,
+          startColumn: startPosition.column,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column
+        },
+        text: symbol,
+        forceMoveMarkers: true
+      }
+    ]);
+    this.applyingShortcut = false;
+
+    this.code = model.getValue();
+    this.formulaEntered.emit(this.code);
   }
 
   onCodeChange(code: string) {

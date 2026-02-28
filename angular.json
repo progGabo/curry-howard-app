@@ -29,6 +29,7 @@
             ],
             "styles": [
               "src/styles.scss",
+              "node_modules/katex/dist/katex.min.css",
               "node_modules/primeicons/primeicons.css"
             ]
           },
@@ -42,8 +43,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "15kB"
+                  "maximumWarning": "8kB",
+                  "maximumError": "20kB"
                 }
               ],
               "outputHashing": "all"
@@ -74,6 +75,7 @@
         "test": {
           "builder": "@angular/build:karma",
           "options": {
+            "karmaConfig": "karma.conf.cjs",
             "polyfills": [
               "zone.js",
               "zone.js/testing"
@@ -88,36 +90,6 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
-          }
-        }
-      }
-    },
-    "proof-tree": {
-      "projectType": "library",
-      "root": "projects/proof-tree",
-      "sourceRoot": "projects/proof-tree/src",
-      "prefix": "lib",
-      "architect": {
-        "build": {
-          "builder": "@angular/build:ng-packagr",
-          "configurations": {
-            "production": {
-              "tsConfig": "projects/proof-tree/tsconfig.lib.prod.json"
-            },
-            "development": {
-              "tsConfig": "projects/proof-tree/tsconfig.lib.json"
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "tsConfig": "projects/proof-tree/tsconfig.spec.json",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
             ]
           }
         }

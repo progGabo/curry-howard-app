@@ -1,4 +1,6 @@
 <app-header
+  [headerSection]="headerSection"
+  [headerOption]="headerOption"
   [conversionMode]="conversionMode"
   [mode]="mode"
   [interactiveSubmode]="interactiveSubmode"
@@ -6,7 +8,8 @@
   [canStepBack]="canStepBack"
   [currentLanguage]="currentLanguage"
   [t]="t"
-  (conversionModeChange)="switchMode($event)"
+  (headerSectionChange)="onHeaderSectionChange($event)"
+  (headerOptionChange)="onHeaderOptionChange($event)"
   (modeChange)="onHeaderModeChange($event)"
   (submodeChange)="interactiveSubmode = $event"
   (stepBack)="stepBack()"
@@ -22,7 +25,163 @@
 <!-- Slide Panel -->
 <div class="slide-panel" [class.open]="slidePanelVisible">
   <div class="slide-panel-content">
-    <!-- Content will go here -->
+    <div class="rule-formula-panel">
+      <h3 class="formula-title">{{ t.ruleReference }}</h3>
+      
+      <!-- All Rules Formulas Display -->
+      <div class="formulas-list">
+        <div class="formula-section" *ngIf="isSequentWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Pravidlo identity a rezu:' : 'Identity and cut rule:' }}</h4>
+          <div class="formula-item" *ngFor="let rule of seqSidebarIdentityCutRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isSequentWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Logické pravidlá: Negácia' : 'Logical rules: Negation' }}</h4>
+          <div class="formula-item" *ngFor="let rule of seqSidebarNegationRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isSequentWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Konjunkcia' : 'Conjunction' }}</h4>
+          <div class="formula-item" *ngFor="let rule of seqSidebarConjunctionRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isSequentWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Disjunkcia' : 'Disjunction' }}</h4>
+          <div class="formula-item" *ngFor="let rule of seqSidebarDisjunctionRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isSequentWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Implikácia' : 'Implication' }}</h4>
+          <div class="formula-item" *ngFor="let rule of seqSidebarImplicationRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isSequentWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Kvantifikátory' : 'Quantifiers' }}</h4>
+          <div class="formula-item" *ngFor="let rule of seqSidebarQuantifierRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isSequentWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Pravidlá zoslabenia' : 'Weakening rules' }}</h4>
+          <div class="formula-item" *ngFor="let rule of seqSidebarWeakeningRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Konštanty' : 'Constants' }}</h4>
+          <div class="formula-item" *ngFor="let rule of ndSidebarCoreRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Negácia' : 'Negation' }}</h4>
+          <div class="formula-item" *ngFor="let rule of ndSidebarNegationRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Konjunkcia' : 'Conjunction' }}</h4>
+          <div class="formula-item" *ngFor="let rule of ndSidebarConjunctionRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Disjunkcia' : 'Disjunction' }}</h4>
+          <div class="formula-item" *ngFor="let rule of ndSidebarDisjunctionRules">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Implikácia' : 'Implication' }}</h4>
+          <div class="formula-item" *ngFor="let rule of ndSidebarImplicationRules" [class.formula-item--imp-e]="rule === '→E'">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
+          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Kvantifikátory' : 'Quantifiers' }}</h4>
+          <div class="formula-item" *ngFor="let rule of ndSidebarQuantifierRules" [class.formula-item--full-row]="rule === '∃E'">
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
+          <h4 class="formula-section-header">{{ t.basicRules }}</h4>
+          <div class="formula-item" *ngFor="let rule of basicRules">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
+          <h4 class="formula-section-header">{{ t.functions }}</h4>
+          <div class="formula-item" *ngFor="let rule of absRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+          <div class="formula-item" *ngFor="let rule of appRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
+          <h4 class="formula-section-header">{{ t.pairsAndSums }}</h4>
+          <div class="formula-item" *ngFor="let rule of pairRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+          <div class="formula-item" *ngFor="let rule of sumRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
+          <h4 class="formula-section-header">{{ t.dependentTypes }}</h4>
+          <div class="formula-item" *ngFor="let rule of dependentRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
+          <h4 class="formula-section-header">{{ t.controlFlow }}</h4>
+          <div class="formula-item" *ngFor="let rule of conditionalRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+          <div class="formula-item" *ngFor="let rule of letRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+
+        <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
+          <h4 class="formula-section-header">{{ t.naturals }}</h4>
+          <div class="formula-item" *ngFor="let rule of natRules">
+            <div class="formula-item-header">{{ rule }}</div>
+            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -33,16 +192,20 @@
         <div class="examples">
           <label class="examples-label">{{ t.examples }}</label>
           <div class="examples-row">
-            <select *ngIf="conversionMode === 'expression-to-lambda'" class="select examples-select" (change)="applyExample($any($event.target).value)">
+            <select *ngIf="isSequentWorkflow" class="select examples-select" (change)="applyExample($any($event.target).value)">
               <option value="" selected disabled>{{ t.chooseExampleExpr }}</option>
               <option *ngFor="let ex of expressionExamples" [value]="ex.code">{{ ex.label }}</option>
             </select>
-            <select *ngIf="conversionMode === 'lambda-to-expression'" class="select examples-select" (change)="applyExample($any($event.target).value)">
+            <select *ngIf="isNaturalDeductionWorkflow" class="select examples-select" (change)="applyExample($any($event.target).value)">
+              <option value="" selected disabled>{{ t.chooseExampleExpr }}</option>
+              <option *ngFor="let ex of expressionExamples" [value]="ex.code">{{ ex.label }}</option>
+            </select>
+            <select *ngIf="isLambdaToExpressionWorkflow" class="select examples-select" (change)="applyExample($any($event.target).value)">
               <option value="" selected disabled>{{ t.chooseExampleLambda }}</option>
               <option *ngFor="let ex of lambdaExamples" [value]="ex.code">{{ ex.label }}</option>
             </select>
             <p-button (click)="parseAndBuild()" styleClass="btn btn-primary examples-btn">
-              {{ conversionMode === 'expression-to-lambda' ? t.generateProof : t.convertLambda }}
+              {{ isLambdaToExpressionWorkflow ? t.convertLambda : t.generateProof }}
             </p-button>
           </div>
         </div>
@@ -55,11 +218,11 @@
             </app-editor>
           </div>
           <app-proof-lambda
-            *ngIf="conversionMode === 'expression-to-lambda' && lambdaExpr"
+            *ngIf="shouldGenerateLambdaFromProof && lambdaExpr"
             [lambdaExpr]="lambdaExpr"
             [label]="t.lambdaExpression"
           ></app-proof-lambda>
-          <div class="result-type" *ngIf="conversionMode === 'lambda-to-expression' && resultExpression">
+          <div class="result-type" *ngIf="isLambdaToExpressionWorkflow && resultExpression">
             <h4>{{ t.exprType }}</h4>
             <pre>{{ resultExpression }}</pre>
           </div>
@@ -68,62 +231,48 @@
     </ng-template>
     <ng-template pTemplate>
       <div class="proof-container">
-        <div class="tree-panel" *ngIf="proofTree || resultExpression || typeInferenceTree">
+        <div class="tree-panel" *ngIf="proofTree || naturalDeductionTree || resultExpression || typeInferenceTree">
           
-          <div *ngIf="conversionMode === 'expression-to-lambda'">
-            <div class="tabs-container">
-              <div class="tabs-header">
-                <button 
-                  class="tab-button" 
-                  [class.active]="activeTab === 'proof'"
-                  (click)="activeTab = 'proof'"
-                >
-                  {{ t.proofTree }}
-                </button>
-                <button 
-                  *ngIf="lambdaExprNode"
-                  class="tab-button" 
-                  [class.active]="activeTab === 'typeInference'"
-                  (click)="activeTab = 'typeInference'"
-                >
-                  {{ currentLanguage === 'sk' ? 'Strom odvodenia typu' : 'Type Inference Tree' }}
-                </button>
-              </div>
-              <div class="tabs-content">
-                <div *ngIf="activeTab === 'proof'" class="tab-panel">
-                  <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger">
-                    <app-proof-tree
-                      [root]="proofTree"
-                      [mode]="mode"
-                      [interactiveSubmode]="interactiveSubmode"
-                      [currentLanguage]="currentLanguage"
-                      [selectedNode]="selectedNode"
-                      [predictionRuleRequest]="predictionRuleRequest"
-                      (nodeClicked)="onNodeClicked($event)"
-                      (plusButtonClicked)="onProofPlusButtonClicked($event)"
-                      (ruleSelected)="applyRuleToNode($event)"
-                    ></app-proof-tree>
-                  </app-tree-canvas>
-                </div>
-                <div *ngIf="activeTab === 'typeInference' && lambdaExprNode" class="tab-panel">
-                  <div *ngIf="!typeInferenceTreeForLambda" class="type-inference-error">
-                    {{ currentLanguage === 'sk' ? 'Strom typu sa nepodarilo zostaviť (napr. chýbajúce typy predpokladov).' : 'Type inference tree could not be built (e.g. missing assumption types).' }}
-                  </div>
-                  <app-tree-canvas *ngIf="typeInferenceTreeForLambda" [resetTrigger]="treeCanvasResetTrigger">
-                    <app-type-inference-tree
-                      [root]="typeInferenceTreeForLambda"
-                      [mode]="'auto'"
-                      [interactiveSubmode]="'all'"
-                      [selectedNode]="null"
-                      [currentLanguage]="currentLanguage"
-                    ></app-type-inference-tree>
-                  </app-tree-canvas>
+          <div *ngIf="isSequentWorkflow">
+            <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger" [initialZoom]="0.85">
+              <app-proof-tree
+                [root]="proofTree"
+                [mode]="mode"
+                [interactiveSubmode]="interactiveSubmode"
+                [currentLanguage]="currentLanguage"
+                [selectedNode]="selectedNode"
+                [predictionRuleRequest]="predictionRuleRequest"
+                (nodeClicked)="onNodeClicked($event)"
+                (plusButtonClicked)="onProofPlusButtonClicked($event)"
+                (ruleSelected)="applyRuleToNode($event)"
+              ></app-proof-tree>
+            </app-tree-canvas>
+          </div>
+
+          <div *ngIf="isNaturalDeductionWorkflow">
+            <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger" [initialZoom]="0.85">
+              <div canvas-overlay class="nd-hypotheses-floating" *ngIf="ndHypotheses.length">
+                <span class="title">{{ currentLanguage === 'sk' ? 'Hypotézy' : 'Hypotheses' }}</span>
+                <div class="hyp-row" *ngFor="let hypothesis of ndHypotheses" [class.hyp-row--closed]="hypothesis.isClosed" [class.hyp-row--open]="!hypothesis.isClosed">
+                  <span class="label">{{ hypothesis.label }} =</span>
+                  <span class="expr" [appKatex]="hypothesis.formulaLatex"></span>
                 </div>
               </div>
-            </div>
+              <app-natural-deduction-tree
+                [root]="naturalDeductionTree"
+                [mode]="mode"
+                [selectedNode]="selectedNdNode"
+                [ndPredictionRequest]="ndPredictionRequest"
+                [currentLanguage]="currentLanguage"
+                (nodeClicked)="onNdNodeClicked($event)"
+                (plusButtonClicked)="onNdPlusButtonClicked($event)"
+                (ndPredictionConfirm)="confirmNdPrediction($event)"
+                (ndPredictionCancel)="cancelNdPrediction()"
+              ></app-natural-deduction-tree>
+            </app-tree-canvas>
           </div>
           
-          <div *ngIf="conversionMode === 'lambda-to-expression'">
+          <div *ngIf="isLambdaToExpressionWorkflow">
             <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger">
               <div class="type-inference-section">
                 <app-type-inference-tree
@@ -154,6 +303,7 @@
   [popupX]="popupX"
   [popupY]="popupY"
   [conversionMode]="conversionMode"
+  [t]="t"
   [filteredConclusionRules]="filteredConclusionRules"
   [filteredAssumptionRules]="filteredAssumptionRules"
   [filteredSpecialRules]="filteredSpecialRules"
@@ -166,6 +316,9 @@
   [filteredConditionalRules]="filteredConditionalRules"
   [filteredNatRules]="filteredNatRules"
   [filteredLetRules]="filteredLetRules"
+  [filteredNdIntroRules]="filteredNdIntroRules"
+  [filteredNdElimRules]="filteredNdElimRules"
+  [filteredNdQuantifierRules]="filteredNdQuantifierRules"
   (proofRuleClick)="onProofRuleClick($event)"
   (typeRuleClick)="onTypeRuleClick($event)"
   (close)="closePopup()"

@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test curry-howard-app",
+    "test:headless": "ng test curry-howard-app --watch=false --browsers=ChromeHeadlessNoSandbox",
+    "test:regression": "ng test curry-howard-app --watch=false --browsers=ChromeHeadlessNoSandbox --include src/services/expression-to-lambda.regression.spec.ts --include src/services/lambda-to-expression.regression.spec.ts"
   },
   "prettier": {
     "overrides": [
@@ -31,6 +33,7 @@
     "antlr4": "^4.13.2",
     "antlr4ng": "^3.0.16",
     "antlr4ts": "^0.5.0-alpha.4",
+    "katex": "^0.16.28",
     "monaco-editor": "^0.52.2",
     "ngx-monaco-editor-v2": "^20.0.0",
     "primeicons": "^7.0.0",
@@ -53,6 +56,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "ng-packagr": "^20.1.0",
+    "puppeteer": "^24.5.0",
     "typescript": "~5.8.2"
   }
 }

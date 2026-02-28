@@ -1,66 +1,73 @@
-<div class="main" *ngIf="root as r">
-  <div class="inference-node">
-    
-    <!-- Children (if any) -->
-    <div class="children" *ngIf="r.children?.length">
-      <app-type-inference-tree
-        *ngFor="let child of r.children"
-        [root]="child"
-        [mode]="mode"
-        [interactiveSubmode]="interactiveSubmode"
-        [selectedNode]="selectedNode"
-        [predictionRuleRequest]="predictionRuleRequest"
-        (nodeClicked)="onChildNodeClicked($event)"
-        (plusButtonClicked)="onChildPlusButtonClicked($event)"
-        (ruleSelected)="onChildRuleSelected($event)">
-      </app-type-inference-tree>
-    </div>
+<ng-container *ngIf="mode === 'interactive' && interactiveSubmode === 'predict'; else sharedRendererTree">
+  <div class="main" *ngIf="root as r">
+    <div class="inference-node">
+      <div class="children" *ngIf="r.children?.length">
+        <app-type-inference-tree
+          *ngFor="let child of r.children"
+          [root]="child"
+          [mode]="mode"
+          [interactiveSubmode]="interactiveSubmode"
+          [selectedNode]="selectedNode"
+          [predictionRuleRequest]="predictionRuleRequest"
+          (nodeClicked)="nodeClicked.emit($event)"
+          (plusButtonClicked)="plusButtonClicked.emit($event)"
+          (ruleSelected)="ruleSelected.emit($event)">
+        </app-type-inference-tree>
+      </div>
 
-    <!-- Prediction inputs above the line (for predict mode) -->
-    <div class="prediction-inputs" *ngIf="mode === 'interactive' && interactiveSubmode === 'predict' && hasPendingPrediction">
-      <div class="prediction-inputs-wrapper-row">
-        <div 
-          *ngFor="let prediction of userPredictions; let i = index; trackBy: trackByIndex" 
-          class="prediction-input-wrapper"
+      <div class="prediction-inputs" *ngIf="hasPendingPrediction">
+        <div class="prediction-inputs-wrapper-row">
+          <div 
+            *ngFor="let prediction of userPredictions; let i = index; trackBy: trackByIndex" 
+            class="prediction-input-wrapper"
+          >
+            <input 
+              type="text" 
+              class="prediction-input-field" 
+              [value]="userPredictions[i]"
+              (input)="onPredictionInput($event, i)"
+              [placeholder]="(t.predictExpression + ' ' + (i + 1) + ' (e.g., x, \\x:A. x)')"
+              (keyup.enter)="confirmPrediction()"
+              (keydown)="onKeyDown($event)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="conclusion" [ngClass]="{ selected: isSelected }">
+        <button 
+          *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Var' && r.rule !== 'True' && r.rule !== 'False' && r.rule !== 'Zero'"
+          class="rule-plus-btn"
+          (click)="onPlusButtonClick($event)"
+          [title]="t.addRule"
         >
-          <input 
-            type="text" 
-            class="prediction-input-field" 
-            [value]="userPredictions[i]"
-            (input)="onPredictionInput($event, i)"
-            [placeholder]="'Predict expression ' + (i + 1) + ' (e.g., x, \\x:A. x)'"
-            (keyup.enter)="confirmPrediction()"
-            (keydown)="onKeyDown($event)"
-          />
+          <span class="plus-icon">+</span>
+        </button>
+        <span class="rule" *ngIf="r.children?.length || r.rule === 'Var' || r.rule === 'True' || r.rule === 'False' || r.rule === 'Zero'">
+          {{ r.rule }}
+        </span>
+        <div class="inference-content">
+          <div class="expression">{{ formatExpression(r.expression) }}</div>
+          <div class="type-separator">:</div>
+          <div class="type">{{ formatType(r.inferredType) }}</div>
         </div>
       </div>
     </div>
-
-    <!-- Type inference step with line above and rule next to line -->
-    <div
-      class="conclusion"
-      [ngClass]="{
-        selected: isSelected
-      }"
-    >
-      <!-- Plus button for interactive mode - only show if no rule has been applied yet -->
-      <button 
-        *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Var' && r.rule !== 'True' && r.rule !== 'False' && r.rule !== 'Zero'"
-        class="rule-plus-btn"
-        (click)="onPlusButtonClick($event)"
-        title="Add rule"
-      >
-        <span class="plus-icon">+</span>
-      </button>
-      <span class="rule" *ngIf="r.children?.length || r.rule === 'Var' || r.rule === 'True' || r.rule === 'False' || r.rule === 'Zero'">
-        {{ r.rule }}
-      </span>
-      <div class="inference-content">
-        <div class="expression">{{ formatExpression(r.expression) }}</div>
-        <div class="type-separator">:</div>
-        <div class="type">{{ formatType(r.inferredType) }}</div>
-      </div>
-    </div>
-
   </div>
-</div>
+</ng-container>
+
+<ng-template #sharedRendererTree>
+  <app-tree-renderer
+    [treeType]="'type'"
+    [root]="root"
+    [mode]="mode"
+    [selectedNode]="selectedNode"
+    [currentLanguage]="currentLanguage"
+    [formatExpressionFn]="rendererExpression"
+    [formatTypeFn]="rendererType"
+    [showPlusButtonFn]="canShowPlusButton"
+    [showRuleFn]="canShowRule"
+    (nodeClicked)="nodeClicked.emit($event)"
+    (plusButtonClicked)="plusButtonClicked.emit($event)">
+  </app-tree-renderer>
+</ng-template>

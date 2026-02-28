@@ -2,21 +2,21 @@
 
 The following files need to be regenerated using ANTLR:
 
-1. `PredicateLogicLexer.ts`
-2. `PredicateLogicParser.ts`
-3. `PredicateLogicListener.ts`
-4. `PredicateLogicVisitor.ts` (can be manually created, but should match generated version)
+1. `LogicLexer.ts`
+2. `LogicParser.ts`
+3. `LogicListener.ts`
+4. `LogicVisitor.ts` (can be manually created, but should match generated version)
 
 ## Command to regenerate:
 
 ```bash
 cd src/antlr/logic
-npx antlr4ng-cli PredicateLogic.g4 -Dlanguage=TypeScript -visitor -listener -o .
+npx antlr4ng-cli Logic.g4 -Dlanguage=TypeScript -visitor -listener -o .
 ```
 
 ## Note:
 
-The `PredicateLogicAstVisitor.ts` file is manually created and should NOT be regenerated - it contains the custom AST building logic.
+The `LogicAstVisitor.ts` file is manually created and should NOT be regenerated - it contains the custom AST building logic currently used by the app.
 
-The `PredicateLogicVisitor.ts` interface file can be manually created (as done) or regenerated - both should work.
+The app parser service is already wired to `LogicLexer`, `LogicParser`, and `LogicAstVisitor`.
 

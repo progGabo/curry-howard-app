@@ -8,6 +8,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 })
 export class TreeCanvasComponent implements OnChanges {
   @Input() resetTrigger: number = 0;
+  @Input() initialZoom: number = 1;
 
   panX = 0;
   panY = 0;
@@ -17,10 +18,10 @@ export class TreeCanvasComponent implements OnChanges {
   private panStartY = 0;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['resetTrigger']) {
+    if (changes['resetTrigger'] || changes['initialZoom']) {
       this.panX = 0;
       this.panY = 0;
-      this.zoom = 1;
+      this.zoom = this.clampZoom(this.initialZoom);
     }
   }
 
@@ -87,5 +88,9 @@ export class TreeCanvasComponent implements OnChanges {
 
   onContextMenu(event: Event): void {
     event.preventDefault();
+  }
+
+  private clampZoom(value: number): number {
+    return Math.max(0.1, Math.min(5, value || 1));
   }
 }

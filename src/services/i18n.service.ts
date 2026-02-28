@@ -8,8 +8,12 @@ export type AppLanguage = 'sk' | 'en';
 
 export interface AppTranslations {
   // Header
+  curryHoward: string;
+  proofs: string;
+  sequentCalculus: string;
   exprToLambda: string;
   lambdaToExpr: string;
+  naturalDeduction: string;
   autoMode: string;
   interactiveMode: string;
   applicableOnly: string;
@@ -41,11 +45,30 @@ export interface AppTranslations {
   errorLambdaConversion: string;
   errorCannotApplyRule: string;
   errorFillAllFields: string;
+  errorNothingTyped: string;
   errorInvalidSequentFormat: string;
   errorExpectedSequents: string;
   errorExpectedCount: string;
   errorInvalidExpressionAtPosition: string;
   errorIncorrectAtPosition: string;
+  // Sidebar translations
+  ruleReference: string;
+  conclusionRules: string;
+  assumptionRules: string;
+  specialRules: string;
+  introRules: string;
+  eliminationRules: string;
+  quantifierRules: string;
+  basicRules: string;
+  functions: string;
+  pairsAndSums: string;
+  dependentTypes: string;
+  controlFlow: string;
+  naturals: string;
+  addRule: string;
+  predictSequent: string;
+  predictExpression: string;
+  predictFormula: string;
 }
 
 export interface QuantifierRuleLabels {
@@ -65,8 +88,12 @@ export interface QuantifierErrors {
 }
 
 const SK: AppTranslations = {
+  curryHoward: 'Curry-Howard',
+  proofs: 'Dôkazy',
+  sequentCalculus: 'Sekvenčný kalkul',
   exprToLambda: 'Výraz → Lambda',
   lambdaToExpr: 'Lambda → Výraz',
+  naturalDeduction: 'Prirodzená dedukcia',
   autoMode: 'Auto',
   interactiveMode: 'Interaktívny',
   applicableOnly: 'Len použiteľné',
@@ -95,16 +122,38 @@ const SK: AppTranslations = {
   errorLambdaConversion: 'Chyba konverzie λ: ',
   errorCannotApplyRule: 'Pravidlo nie je možné použiť.',
   errorFillAllFields: 'Vyplňte všetky polia.',
+  errorNothingTyped: 'Nebol zadaný žiadny vzorec.',
   errorInvalidSequentFormat: 'Neplatný formát sekventu.',
   errorExpectedSequents: 'Očakávaných sekventov: {expected}, zadaných: {got}.',
   errorExpectedCount: 'Očakávaných výrazov: {expected}, zadaných: {got}.',
   errorInvalidExpressionAtPosition: 'Neplatný výraz na pozícii {position}.',
   errorIncorrectAtPosition: 'Nesprávna hodnota na pozícii {position}.',
+  ruleReference: 'Pravidlá',
+  conclusionRules: 'Pravidlá pre záver',
+  assumptionRules: 'Pravidlá pre predpoklad',
+  specialRules: 'Špeciálne pravidlá',
+  introRules: 'Zavádzacie pravidlá',
+  eliminationRules: 'Eliminačné pravidlá',
+  quantifierRules: 'Kvantifikátorové pravidlá',
+  basicRules: 'Základné',
+  functions: 'Funkcie',
+  pairsAndSums: 'Páry a sumy',
+  dependentTypes: 'Závislé (∀ / ∃)',
+  controlFlow: 'Riadenie toku',
+  naturals: 'Prirodzené čísla',
+  addRule: 'Pridať pravidlo',
+  predictSequent: 'Predikuj sekvent',
+  predictExpression: 'Predikuj výraz',
+  predictFormula: 'Predikuj formulu',
 };
 
 const EN: AppTranslations = {
+  curryHoward: 'Curry-Howard',
+  proofs: 'Proofs',
+  sequentCalculus: 'Sequent calculus',
   exprToLambda: 'Expression → Lambda',
   lambdaToExpr: 'Lambda → Expression',
+  naturalDeduction: 'Natural Deduction',
   autoMode: 'Auto',
   interactiveMode: 'Interactive',
   applicableOnly: 'Applicable only',
@@ -133,11 +182,29 @@ const EN: AppTranslations = {
   errorLambdaConversion: 'Lambda conversion error: ',
   errorCannotApplyRule: 'Rule cannot be applied.',
   errorFillAllFields: 'Please fill all fields.',
+  errorNothingTyped: 'No formula entered.',
   errorInvalidSequentFormat: 'Invalid sequent format.',
   errorExpectedSequents: 'Expected {expected} sequent(s), got {got}.',
   errorExpectedCount: 'Expected {expected} expression(s), got {got}.',
   errorInvalidExpressionAtPosition: 'Invalid expression at position {position}.',
   errorIncorrectAtPosition: 'Incorrect value at position {position}.',
+  ruleReference: 'Rules',
+  conclusionRules: 'Conclusion Rules',
+  assumptionRules: 'Assumption Rules',
+  specialRules: 'Special Rules',
+  introRules: 'Introduction Rules',
+  eliminationRules: 'Elimination Rules',
+  quantifierRules: 'Quantifier Rules',
+  basicRules: 'Basic',
+  functions: 'Functions',
+  pairsAndSums: 'Pairs & Sums',
+  dependentTypes: 'Dependent (∀ / ∃)',
+  controlFlow: 'Control Flow',
+  naturals: 'Naturals',
+  addRule: 'Add rule',
+  predictSequent: 'Predict sequent',
+  predictExpression: 'Predict expression',
+  predictFormula: 'Predict formula',
 };
 
 const QUANTIFIER_LABELS_SK: Record<string, QuantifierRuleLabels> = {

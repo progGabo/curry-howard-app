@@ -5,12 +5,16 @@ import { Equality } from '../utils/equality';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
 import { parseTerm, freeVarsFormula, freeVarsTerm, substituteFormula, substituteTerm } from '../utils/quantifier-utils';
+import { FormulaRenderService } from './formula-render.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProofTreeBuilderService {
   private dialogService: DialogService | null = null;
 
-  constructor(private injector: Injector) {}
+  constructor(
+    private injector: Injector,
+    private formulaRender: FormulaRenderService
+  ) {}
 
   private getDialogService(): DialogService {
     if (!this.dialogService) {
@@ -20,7 +24,16 @@ export class ProofTreeBuilderService {
   }
 
   async buildProof(sequent: SequentNode): Promise<DerivationNode> {
-    return await this.applyRules(sequent);
+    const root = await this.applyRules(sequent);
+    return this.annotateLatex(root);
+  }
+
+  private annotateLatex(node: DerivationNode): DerivationNode {
+    node.sequentLatex = this.formulaRender.sequentToLatex(node.sequent);
+    if (node.children?.length) {
+      node.children.forEach((child) => this.annotateLatex(child));
+    }
+    return node;
   }
 
   private unwrapSequent(sequent: SequentNode): SequentNode {
@@ -896,78 +909,97 @@ export class ProofTreeBuilderService {
   }
 
   async applyRuleManually(sequent: SequentNode, rule: string, isInteractive = true, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode | null> {
+    let result: DerivationNode | null;
     switch (rule) {
       case '→R': {
         const impl = sequent.conclusions.find(f => f.kind === 'Implies');
-        return impl ? this.applyImplRight(sequent, impl, isInteractive) : null;
+        result = impl ? await this.applyImplRight(sequent, impl, isInteractive) : null;
+        break;
       }
       case '→L': {
         const idx = sequent.assumptions.findIndex(f => f.kind === 'Implies');
-        return idx !== -1 ? this.applyImplLeft(sequent, idx, isInteractive) : null;
+        result = idx !== -1 ? await this.applyImplLeft(sequent, idx, isInteractive) : null;
+        break;
       }
       case '∧R': {
         const and = sequent.conclusions.find(f => f.kind === 'And');
-        return and ? this.applyAndRight(sequent, and, isInteractive) : null;
+        result = and ? await this.applyAndRight(sequent, and, isInteractive) : null;
+        break;
       }
       case '∧L': {
         const idx = sequent.assumptions.findIndex(f => f.kind === 'And');
-        return idx !== -1 ? this.applyAndLeft(sequent, idx, isInteractive) : null;
+        result = idx !== -1 ? await this.applyAndLeft(sequent, idx, isInteractive) : null;
+        break;
       }
       case '∨R': {
         const or = sequent.conclusions.find(f => f.kind === 'Or');
-        return or ? this.applyOrRight(sequent, or, isInteractive) : null;
+        result = or ? await this.applyOrRight(sequent, or, isInteractive) : null;
+        break;
       }
       case '∨L': {
         const idx = sequent.assumptions.findIndex(f => f.kind === 'Or');
-        return idx !== -1 ? this.applyOrLeft(sequent, idx, isInteractive) : null;
+        result = idx !== -1 ? await this.applyOrLeft(sequent, idx, isInteractive) : null;
+        break;
       }
       case '¬R': {
         const not = sequent.conclusions.find(f => f.kind === 'Not');
-        return not ? this.applyNotRight(sequent, not, isInteractive) : null;
+        result = not ? await this.applyNotRight(sequent, not, isInteractive) : null;
+        break;
       }
       case '¬L': {
         const idx = sequent.assumptions.findIndex(f => f.kind === 'Not');
-        return idx !== -1 ? this.applyNotLeft(sequent, idx, isInteractive) : null;
+        result = idx !== -1 ? await this.applyNotLeft(sequent, idx, isInteractive) : null;
+        break;
       }
       case 'WL': {
-        return this.applyWeakeningLeft(sequent, isInteractive);
+        result = await this.applyWeakeningLeft(sequent, isInteractive);
+        break;
       }
       case 'WR': {
-        return this.applyWeakeningRight(sequent, isInteractive);
+        result = await this.applyWeakeningRight(sequent, isInteractive);
+        break;
       }
       case '∀R': {
         const forall = sequent.conclusions.find(f => f.kind === 'Forall');
-        return forall ? await this.applyForallRight(sequent, forall, isInteractive, language) : null;
+        result = forall ? await this.applyForallRight(sequent, forall, isInteractive, language) : null;
+        break;
       }
       case '∀L': {
         const idx = sequent.assumptions.findIndex(f => f.kind === 'Forall');
-        return idx !== -1 ? await this.applyForallLeft(sequent, idx, isInteractive, language) : null;
+        result = idx !== -1 ? await this.applyForallLeft(sequent, idx, isInteractive, language) : null;
+        break;
       }
       case '∃R': {
         const exists = sequent.conclusions.find(f => f.kind === 'Exists');
-        return exists ? await this.applyExistsRight(sequent, exists, isInteractive, language) : null;
+        result = exists ? await this.applyExistsRight(sequent, exists, isInteractive, language) : null;
+        break;
       }
       case '∃L': {
         const idx = sequent.assumptions.findIndex(f => f.kind === 'Exists');
-        return idx !== -1 ? await this.applyExistsLeft(sequent, idx, isInteractive, language) : null;
+        result = idx !== -1 ? await this.applyExistsLeft(sequent, idx, isInteractive, language) : null;
+        break;
       }
       case 'Ax': {
         if (this.isAxiom(sequent)) {
-          return { rule: 'Ax', sequent, children: [] };
+          result = { rule: 'Ax', sequent, children: [] };
+          break;
         }
-        return null;
+        result = null;
+        break;
       }
       default:
-        return null;
+        result = null;
+        break;
     }
+    return result ? this.annotateLatex(result) : null;
   }
 
     buildInteractiveRoot(sequent: SequentNode): DerivationNode {
-    return {
+    return this.annotateLatex({
       rule: '∅', // alebo necháš prázdne ''
       sequent: this.unwrapSequent(sequent),
       children: [],
       usedFormula: undefined
-    };
+    });
   }
 }

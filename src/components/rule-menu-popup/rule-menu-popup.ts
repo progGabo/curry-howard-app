@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import type { AppTranslations } from '../../services/i18n.service';
 
 @Component({
   selector: 'app-rule-menu-popup',
@@ -10,7 +11,7 @@ export class RuleMenuPopupComponent {
   @Input() visible = false;
   @Input() popupX = 0;
   @Input() popupY = 0;
-  @Input() conversionMode: 'expression-to-lambda' | 'lambda-to-expression' = 'expression-to-lambda';
+  @Input() conversionMode: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction' = 'expression-to-lambda';
   @Input() filteredConclusionRules: string[] = [];
   @Input() filteredAssumptionRules: string[] = [];
   @Input() filteredSpecialRules: string[] = [];
@@ -23,6 +24,10 @@ export class RuleMenuPopupComponent {
   @Input() filteredConditionalRules: string[] = [];
   @Input() filteredNatRules: string[] = [];
   @Input() filteredLetRules: string[] = [];
+  @Input() filteredNdIntroRules: string[] = [];
+  @Input() filteredNdElimRules: string[] = [];
+  @Input() filteredNdQuantifierRules: string[] = [];
+  @Input() t!: AppTranslations;
 
   @Output() proofRuleClick = new EventEmitter<string>();
   @Output() typeRuleClick = new EventEmitter<string>();
@@ -67,5 +72,9 @@ export class RuleMenuPopupComponent {
 
   onTypeRuleClick(rule: string): void {
     this.typeRuleClick.emit(rule);
+  }
+
+  displayProofRule(rule: string): string {
+    return rule === 'id' ? 'ID' : rule;
   }
 }

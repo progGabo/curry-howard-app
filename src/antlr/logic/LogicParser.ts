@@ -1,17 +1,17 @@
-// Generated from PredicateLogic.g4 by ANTLR 4.13.1
+// Generated from Logic.g4 by ANTLR 4.13.1
 
 import * as antlr from "antlr4ng";
 import { Token } from "antlr4ng";
 
-import { PredicateLogicListener } from "./PredicateLogicListener.js";
-import { PredicateLogicVisitor } from "./PredicateLogicVisitor.js";
+import { LogicListener } from "./LogicListener.js";
+import { LogicVisitor } from "./LogicVisitor.js";
 
 // for running tests with parameters, TODO: discuss strategy for typed parameters in CI
 // eslint-disable-next-line no-unused-vars
 type int = number;
 
 
-export class PredicateLogicParser extends antlr.Parser {
+export class LogicParser extends antlr.Parser {
     public static readonly TURNSTILE = 1;
     public static readonly IMPL = 2;
     public static readonly AND = 3;
@@ -25,8 +25,7 @@ export class PredicateLogicParser extends antlr.Parser {
     public static readonly COMMA = 11;
     public static readonly PRED = 12;
     public static readonly LOWERID = 13;
-    public static readonly ATOM = 14;
-    public static readonly WS = 15;
+    public static readonly WS = 14;
     public static readonly RULE_sequent = 0;
     public static readonly RULE_assumptions = 1;
     public static readonly RULE_conclusion = 2;
@@ -52,7 +51,7 @@ export class PredicateLogicParser extends antlr.Parser {
 
     public static readonly symbolicNames = [
         null, "TURNSTILE", "IMPL", "AND", "OR", "NOT", "FORALL", "EXISTS", 
-        "DOT", "LPAREN", "RPAREN", "COMMA", "PRED", "LOWERID", "ATOM", "WS"
+        "DOT", "LPAREN", "RPAREN", "COMMA", "PRED", "LOWERID", "WS"
     ];
     public static readonly ruleNames = [
         "sequent", "assumptions", "conclusion", "formula", "forall", "exists", 
@@ -60,11 +59,11 @@ export class PredicateLogicParser extends antlr.Parser {
         "predicate", "termList", "term", "variable", "constant", "functionApp",
     ];
 
-    public get grammarFileName(): string { return "PredicateLogic.g4"; }
-    public get literalNames(): (string | null)[] { return PredicateLogicParser.literalNames; }
-    public get symbolicNames(): (string | null)[] { return PredicateLogicParser.symbolicNames; }
-    public get ruleNames(): string[] { return PredicateLogicParser.ruleNames; }
-    public get serializedATN(): number[] { return PredicateLogicParser._serializedATN; }
+    public get grammarFileName(): string { return "Logic.g4"; }
+    public get literalNames(): (string | null)[] { return LogicParser.literalNames; }
+    public get symbolicNames(): (string | null)[] { return LogicParser.symbolicNames; }
+    public get ruleNames(): string[] { return LogicParser.ruleNames; }
+    public get serializedATN(): number[] { return LogicParser._serializedATN; }
 
     protected createFailedPredicateException(predicate?: string, message?: string): antlr.FailedPredicateException {
         return new antlr.FailedPredicateException(this, predicate, message);
@@ -72,11 +71,11 @@ export class PredicateLogicParser extends antlr.Parser {
 
     public constructor(input: antlr.TokenStream) {
         super(input);
-        this.interpreter = new antlr.ParserATNSimulator(this, PredicateLogicParser._ATN, PredicateLogicParser.decisionsToDFA, new antlr.PredictionContextCache());
+        this.interpreter = new antlr.ParserATNSimulator(this, LogicParser._ATN, LogicParser.decisionsToDFA, new antlr.PredictionContextCache());
     }
     public sequent(): SequentContext {
         let localContext = new SequentContext(this.context, this.state);
-        this.enterRule(localContext, 0, PredicateLogicParser.RULE_sequent);
+        this.enterRule(localContext, 0, LogicParser.RULE_sequent);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
@@ -84,7 +83,7 @@ export class PredicateLogicParser extends antlr.Parser {
             this.state = 35;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 29408) !== 0)) {
+            if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 13024) !== 0)) {
                 {
                 this.state = 34;
                 this.assumptions();
@@ -92,11 +91,11 @@ export class PredicateLogicParser extends antlr.Parser {
             }
 
             this.state = 37;
-            this.match(PredicateLogicParser.TURNSTILE);
+            this.match(LogicParser.TURNSTILE);
             this.state = 39;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 29408) !== 0)) {
+            if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 13024) !== 0)) {
                 {
                 this.state = 38;
                 this.conclusion();
@@ -104,7 +103,7 @@ export class PredicateLogicParser extends antlr.Parser {
             }
 
             this.state = 41;
-            this.match(PredicateLogicParser.EOF);
+            this.match(LogicParser.EOF);
             }
         }
         catch (re) {
@@ -122,7 +121,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public assumptions(): AssumptionsContext {
         let localContext = new AssumptionsContext(this.context, this.state);
-        this.enterRule(localContext, 2, PredicateLogicParser.RULE_assumptions);
+        this.enterRule(localContext, 2, LogicParser.RULE_assumptions);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
@@ -136,7 +135,7 @@ export class PredicateLogicParser extends antlr.Parser {
                 {
                 {
                 this.state = 44;
-                this.match(PredicateLogicParser.COMMA);
+                this.match(LogicParser.COMMA);
                 this.state = 45;
                 this.formula();
                 }
@@ -162,7 +161,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public conclusion(): ConclusionContext {
         let localContext = new ConclusionContext(this.context, this.state);
-        this.enterRule(localContext, 4, PredicateLogicParser.RULE_conclusion);
+        this.enterRule(localContext, 4, LogicParser.RULE_conclusion);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
@@ -176,7 +175,7 @@ export class PredicateLogicParser extends antlr.Parser {
                 {
                 {
                 this.state = 52;
-                this.match(PredicateLogicParser.COMMA);
+                this.match(LogicParser.COMMA);
                 this.state = 53;
                 this.formula();
                 }
@@ -202,34 +201,33 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public formula(): FormulaContext {
         let localContext = new FormulaContext(this.context, this.state);
-        this.enterRule(localContext, 6, PredicateLogicParser.RULE_formula);
+        this.enterRule(localContext, 6, LogicParser.RULE_formula);
         try {
             this.state = 62;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
-            case PredicateLogicParser.NOT:
-            case PredicateLogicParser.LPAREN:
-            case PredicateLogicParser.PRED:
-            case PredicateLogicParser.LOWERID:
-            case PredicateLogicParser.ATOM:
+            case LogicParser.FORALL:
                 this.enterOuterAlt(localContext, 1);
                 {
                 this.state = 59;
-                this.implication();
-                }
-                break;
-            case PredicateLogicParser.FORALL:
-                this.enterOuterAlt(localContext, 2);
-                {
-                this.state = 60;
                 this.forall();
                 }
                 break;
-            case PredicateLogicParser.EXISTS:
+            case LogicParser.EXISTS:
+                this.enterOuterAlt(localContext, 2);
+                {
+                this.state = 60;
+                this.exists();
+                }
+                break;
+            case LogicParser.NOT:
+            case LogicParser.LPAREN:
+            case LogicParser.PRED:
+            case LogicParser.LOWERID:
                 this.enterOuterAlt(localContext, 3);
                 {
                 this.state = 61;
-                this.exists();
+                this.implication();
                 }
                 break;
             default:
@@ -251,16 +249,16 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public forall(): ForallContext {
         let localContext = new ForallContext(this.context, this.state);
-        this.enterRule(localContext, 8, PredicateLogicParser.RULE_forall);
+        this.enterRule(localContext, 8, LogicParser.RULE_forall);
         try {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 64;
-            this.match(PredicateLogicParser.FORALL);
+            this.match(LogicParser.FORALL);
             this.state = 65;
             this.variable();
             this.state = 66;
-            this.match(PredicateLogicParser.DOT);
+            this.match(LogicParser.DOT);
             this.state = 67;
             this.formula();
             }
@@ -280,16 +278,16 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public exists(): ExistsContext {
         let localContext = new ExistsContext(this.context, this.state);
-        this.enterRule(localContext, 10, PredicateLogicParser.RULE_exists);
+        this.enterRule(localContext, 10, LogicParser.RULE_exists);
         try {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 69;
-            this.match(PredicateLogicParser.EXISTS);
+            this.match(LogicParser.EXISTS);
             this.state = 70;
             this.variable();
             this.state = 71;
-            this.match(PredicateLogicParser.DOT);
+            this.match(LogicParser.DOT);
             this.state = 72;
             this.formula();
             }
@@ -309,7 +307,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public implication(): ImplicationContext {
         let localContext = new ImplicationContext(this.context, this.state);
-        this.enterRule(localContext, 12, PredicateLogicParser.RULE_implication);
+        this.enterRule(localContext, 12, LogicParser.RULE_implication);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
@@ -322,7 +320,7 @@ export class PredicateLogicParser extends antlr.Parser {
             if (_la === 2) {
                 {
                 this.state = 75;
-                this.match(PredicateLogicParser.IMPL);
+                this.match(LogicParser.IMPL);
                 this.state = 76;
                 this.implication();
                 }
@@ -345,7 +343,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public disjunction(): DisjunctionContext {
         let localContext = new DisjunctionContext(this.context, this.state);
-        this.enterRule(localContext, 14, PredicateLogicParser.RULE_disjunction);
+        this.enterRule(localContext, 14, LogicParser.RULE_disjunction);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
@@ -359,7 +357,7 @@ export class PredicateLogicParser extends antlr.Parser {
                 {
                 {
                 this.state = 80;
-                this.match(PredicateLogicParser.OR);
+                this.match(LogicParser.OR);
                 this.state = 81;
                 this.conjunction();
                 }
@@ -385,7 +383,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public conjunction(): ConjunctionContext {
         let localContext = new ConjunctionContext(this.context, this.state);
-        this.enterRule(localContext, 16, PredicateLogicParser.RULE_conjunction);
+        this.enterRule(localContext, 16, LogicParser.RULE_conjunction);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
@@ -399,7 +397,7 @@ export class PredicateLogicParser extends antlr.Parser {
                 {
                 {
                 this.state = 88;
-                this.match(PredicateLogicParser.AND);
+                this.match(LogicParser.AND);
                 this.state = 89;
                 this.negation();
                 }
@@ -425,24 +423,23 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public negation(): NegationContext {
         let localContext = new NegationContext(this.context, this.state);
-        this.enterRule(localContext, 18, PredicateLogicParser.RULE_negation);
+        this.enterRule(localContext, 18, LogicParser.RULE_negation);
         try {
             this.state = 98;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
-            case PredicateLogicParser.NOT:
+            case LogicParser.NOT:
                 this.enterOuterAlt(localContext, 1);
                 {
                 this.state = 95;
-                this.match(PredicateLogicParser.NOT);
+                this.match(LogicParser.NOT);
                 this.state = 96;
                 this.negation();
                 }
                 break;
-            case PredicateLogicParser.LPAREN:
-            case PredicateLogicParser.PRED:
-            case PredicateLogicParser.LOWERID:
-            case PredicateLogicParser.ATOM:
+            case LogicParser.LPAREN:
+            case LogicParser.PRED:
+            case LogicParser.LOWERID:
                 this.enterOuterAlt(localContext, 2);
                 {
                 this.state = 97;
@@ -468,45 +465,43 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public atom(): AtomContext {
         let localContext = new AtomContext(this.context, this.state);
-        this.enterRule(localContext, 20, PredicateLogicParser.RULE_atom);
+        this.enterRule(localContext, 20, LogicParser.RULE_atom);
         try {
             this.state = 107;
             this.errorHandler.sync(this);
-            switch (this.tokenStream.LA(1)) {
-            case PredicateLogicParser.LPAREN:
+            switch (this.interpreter.adaptivePredict(this.tokenStream, 9, this.context) ) {
+            case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
                 this.state = 100;
-                this.match(PredicateLogicParser.LPAREN);
+                this.match(LogicParser.LPAREN);
                 this.state = 101;
                 this.formula();
                 this.state = 102;
-                this.match(PredicateLogicParser.RPAREN);
+                this.match(LogicParser.RPAREN);
                 }
                 break;
-            case PredicateLogicParser.PRED:
+            case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
                 this.state = 104;
                 this.predicate();
                 }
                 break;
-            case PredicateLogicParser.LOWERID:
+            case 3:
                 this.enterOuterAlt(localContext, 3);
                 {
                 this.state = 105;
-                this.match(PredicateLogicParser.LOWERID);
+                this.match(LogicParser.LOWERID);
                 }
                 break;
-            case PredicateLogicParser.ATOM:
+            case 4:
                 this.enterOuterAlt(localContext, 4);
                 {
                 this.state = 106;
-                this.match(PredicateLogicParser.ATOM);
+                this.match(LogicParser.PRED);
                 }
                 break;
-            default:
-                throw new antlr.NoViableAltException(this);
             }
         }
         catch (re) {
@@ -524,15 +519,15 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public predicate(): PredicateContext {
         let localContext = new PredicateContext(this.context, this.state);
-        this.enterRule(localContext, 22, PredicateLogicParser.RULE_predicate);
+        this.enterRule(localContext, 22, LogicParser.RULE_predicate);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 109;
-            this.match(PredicateLogicParser.PRED);
+            this.match(LogicParser.PRED);
             this.state = 110;
-            this.match(PredicateLogicParser.LPAREN);
+            this.match(LogicParser.LPAREN);
             this.state = 112;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
@@ -544,7 +539,7 @@ export class PredicateLogicParser extends antlr.Parser {
             }
 
             this.state = 114;
-            this.match(PredicateLogicParser.RPAREN);
+            this.match(LogicParser.RPAREN);
             }
         }
         catch (re) {
@@ -562,7 +557,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public termList(): TermListContext {
         let localContext = new TermListContext(this.context, this.state);
-        this.enterRule(localContext, 24, PredicateLogicParser.RULE_termList);
+        this.enterRule(localContext, 24, LogicParser.RULE_termList);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
@@ -576,7 +571,7 @@ export class PredicateLogicParser extends antlr.Parser {
                 {
                 {
                 this.state = 117;
-                this.match(PredicateLogicParser.COMMA);
+                this.match(LogicParser.COMMA);
                 this.state = 118;
                 this.term();
                 }
@@ -602,7 +597,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public term(): TermContext {
         let localContext = new TermContext(this.context, this.state);
-        this.enterRule(localContext, 26, PredicateLogicParser.RULE_term);
+        this.enterRule(localContext, 26, LogicParser.RULE_term);
         try {
             this.state = 131;
             this.errorHandler.sync(this);
@@ -632,11 +627,11 @@ export class PredicateLogicParser extends antlr.Parser {
                 this.enterOuterAlt(localContext, 4);
                 {
                 this.state = 127;
-                this.match(PredicateLogicParser.LPAREN);
+                this.match(LogicParser.LPAREN);
                 this.state = 128;
                 this.term();
                 this.state = 129;
-                this.match(PredicateLogicParser.RPAREN);
+                this.match(LogicParser.RPAREN);
                 }
                 break;
             }
@@ -656,12 +651,12 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public variable(): VariableContext {
         let localContext = new VariableContext(this.context, this.state);
-        this.enterRule(localContext, 28, PredicateLogicParser.RULE_variable);
+        this.enterRule(localContext, 28, LogicParser.RULE_variable);
         try {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 133;
-            this.match(PredicateLogicParser.LOWERID);
+            this.match(LogicParser.LOWERID);
             }
         }
         catch (re) {
@@ -679,12 +674,12 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public constant(): ConstantContext {
         let localContext = new ConstantContext(this.context, this.state);
-        this.enterRule(localContext, 30, PredicateLogicParser.RULE_constant);
+        this.enterRule(localContext, 30, LogicParser.RULE_constant);
         try {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 135;
-            this.match(PredicateLogicParser.LOWERID);
+            this.match(LogicParser.LOWERID);
             }
         }
         catch (re) {
@@ -702,15 +697,15 @@ export class PredicateLogicParser extends antlr.Parser {
     }
     public functionApp(): FunctionAppContext {
         let localContext = new FunctionAppContext(this.context, this.state);
-        this.enterRule(localContext, 32, PredicateLogicParser.RULE_functionApp);
+        this.enterRule(localContext, 32, LogicParser.RULE_functionApp);
         let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 137;
-            this.match(PredicateLogicParser.LOWERID);
+            this.match(LogicParser.LOWERID);
             this.state = 138;
-            this.match(PredicateLogicParser.LPAREN);
+            this.match(LogicParser.LPAREN);
             this.state = 140;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
@@ -722,7 +717,7 @@ export class PredicateLogicParser extends antlr.Parser {
             }
 
             this.state = 142;
-            this.match(PredicateLogicParser.RPAREN);
+            this.match(LogicParser.RPAREN);
             }
         }
         catch (re) {
@@ -740,7 +735,7 @@ export class PredicateLogicParser extends antlr.Parser {
     }
 
     public static readonly _serializedATN: number[] = [
-        4,1,15,145,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,14,145,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
         2,14,7,14,2,15,7,15,2,16,7,16,1,0,3,0,36,8,0,1,0,1,0,3,0,40,8,0,
         1,0,1,0,1,1,1,1,1,1,5,1,47,8,1,10,1,12,1,50,9,1,1,2,1,2,1,2,5,2,
@@ -762,7 +757,7 @@ export class PredicateLogicParser extends antlr.Parser {
         50,1,0,0,0,48,46,1,0,0,0,48,49,1,0,0,0,49,3,1,0,0,0,50,48,1,0,0,
         0,51,56,3,6,3,0,52,53,5,11,0,0,53,55,3,6,3,0,54,52,1,0,0,0,55,58,
         1,0,0,0,56,54,1,0,0,0,56,57,1,0,0,0,57,5,1,0,0,0,58,56,1,0,0,0,59,
-        63,3,12,6,0,60,63,3,8,4,0,61,63,3,10,5,0,62,59,1,0,0,0,62,60,1,0,
+        63,3,8,4,0,60,63,3,10,5,0,61,63,3,12,6,0,62,59,1,0,0,0,62,60,1,0,
         0,0,62,61,1,0,0,0,63,7,1,0,0,0,64,65,5,6,0,0,65,66,3,28,14,0,66,
         67,5,8,0,0,67,68,3,6,3,0,68,9,1,0,0,0,69,70,5,7,0,0,70,71,3,28,14,
         0,71,72,5,8,0,0,72,73,3,6,3,0,73,11,1,0,0,0,74,77,3,14,7,0,75,76,
@@ -774,7 +769,7 @@ export class PredicateLogicParser extends antlr.Parser {
         95,96,5,5,0,0,96,99,3,18,9,0,97,99,3,20,10,0,98,95,1,0,0,0,98,97,
         1,0,0,0,99,19,1,0,0,0,100,101,5,9,0,0,101,102,3,6,3,0,102,103,5,
         10,0,0,103,108,1,0,0,0,104,108,3,22,11,0,105,108,5,13,0,0,106,108,
-        5,14,0,0,107,100,1,0,0,0,107,104,1,0,0,0,107,105,1,0,0,0,107,106,
+        5,12,0,0,107,100,1,0,0,0,107,104,1,0,0,0,107,105,1,0,0,0,107,106,
         1,0,0,0,108,21,1,0,0,0,109,110,5,12,0,0,110,112,5,9,0,0,111,113,
         3,24,12,0,112,111,1,0,0,0,112,113,1,0,0,0,113,114,1,0,0,0,114,115,
         5,10,0,0,115,23,1,0,0,0,116,121,3,26,13,0,117,118,5,11,0,0,118,120,
@@ -791,21 +786,21 @@ export class PredicateLogicParser extends antlr.Parser {
 
     private static __ATN: antlr.ATN;
     public static get _ATN(): antlr.ATN {
-        if (!PredicateLogicParser.__ATN) {
-            PredicateLogicParser.__ATN = new antlr.ATNDeserializer().deserialize(PredicateLogicParser._serializedATN);
+        if (!LogicParser.__ATN) {
+            LogicParser.__ATN = new antlr.ATNDeserializer().deserialize(LogicParser._serializedATN);
         }
 
-        return PredicateLogicParser.__ATN;
+        return LogicParser.__ATN;
     }
 
 
-    private static readonly vocabulary = new antlr.Vocabulary(PredicateLogicParser.literalNames, PredicateLogicParser.symbolicNames, []);
+    private static readonly vocabulary = new antlr.Vocabulary(LogicParser.literalNames, LogicParser.symbolicNames, []);
 
     public override get vocabulary(): antlr.Vocabulary {
-        return PredicateLogicParser.vocabulary;
+        return LogicParser.vocabulary;
     }
 
-    private static readonly decisionsToDFA = PredicateLogicParser._ATN.decisionToState.map( (ds: antlr.DecisionState, index: number) => new antlr.DFA(ds, index) );
+    private static readonly decisionsToDFA = LogicParser._ATN.decisionToState.map( (ds: antlr.DecisionState, index: number) => new antlr.DFA(ds, index) );
 }
 
 export class SequentContext extends antlr.ParserRuleContext {
@@ -813,10 +808,10 @@ export class SequentContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public TURNSTILE(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.TURNSTILE, 0)!;
+        return this.getToken(LogicParser.TURNSTILE, 0)!;
     }
     public EOF(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.EOF, 0)!;
+        return this.getToken(LogicParser.EOF, 0)!;
     }
     public assumptions(): AssumptionsContext | null {
         return this.getRuleContext(0, AssumptionsContext);
@@ -825,19 +820,19 @@ export class SequentContext extends antlr.ParserRuleContext {
         return this.getRuleContext(0, ConclusionContext);
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_sequent;
+        return LogicParser.RULE_sequent;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterSequent) {
              listener.enterSequent(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitSequent) {
              listener.exitSequent(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitSequent) {
             return visitor.visitSequent(this);
         } else {
@@ -864,25 +859,25 @@ export class AssumptionsContext extends antlr.ParserRuleContext {
     public COMMA(i: number): antlr.TerminalNode | null;
     public COMMA(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
     	if (i === undefined) {
-    		return this.getTokens(PredicateLogicParser.COMMA);
+    		return this.getTokens(LogicParser.COMMA);
     	} else {
-    		return this.getToken(PredicateLogicParser.COMMA, i);
+    		return this.getToken(LogicParser.COMMA, i);
     	}
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_assumptions;
+        return LogicParser.RULE_assumptions;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterAssumptions) {
              listener.enterAssumptions(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitAssumptions) {
              listener.exitAssumptions(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitAssumptions) {
             return visitor.visitAssumptions(this);
         } else {
@@ -909,25 +904,25 @@ export class ConclusionContext extends antlr.ParserRuleContext {
     public COMMA(i: number): antlr.TerminalNode | null;
     public COMMA(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
     	if (i === undefined) {
-    		return this.getTokens(PredicateLogicParser.COMMA);
+    		return this.getTokens(LogicParser.COMMA);
     	} else {
-    		return this.getToken(PredicateLogicParser.COMMA, i);
+    		return this.getToken(LogicParser.COMMA, i);
     	}
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_conclusion;
+        return LogicParser.RULE_conclusion;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterConclusion) {
              listener.enterConclusion(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitConclusion) {
              listener.exitConclusion(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitConclusion) {
             return visitor.visitConclusion(this);
         } else {
@@ -941,29 +936,29 @@ export class FormulaContext extends antlr.ParserRuleContext {
     public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
         super(parent, invokingState);
     }
-    public implication(): ImplicationContext | null {
-        return this.getRuleContext(0, ImplicationContext);
-    }
     public forall(): ForallContext | null {
         return this.getRuleContext(0, ForallContext);
     }
     public exists(): ExistsContext | null {
         return this.getRuleContext(0, ExistsContext);
     }
-    public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_formula;
+    public implication(): ImplicationContext | null {
+        return this.getRuleContext(0, ImplicationContext);
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override get ruleIndex(): number {
+        return LogicParser.RULE_formula;
+    }
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterFormula) {
              listener.enterFormula(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitFormula) {
              listener.exitFormula(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitFormula) {
             return visitor.visitFormula(this);
         } else {
@@ -978,31 +973,31 @@ export class ForallContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public FORALL(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.FORALL, 0)!;
+        return this.getToken(LogicParser.FORALL, 0)!;
     }
     public variable(): VariableContext {
         return this.getRuleContext(0, VariableContext)!;
     }
     public DOT(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.DOT, 0)!;
+        return this.getToken(LogicParser.DOT, 0)!;
     }
     public formula(): FormulaContext {
         return this.getRuleContext(0, FormulaContext)!;
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_forall;
+        return LogicParser.RULE_forall;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterForall) {
              listener.enterForall(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitForall) {
              listener.exitForall(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitForall) {
             return visitor.visitForall(this);
         } else {
@@ -1017,31 +1012,31 @@ export class ExistsContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public EXISTS(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.EXISTS, 0)!;
+        return this.getToken(LogicParser.EXISTS, 0)!;
     }
     public variable(): VariableContext {
         return this.getRuleContext(0, VariableContext)!;
     }
     public DOT(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.DOT, 0)!;
+        return this.getToken(LogicParser.DOT, 0)!;
     }
     public formula(): FormulaContext {
         return this.getRuleContext(0, FormulaContext)!;
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_exists;
+        return LogicParser.RULE_exists;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterExists) {
              listener.enterExists(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitExists) {
              listener.exitExists(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitExists) {
             return visitor.visitExists(this);
         } else {
@@ -1059,25 +1054,25 @@ export class ImplicationContext extends antlr.ParserRuleContext {
         return this.getRuleContext(0, DisjunctionContext)!;
     }
     public IMPL(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.IMPL, 0);
+        return this.getToken(LogicParser.IMPL, 0);
     }
     public implication(): ImplicationContext | null {
         return this.getRuleContext(0, ImplicationContext);
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_implication;
+        return LogicParser.RULE_implication;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterImplication) {
              listener.enterImplication(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitImplication) {
              listener.exitImplication(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitImplication) {
             return visitor.visitImplication(this);
         } else {
@@ -1104,25 +1099,25 @@ export class DisjunctionContext extends antlr.ParserRuleContext {
     public OR(i: number): antlr.TerminalNode | null;
     public OR(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
     	if (i === undefined) {
-    		return this.getTokens(PredicateLogicParser.OR);
+    		return this.getTokens(LogicParser.OR);
     	} else {
-    		return this.getToken(PredicateLogicParser.OR, i);
+    		return this.getToken(LogicParser.OR, i);
     	}
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_disjunction;
+        return LogicParser.RULE_disjunction;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterDisjunction) {
              listener.enterDisjunction(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitDisjunction) {
              listener.exitDisjunction(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitDisjunction) {
             return visitor.visitDisjunction(this);
         } else {
@@ -1149,25 +1144,25 @@ export class ConjunctionContext extends antlr.ParserRuleContext {
     public AND(i: number): antlr.TerminalNode | null;
     public AND(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
     	if (i === undefined) {
-    		return this.getTokens(PredicateLogicParser.AND);
+    		return this.getTokens(LogicParser.AND);
     	} else {
-    		return this.getToken(PredicateLogicParser.AND, i);
+    		return this.getToken(LogicParser.AND, i);
     	}
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_conjunction;
+        return LogicParser.RULE_conjunction;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterConjunction) {
              listener.enterConjunction(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitConjunction) {
              listener.exitConjunction(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitConjunction) {
             return visitor.visitConjunction(this);
         } else {
@@ -1182,7 +1177,7 @@ export class NegationContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public NOT(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.NOT, 0);
+        return this.getToken(LogicParser.NOT, 0);
     }
     public negation(): NegationContext | null {
         return this.getRuleContext(0, NegationContext);
@@ -1191,19 +1186,19 @@ export class NegationContext extends antlr.ParserRuleContext {
         return this.getRuleContext(0, AtomContext);
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_negation;
+        return LogicParser.RULE_negation;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterNegation) {
              listener.enterNegation(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitNegation) {
              listener.exitNegation(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitNegation) {
             return visitor.visitNegation(this);
         } else {
@@ -1218,37 +1213,37 @@ export class AtomContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public LPAREN(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.LPAREN, 0);
+        return this.getToken(LogicParser.LPAREN, 0);
     }
     public formula(): FormulaContext | null {
         return this.getRuleContext(0, FormulaContext);
     }
     public RPAREN(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.RPAREN, 0);
+        return this.getToken(LogicParser.RPAREN, 0);
     }
     public predicate(): PredicateContext | null {
         return this.getRuleContext(0, PredicateContext);
     }
     public LOWERID(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.LOWERID, 0);
+        return this.getToken(LogicParser.LOWERID, 0);
     }
-    public ATOM(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.ATOM, 0);
+    public PRED(): antlr.TerminalNode | null {
+        return this.getToken(LogicParser.PRED, 0);
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_atom;
+        return LogicParser.RULE_atom;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterAtom) {
              listener.enterAtom(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitAtom) {
              listener.exitAtom(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitAtom) {
             return visitor.visitAtom(this);
         } else {
@@ -1263,31 +1258,31 @@ export class PredicateContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public PRED(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.PRED, 0)!;
+        return this.getToken(LogicParser.PRED, 0)!;
     }
     public LPAREN(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.LPAREN, 0)!;
+        return this.getToken(LogicParser.LPAREN, 0)!;
     }
     public RPAREN(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.RPAREN, 0)!;
+        return this.getToken(LogicParser.RPAREN, 0)!;
     }
     public termList(): TermListContext | null {
         return this.getRuleContext(0, TermListContext);
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_predicate;
+        return LogicParser.RULE_predicate;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterPredicate) {
              listener.enterPredicate(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitPredicate) {
              listener.exitPredicate(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitPredicate) {
             return visitor.visitPredicate(this);
         } else {
@@ -1314,25 +1309,25 @@ export class TermListContext extends antlr.ParserRuleContext {
     public COMMA(i: number): antlr.TerminalNode | null;
     public COMMA(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
     	if (i === undefined) {
-    		return this.getTokens(PredicateLogicParser.COMMA);
+    		return this.getTokens(LogicParser.COMMA);
     	} else {
-    		return this.getToken(PredicateLogicParser.COMMA, i);
+    		return this.getToken(LogicParser.COMMA, i);
     	}
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_termList;
+        return LogicParser.RULE_termList;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterTermList) {
              listener.enterTermList(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitTermList) {
              listener.exitTermList(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitTermList) {
             return visitor.visitTermList(this);
         } else {
@@ -1356,28 +1351,28 @@ export class TermContext extends antlr.ParserRuleContext {
         return this.getRuleContext(0, FunctionAppContext);
     }
     public LPAREN(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.LPAREN, 0);
+        return this.getToken(LogicParser.LPAREN, 0);
     }
     public term(): TermContext | null {
         return this.getRuleContext(0, TermContext);
     }
     public RPAREN(): antlr.TerminalNode | null {
-        return this.getToken(PredicateLogicParser.RPAREN, 0);
+        return this.getToken(LogicParser.RPAREN, 0);
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_term;
+        return LogicParser.RULE_term;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterTerm) {
              listener.enterTerm(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitTerm) {
              listener.exitTerm(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitTerm) {
             return visitor.visitTerm(this);
         } else {
@@ -1392,22 +1387,22 @@ export class VariableContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public LOWERID(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.LOWERID, 0)!;
+        return this.getToken(LogicParser.LOWERID, 0)!;
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_variable;
+        return LogicParser.RULE_variable;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterVariable) {
              listener.enterVariable(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitVariable) {
              listener.exitVariable(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitVariable) {
             return visitor.visitVariable(this);
         } else {
@@ -1422,22 +1417,22 @@ export class ConstantContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public LOWERID(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.LOWERID, 0)!;
+        return this.getToken(LogicParser.LOWERID, 0)!;
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_constant;
+        return LogicParser.RULE_constant;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterConstant) {
              listener.enterConstant(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitConstant) {
              listener.exitConstant(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitConstant) {
             return visitor.visitConstant(this);
         } else {
@@ -1452,31 +1447,31 @@ export class FunctionAppContext extends antlr.ParserRuleContext {
         super(parent, invokingState);
     }
     public LOWERID(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.LOWERID, 0)!;
+        return this.getToken(LogicParser.LOWERID, 0)!;
     }
     public LPAREN(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.LPAREN, 0)!;
+        return this.getToken(LogicParser.LPAREN, 0)!;
     }
     public RPAREN(): antlr.TerminalNode {
-        return this.getToken(PredicateLogicParser.RPAREN, 0)!;
+        return this.getToken(LogicParser.RPAREN, 0)!;
     }
     public termList(): TermListContext | null {
         return this.getRuleContext(0, TermListContext);
     }
     public override get ruleIndex(): number {
-        return PredicateLogicParser.RULE_functionApp;
+        return LogicParser.RULE_functionApp;
     }
-    public override enterRule(listener: PredicateLogicListener): void {
+    public override enterRule(listener: LogicListener): void {
         if(listener.enterFunctionApp) {
              listener.enterFunctionApp(this);
         }
     }
-    public override exitRule(listener: PredicateLogicListener): void {
+    public override exitRule(listener: LogicListener): void {
         if(listener.exitFunctionApp) {
              listener.exitFunctionApp(this);
         }
     }
-    public override accept<Result>(visitor: PredicateLogicVisitor<Result>): Result | null {
+    public override accept<Result>(visitor: LogicVisitor<Result>): Result | null {
         if (visitor.visitFunctionApp) {
             return visitor.visitFunctionApp(this);
         } else {

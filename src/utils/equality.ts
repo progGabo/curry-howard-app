@@ -3,6 +3,9 @@ import { FormulaNode, TermNode } from '../models/formula-node';
 
 export class Equality {
   static formulasEqual(a: FormulaNode, b: FormulaNode): boolean {
+    a = this.unwrapParen(a);
+    b = this.unwrapParen(b);
+
     if (a.kind !== b.kind) return false;
     
     switch (a.kind) {
@@ -30,6 +33,14 @@ export class Equality {
       default:
         return false;
     }
+  }
+
+  private static unwrapParen(formula: FormulaNode): FormulaNode {
+    let current = formula;
+    while (current.kind === 'Paren') {
+      current = current.inner;
+    }
+    return current;
   }
 
   static termsEqual(a: TermNode, b: TermNode): boolean {
@@ -61,6 +72,7 @@ export class Equality {
         const bProd = b as typeof a;
         return this.typesEqual(a.left, bProd.left) && this.typesEqual(a.right, bProd.right);
       case 'Bool':
+      case 'Bottom':
       case 'Nat':
         return true;
       case 'PredicateType':
@@ -145,7 +157,10 @@ export class Equality {
         const bDepPair = b as typeof a;
         return this.exprsEqual(a.witness, bDepPair.witness) &&
                this.typesEqual(a.witnessType, bDepPair.witnessType) &&
-               this.exprsEqual(a.proof, bDepPair.proof);
+               this.exprsEqual(a.proof, bDepPair.proof) &&
+               ((a.proofType && bDepPair.proofType)
+                 ? this.typesEqual(a.proofType, bDepPair.proofType)
+                 : a.proofType === bDepPair.proofType);
       case 'LetDependentPair':
         const bLetDepPair = b as typeof a;
         return a.x === bLetDepPair.x &&

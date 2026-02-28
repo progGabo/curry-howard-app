@@ -1,0 +1,54 @@
+<div class="main" *ngIf="root as r">
+  <div class="tree-node">
+    <div class="children" *ngIf="children.length" #childrenEl>
+      <app-tree-renderer
+        *ngFor="let child of children"
+        [treeType]="treeType"
+        [root]="child"
+        [mode]="mode"
+        [selectedNode]="selectedNode"
+        [currentLanguage]="currentLanguage"
+        [sequentLatexFn]="sequentLatexFn"
+        [formatExpressionFn]="formatExpressionFn"
+        [formatTypeFn]="formatTypeFn"
+        [dischargeLabelFn]="dischargeLabelFn"
+        [ruleLabelFn]="ruleLabelFn"
+        [showPlusButtonFn]="showPlusButtonFn"
+        [showRuleFn]="showRuleFn"
+        (nodeClicked)="nodeClicked.emit($event)"
+        (plusButtonClicked)="plusButtonClicked.emit($event)">
+      </app-tree-renderer>
+    </div>
+
+    <div
+      class="conclusion"
+      #conclusionEl
+      [style.--nd-line-width.px]="treeType === 'nd' ? lineWidthPx : null"
+      [class.selected]="isSelected"
+      [class.nd]="treeType === 'nd'"
+      [class.leaf]="isLeaf"
+      (click)="onNodeClick()"
+    >
+      <span class="rule" *ngIf="showRule">
+        {{ getRuleLabel(r) }}<sup *ngIf="treeType === 'nd' && getDischargeLabel(r)">{{ getDischargeLabel(r) }}</sup>
+      </span>
+
+      <button
+        *ngIf="showPlusButton"
+        class="rule-plus-btn"
+        (click)="onPlusButtonClick($event)"
+        [title]="addRuleTitle"
+      >
+        <span class="plus-icon">+</span>
+      </button>
+
+      <div class="sequent-content" *ngIf="treeType === 'sequent' || treeType === 'nd'" [appKatex]="getConclusionKatex(r)"></div>
+
+      <div class="inference-content" *ngIf="treeType === 'type'">
+        <div class="expression">{{ getExpressionText(r) }}</div>
+        <div class="type-separator">:</div>
+        <div class="type">{{ getTypeText(r) }}</div>
+      </div>
+    </div>
+  </div>
+</div>

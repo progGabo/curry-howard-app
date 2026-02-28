@@ -74,16 +74,11 @@ export class VariableNamingService {
   }
 
   /**
-   * Get the next simple alphabet letter (a, b, c, ..., z, then a0, b0, ...)
+   * Get the next simple alphabet letter (a, b, c, ..., z, then aa, ab, ...)
    * Note: counter is incremented in ensureUnique, so this just calculates the name
    */
   private getNextSimpleName(): string {
-    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-    const currentCounter = this.counter;
-    const index = currentCounter % alphabet.length;
-    const letter = alphabet[index];
-    const number = Math.floor(currentCounter / alphabet.length);
-    return number === 0 ? letter : `${letter}${number}`;
+    return this.alphaSequence(this.counter);
   }
 
   /**
@@ -102,12 +97,11 @@ export class VariableNamingService {
       return baseName;
     }
 
-    // If name is taken, append a number
     let suffix = 0;
-    let candidate = `${baseName}${suffix}`;
+    let candidate = `${baseName}${this.alphaSequence(suffix)}`;
     while (this.usedNames.has(candidate)) {
       suffix++;
-      candidate = `${baseName}${suffix}`;
+      candidate = `${baseName}${this.alphaSequence(suffix)}`;
     }
     this.counter++;
     return candidate;
@@ -122,7 +116,7 @@ export class VariableNamingService {
     let suffix = 0;
     
     while (avoidSet.has(candidate)) {
-      candidate = `${baseName}${suffix}`;
+      candidate = `${baseName}${this.alphaSequence(suffix)}`;
       suffix++;
     }
     
@@ -157,6 +151,19 @@ export class VariableNamingService {
    */
   boundVariable(variable: string): string {
     return this.freshVariable(variable);
+  }
+
+  private alphaSequence(index: number): string {
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+    let value = index;
+    let result = '';
+
+    do {
+      result = alphabet[value % alphabet.length] + result;
+      value = Math.floor(value / alphabet.length) - 1;
+    } while (value >= 0);
+
+    return result;
   }
 }
 
