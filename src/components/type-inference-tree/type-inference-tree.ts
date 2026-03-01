@@ -2,20 +2,12 @@ import { Component, Input, Output, EventEmitter, OnChanges } from '@angular/core
 import { TypeInferenceNode } from '../../services/type-inference-service';
 import { ExprNode } from '../../models/lambda-node';
 import { LambdaParserService } from '../../services/lambda-parser-service';
-import {
-  BASIC_RULES,
-  ABS_RULES,
-  APP_RULES,
-  PAIR_RULES,
-  SUM_RULES,
-  CONDITIONAL_RULES,
-  NAT_RULES,
-  LET_RULES
-} from '../../constants/rules';
 import { I18nService } from '../../services/i18n.service';
 import { NotificationService } from '../../services/notification.service';
 import type { AppTranslations } from '../../services/i18n.service';
-import { applySymbolShortcut } from '../../utils/symbol-shortcuts';
+import { getElementCenter } from '../../utils/dom-position';
+import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
+import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 
 @Component({
   selector: 'app-type-inference-tree',
@@ -28,32 +20,37 @@ export class TypeInferenceTree implements OnChanges {
   @Input() selectedNode: TypeInferenceNode | null = null;
   @Input() mode: 'auto' | 'interactive' = 'auto';
   @Input() interactiveSubmode: 'applicable' | 'all' | 'predict' = 'all';
-  @Input() predictionRuleRequest: { node: TypeInferenceNode, rule: string } | null = null;
+  @Input() predictionRuleRequest: { node: TypeInferenceNode, rule: string, requestId: number } | null = null;
   @Input() currentLanguage: 'sk' | 'en' = 'sk';
   @Output() nodeClicked = new EventEmitter<TypeInferenceNode>();
   @Output() plusButtonClicked = new EventEmitter<{ node: TypeInferenceNode, x: number, y: number }>();
   @Output() ruleSelected = new EventEmitter<{ node: TypeInferenceNode, rule: string }>();
 
-  basicRules = [...BASIC_RULES];
-  absRules = [...ABS_RULES];
-  appRules = [...APP_RULES];
-  pairRules = [...PAIR_RULES];
-  sumRules = [...SUM_RULES];
-  conditionalRules = [...CONDITIONAL_RULES];
-  natRules = [...NAT_RULES];
-  letRules = [...LET_RULES];
-
   rendererExpression = (expression: ExprNode): string => this.formatExpression(expression);
   rendererType = (type: any): string => this.formatType(type);
 
-  canShowPlusButton = (node: TypeInferenceNode): boolean => {
+  canShowPlusButton = (node: TreeRenderNode): boolean => {
+    const typeNode = node as TypeInferenceNode;
     if (this.mode !== 'interactive') return false;
-    return !node.children?.length && node.rule !== 'Var' && node.rule !== 'True' && node.rule !== 'False' && node.rule !== 'Zero';
+    return !typeNode.children?.length && typeNode.rule !== 'Var' && typeNode.rule !== 'True' && typeNode.rule !== 'False' && typeNode.rule !== 'Zero';
   };
 
-  canShowRule = (node: TypeInferenceNode): boolean => {
-    return !!node.children?.length || node.rule === 'Var' || node.rule === 'True' || node.rule === 'False' || node.rule === 'Zero';
+  canShowRule = (node: TreeRenderNode): boolean => {
+    const typeNode = node as TypeInferenceNode;
+    return !!typeNode.children?.length || typeNode.rule === 'Var' || typeNode.rule === 'True' || typeNode.rule === 'False' || typeNode.rule === 'Zero';
   };
+
+  onRendererNodeClicked(node: TreeRenderNode): void {
+    this.nodeClicked.emit(node as TypeInferenceNode);
+  }
+
+  onRendererPlusButtonClicked(event: { node: TreeRenderNode; x: number; y: number }): void {
+    this.plusButtonClicked.emit({
+      node: event.node as TypeInferenceNode,
+      x: event.x,
+      y: event.y
+    });
+  }
 
   constructor(
     private lambdaParser: LambdaParserService,
@@ -81,19 +78,12 @@ export class TypeInferenceTree implements OnChanges {
   onPlusButtonClick(event: MouseEvent) {
     event.stopPropagation();
     if (this.mode === 'interactive' && this.root) {
-      // Get the plus button's position
       const button = event.currentTarget as HTMLElement;
-      const buttonRect = button.getBoundingClientRect();
-      
-      // Calculate center of the button
-      const buttonCenterX = buttonRect.left + buttonRect.width / 2;
-      const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-      
-      // Emit the position to parent component
+      const center = getElementCenter(button);
       this.plusButtonClicked.emit({ 
         node: this.root, 
-        x: buttonCenterX, 
-        y: buttonCenterY 
+        x: center.x,
+        y: center.y
       });
     }
   }
@@ -162,21 +152,11 @@ export class TypeInferenceTree implements OnChanges {
   }
 
   onPredictionInput(event: Event, index: number) {
-    const target = event.target as HTMLInputElement;
-    const cursor = target.selectionStart ?? target.value.length;
-    const transformed = applySymbolShortcut(target.value, cursor);
-    this.userPredictions[index] = transformed.text;
-
-    if (transformed.changed) {
-      target.value = transformed.text;
-      queueMicrotask(() => {
-        target.setSelectionRange(transformed.cursor, transformed.cursor);
-      });
-    }
+    this.userPredictions[index] = applyPredictionShortcut(event);
   }
 
   onKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
+    if (isEscapeCancel(event)) {
       this.cancelPrediction();
     }
   }

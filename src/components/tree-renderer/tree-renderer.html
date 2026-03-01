@@ -27,7 +27,11 @@
       [class.selected]="isSelected"
       [class.nd]="treeType === 'nd'"
       [class.leaf]="isLeaf"
+      [attr.role]="mode === 'interactive' ? 'button' : null"
+      [attr.tabindex]="mode === 'interactive' ? 0 : null"
+      [attr.aria-label]="nodeAriaLabel"
       (click)="onNodeClick()"
+      (keydown)="onNodeKeyDown($event)"
     >
       <span class="rule" *ngIf="showRule">
         {{ getRuleLabel(r) }}<sup *ngIf="treeType === 'nd' && getDischargeLabel(r)">{{ getDischargeLabel(r) }}</sup>
@@ -38,6 +42,7 @@
         class="rule-plus-btn"
         (click)="onPlusButtonClick($event)"
         [title]="addRuleTitle"
+        [attr.aria-label]="addRuleTitle"
       >
         <span class="plus-icon">+</span>
       </button>

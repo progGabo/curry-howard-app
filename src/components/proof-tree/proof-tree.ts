@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { DerivationNode, FormulaNode, SequentNode, TermNode } from '../../models/formula-node';
-import { CONCLUSION_RULES, ASSUMPTION_RULES, SPECIAL_RULES } from '../../constants/rules';
 import { I18nService } from '../../services/i18n.service';
 import { NotificationService } from '../../services/notification.service';
 import { FormulaRenderService } from '../../services/formula-render.service';
 import type { AppTranslations } from '../../services/i18n.service';
-import { applySymbolShortcut } from '../../utils/symbol-shortcuts';
+import { getElementCenter } from '../../utils/dom-position';
+import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
+import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 
 @Component({
   selector: 'app-proof-tree',
@@ -21,13 +22,9 @@ export class ProofTree implements OnChanges {
   @Output() plusButtonClicked = new EventEmitter<{ node: DerivationNode, x: number, y: number }>();
   @Input() root!: DerivationNode | null;
 
-  conclusionRules = [...CONCLUSION_RULES];
-  assumptionRules = [...ASSUMPTION_RULES];
-  specialRules = [...SPECIAL_RULES];
-
   @Output() ruleSelected = new EventEmitter<{ node: DerivationNode, rule: string }>();
   @Input() selectedNode: DerivationNode | null = null;
-  @Input() predictionRuleRequest: { node: DerivationNode, rule: string } | null = null;
+  @Input() predictionRuleRequest: { node: DerivationNode, rule: string, requestId: number } | null = null;
 
   pendingRule: string | null = null;
   pendingRuleNode: DerivationNode | null = null;
@@ -35,16 +32,30 @@ export class ProofTree implements OnChanges {
   predictError: string | null = null;
 
   rendererSequentLatex = (sequent: SequentNode): string => this.sequentToLatex(sequent);
-  rendererRuleLabel = (node: DerivationNode): string => this.displayRuleLabel(node.rule);
+  rendererRuleLabel = (node: TreeRenderNode): string => this.displayRuleLabel((node as DerivationNode).rule);
 
-  canShowPlusButton = (node: DerivationNode): boolean => {
+  canShowPlusButton = (node: TreeRenderNode): boolean => {
+    const proofNode = node as DerivationNode;
     if (this.mode !== 'interactive') return false;
-    return !node.children?.length && node.rule !== 'Ax' && node.rule !== 'id' && node.rule !== 'ID';
+    return !proofNode.children?.length && proofNode.rule !== 'Ax' && proofNode.rule !== 'id' && proofNode.rule !== 'ID';
   };
 
-  canShowRule = (node: DerivationNode): boolean => {
-    return !!node.children?.length || node.rule === 'Ax' || node.rule === 'id' || node.rule === 'ID';
+  canShowRule = (node: TreeRenderNode): boolean => {
+    const proofNode = node as DerivationNode;
+    return !!proofNode.children?.length || proofNode.rule === 'Ax' || proofNode.rule === 'id' || proofNode.rule === 'ID';
   };
+
+  onRendererNodeClicked(node: TreeRenderNode): void {
+    this.nodeClicked.emit(node as DerivationNode);
+  }
+
+  onRendererPlusButtonClicked(event: { node: TreeRenderNode; x: number; y: number }): void {
+    this.plusButtonClicked.emit({
+      node: event.node as DerivationNode,
+      x: event.x,
+      y: event.y
+    });
+  }
 
   constructor(
     private i18n: I18nService,
@@ -126,21 +137,11 @@ export class ProofTree implements OnChanges {
   }
 
   onPredictionInput(event: Event, index: number) {
-    const target = event.target as HTMLInputElement;
-    const cursor = target.selectionStart ?? target.value.length;
-    const transformed = applySymbolShortcut(target.value, cursor);
-    this.userPredictions[index] = transformed.text;
-
-    if (transformed.changed) {
-      target.value = transformed.text;
-      queueMicrotask(() => {
-        target.setSelectionRange(transformed.cursor, transformed.cursor);
-      });
-    }
+    this.userPredictions[index] = applyPredictionShortcut(event);
   }
 
   onKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
+    if (isEscapeCancel(event)) {
       this.cancelPrediction();
     }
   }
@@ -210,19 +211,12 @@ export class ProofTree implements OnChanges {
   onPlusButtonClick(event: MouseEvent) {
     event.stopPropagation();
     if (this.mode === 'interactive' && this.root) {
-      // Get the plus button's position
       const button = event.currentTarget as HTMLElement;
-      const buttonRect = button.getBoundingClientRect();
-      
-      // Calculate center of the button
-      const buttonCenterX = buttonRect.left + buttonRect.width / 2;
-      const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-      
-      // Emit the position to parent component
+      const center = getElementCenter(button);
       this.plusButtonClicked.emit({ 
         node: this.root, 
-        x: buttonCenterX, 
-        y: buttonCenterY 
+        x: center.x,
+        y: center.y
       });
     }
   }

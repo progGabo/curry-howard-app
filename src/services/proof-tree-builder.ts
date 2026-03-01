@@ -6,6 +6,7 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
 import { parseTerm, freeVarsFormula, freeVarsTerm, substituteFormula, substituteTerm } from '../utils/quantifier-utils';
 import { FormulaRenderService } from './formula-render.service';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class ProofTreeBuilderService {
@@ -329,8 +330,11 @@ export class ProofTreeBuilderService {
         width: '500px',
         modal: true
       });
+      if (!dialogRef) {
+        throw new Error('Failed to open quantifier input dialog');
+      }
       
-      const result = await dialogRef.onClose.toPromise();
+      const result = await firstValueFrom(dialogRef.onClose);
       if (!result) {
         throw new Error('User cancelled quantifier rule application');
       }
@@ -396,8 +400,11 @@ export class ProofTreeBuilderService {
         width: '500px',
         modal: true
       });
+      if (!dialogRef) {
+        throw new Error('Failed to open quantifier input dialog');
+      }
       
-      const result = await dialogRef.onClose.toPromise();
+      const result = await firstValueFrom(dialogRef.onClose);
       if (!result) {
         throw new Error('User cancelled quantifier rule application');
       }
@@ -452,8 +459,11 @@ export class ProofTreeBuilderService {
         width: '500px',
         modal: true
       });
+      if (!dialogRef) {
+        throw new Error('Failed to open quantifier input dialog');
+      }
       
-      const result = await dialogRef.onClose.toPromise();
+      const result = await firstValueFrom(dialogRef.onClose);
       if (!result) {
         throw new Error('User cancelled quantifier rule application');
       }
@@ -525,8 +535,11 @@ export class ProofTreeBuilderService {
         width: '500px',
         modal: true
       });
+      if (!dialogRef) {
+        throw new Error('Failed to open quantifier input dialog');
+      }
       
-      const result = await dialogRef.onClose.toPromise();
+      const result = await firstValueFrom(dialogRef.onClose);
       if (!result) {
         throw new Error('User cancelled quantifier rule application');
       }
@@ -979,7 +992,9 @@ export class ProofTreeBuilderService {
         result = idx !== -1 ? await this.applyExistsLeft(sequent, idx, isInteractive, language) : null;
         break;
       }
-      case 'Ax': {
+      case 'Ax':
+      case 'id':
+      case 'ID': {
         if (this.isAxiom(sequent)) {
           result = { rule: 'Ax', sequent, children: [] };
           break;

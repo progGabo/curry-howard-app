@@ -3,6 +3,7 @@ import { ExprNode, TypeNode } from '../models/lambda-node';
 import { FormulaNode } from '../models/formula-node';
 import { TypeFactories } from '../utils/ast-factories';
 import { TreeUtils } from '../utils/tree-utils';
+import { TypeInferenceRuleDispatcherService } from './type-inference-rule-dispatcher.service';
 
 // Type inference tree node
 export interface TypeInferenceNode {
@@ -20,6 +21,7 @@ export interface TypeInferenceNode {
 
 @Injectable({ providedIn: 'root' })
 export class TypeInferenceService {
+  constructor(private ruleDispatcher: TypeInferenceRuleDispatcherService) {}
 
   buildTypeInferenceTree(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
     let assumptions = initialAssumptions ? new Map(initialAssumptions) : new Map<string, TypeNode>();
@@ -696,30 +698,7 @@ export class TypeInferenceService {
       }
     }
 
-    let baseType: TypeNode;
-    try {
-      if (lambdaExpr.kind === 'Abs') {
-        baseType = { kind: 'Func', from: lambdaExpr.paramType, to: { kind: 'TypeVar', name: '?' } };
-      } else if (lambdaExpr.kind === 'DependentAbs') {
-        baseType = {
-          kind: 'DependentFunc',
-          param: lambdaExpr.param,
-          paramType: lambdaExpr.paramType,
-          bodyType: { kind: 'TypeVar', name: '?' }
-        };
-      } else if (lambdaExpr.kind === 'DependentPair') {
-        baseType = {
-          kind: 'DependentProd',
-          param: 'x',
-          paramType: lambdaExpr.witnessType,
-          bodyType: { kind: 'TypeVar', name: '?' }
-        };
-      } else {
-        baseType = { kind: 'TypeVar', name: '?' };
-      }
-    } catch {
-      baseType = { kind: 'TypeVar', name: '?' };
-    }
+    const baseType = this.ruleDispatcher.getInitialInteractiveType(lambdaExpr);
     
     return {
       rule: '∅',
@@ -732,65 +711,27 @@ export class TypeInferenceService {
 
   applyRuleManually(expr: ExprNode, assumptions: Map<string, TypeNode>, rule: string): TypeInferenceNode | null {
     try {
-      if (rule === 'Var' && expr.kind === 'Var') {
-        return this.inferVarInteractive(expr, assumptions);
-      }
-      if (rule === 'Abs' && expr.kind === 'Abs') {
-        return this.inferAbsInteractive(expr, assumptions);
-      }
-      if (rule === 'App' && expr.kind === 'App') {
-        return this.inferAppInteractive(expr, assumptions);
-      }
-      if (rule === 'Pair' && expr.kind === 'Pair') {
-        return this.inferPairInteractive(expr, assumptions);
-      }
-      if (rule === 'LetPair' && expr.kind === 'LetPair') {
-        return this.inferLetPairInteractive(expr, assumptions);
-      }
-      if (rule === 'Inl' && expr.kind === 'Inl') {
-        return this.inferInlInteractive(expr, assumptions);
-      }
-      if (rule === 'Inr' && expr.kind === 'Inr') {
-        return this.inferInrInteractive(expr, assumptions);
-      }
-      if (rule === 'Case' && expr.kind === 'Case') {
-        return this.inferCaseInteractive(expr, assumptions);
-      }
-      if (rule === 'If' && expr.kind === 'If') {
-        return this.inferIfInteractive(expr, assumptions);
-      }
-      if (rule === 'Let' && expr.kind === 'Let') {
-        return this.inferLetInteractive(expr, assumptions);
-      }
-      if (rule === 'True' && expr.kind === 'True') {
-        return this.inferBool(expr);
-      }
-      if (rule === 'False' && expr.kind === 'False') {
-        return this.inferBool(expr);
-      }
-      if (rule === 'Zero' && expr.kind === 'Zero') {
-        return this.inferZero(expr);
-      }
-      if (rule === 'Succ' && expr.kind === 'Succ') {
-        return this.inferNatOpInteractive(expr, assumptions);
-      }
-      if (rule === 'Pred' && expr.kind === 'Pred') {
-        return this.inferNatOpInteractive(expr, assumptions);
-      }
-      if (rule === 'IsZero' && expr.kind === 'IsZero') {
-        return this.inferNatOpInteractive(expr, assumptions);
-      }
-      if (rule === 'DependentAbs' && expr.kind === 'DependentAbs') {
-        return this.inferDependentAbsInteractive(expr, assumptions);
-      }
-      if (rule === 'DependentPair' && expr.kind === 'DependentPair') {
-        return this.inferDependentPairInteractive(expr, assumptions);
-      }
-      if (rule === 'LetDependentPair' && expr.kind === 'LetDependentPair') {
-        return this.inferLetDependentPairInteractive(expr, assumptions);
-      }
-      
-      return null;
+      return this.ruleDispatcher.applyManualRule(expr, rule, {
+        inferVar: () => this.inferVarInteractive(expr, assumptions),
+        inferAbs: () => this.inferAbsInteractive(expr, assumptions),
+        inferApp: () => this.inferAppInteractive(expr, assumptions),
+        inferPair: () => this.inferPairInteractive(expr, assumptions),
+        inferLetPair: () => this.inferLetPairInteractive(expr, assumptions),
+        inferInl: () => this.inferInlInteractive(expr, assumptions),
+        inferInr: () => this.inferInrInteractive(expr, assumptions),
+        inferCase: () => this.inferCaseInteractive(expr, assumptions),
+        inferIf: () => this.inferIfInteractive(expr, assumptions),
+        inferLet: () => this.inferLetInteractive(expr, assumptions),
+        inferTrue: () => this.inferBool(expr),
+        inferFalse: () => this.inferBool(expr),
+        inferZero: () => this.inferZero(expr),
+        inferSucc: () => this.inferNatOpInteractive(expr, assumptions),
+        inferPred: () => this.inferNatOpInteractive(expr, assumptions),
+        inferIsZero: () => this.inferNatOpInteractive(expr, assumptions),
+        inferDependentAbs: () => this.inferDependentAbsInteractive(expr, assumptions),
+        inferDependentPair: () => this.inferDependentPairInteractive(expr, assumptions),
+        inferLetDependentPair: () => this.inferLetDependentPairInteractive(expr, assumptions)
+      });
     } catch (error) {
       console.error(`Error applying rule ${rule}:`, error);
       return null;

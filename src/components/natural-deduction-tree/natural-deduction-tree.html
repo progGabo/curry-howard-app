@@ -31,7 +31,16 @@
       </div>
     </div>
 
-    <div class="conclusion" [class.selected]="selectedNode === r" [class.leaf]="!r.premises.length" (click)="onNodeClick(r)">
+    <div
+      class="conclusion"
+      [class.selected]="selectedNode === r"
+      [class.leaf]="!r.premises.length"
+      [attr.role]="mode === 'interactive' ? 'button' : null"
+      [attr.tabindex]="mode === 'interactive' ? 0 : null"
+      [attr.aria-label]="nodeAriaLabel"
+      (click)="onNodeClick(r)"
+      (keydown)="onNodeKeyDown(r, $event)"
+    >
       <span class="rule" *ngIf="r.rule !== '∅'">
         {{ getRuleLabel(r) }}<sup *ngIf="getDischargeLabel(r)">{{ getDischargeLabel(r) }}</sup>
       </span>
@@ -41,6 +50,7 @@
         class="rule-plus-btn"
         (click)="onPlusButtonClick(r, $event)"
         [title]="addRuleTitle"
+        [attr.aria-label]="addRuleTitle"
       >
         <span class="plus-icon">+</span>
       </button>

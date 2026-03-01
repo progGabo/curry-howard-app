@@ -7,24 +7,27 @@
         <button
           type="button"
           class="direction-toggle-btn"
-          [class.active]="headerSection === 'curry-howard'"
+          [class.active]="currentSection === 'curry-howard'"
+          [attr.aria-pressed]="currentSection === 'curry-howard'"
           (click)="onHeaderSection('curry-howard')">
           {{ t.curryHoward }}
         </button>
         <button
           type="button"
           class="direction-toggle-btn"
-          [class.active]="headerSection === 'proofs'"
+          [class.active]="currentSection === 'proofs'"
+          [attr.aria-pressed]="currentSection === 'proofs'"
           (click)="onHeaderSection('proofs')">
           {{ t.proofs }}
         </button>
       </div>
-      <div class="workflow-secondary-toggle" [class.workflow-secondary-toggle--visible]="true">
-        <ng-container *ngIf="headerSection === 'curry-howard'; else proofsOptions">
+      <div class="workflow-secondary-toggle workflow-secondary-toggle--visible">
+        <ng-container *ngIf="currentSection === 'curry-howard'; else proofsOptions">
           <button
             type="button"
             class="direction-toggle-btn"
             [class.active]="headerOption === 'ch-expression-to-lambda'"
+            [attr.aria-pressed]="headerOption === 'ch-expression-to-lambda'"
             (click)="onHeaderOption('ch-expression-to-lambda')">
             {{ t.exprToLambda }}
           </button>
@@ -32,6 +35,7 @@
             type="button"
             class="direction-toggle-btn"
             [class.active]="headerOption === 'ch-lambda-to-expression'"
+            [attr.aria-pressed]="headerOption === 'ch-lambda-to-expression'"
             (click)="onHeaderOption('ch-lambda-to-expression')">
             {{ t.lambdaToExpr }}
           </button>
@@ -41,6 +45,7 @@
             type="button"
             class="direction-toggle-btn"
             [class.active]="headerOption === 'proofs-sequent'"
+            [attr.aria-pressed]="headerOption === 'proofs-sequent'"
             (click)="onHeaderOption('proofs-sequent')">
             {{ t.sequentCalculus }}
           </button>
@@ -48,6 +53,7 @@
             type="button"
             class="direction-toggle-btn"
             [class.active]="headerOption === 'proofs-natural-deduction'"
+            [attr.aria-pressed]="headerOption === 'proofs-natural-deduction'"
             (click)="onHeaderOption('proofs-natural-deduction')">
             {{ t.naturalDeduction }}
           </button>
@@ -60,6 +66,7 @@
         <button
           class="mode-toggle-btn"
           [class.active]="mode === 'auto'"
+          [attr.aria-pressed]="mode === 'auto'"
           [disabled]="autoModeDisabled"
           [title]="autoModeTitle"
           type="button"
@@ -69,6 +76,7 @@
         <button
           class="mode-toggle-btn"
           [class.active]="mode === 'interactive'"
+          [attr.aria-pressed]="mode === 'interactive'"
           type="button"
           (click)="onModeInteractive()">
           {{ t.interactiveMode }}

@@ -8,7 +8,7 @@ describe('ProofLambda', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProofLambda]
+      declarations: [ProofLambda]
     })
     .compileComponents();
 

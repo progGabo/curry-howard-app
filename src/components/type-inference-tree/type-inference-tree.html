@@ -40,6 +40,7 @@
           class="rule-plus-btn"
           (click)="onPlusButtonClick($event)"
           [title]="t.addRule"
+          [attr.aria-label]="t.addRule"
         >
           <span class="plus-icon">+</span>
         </button>
@@ -67,7 +68,7 @@
     [formatTypeFn]="rendererType"
     [showPlusButtonFn]="canShowPlusButton"
     [showRuleFn]="canShowRule"
-    (nodeClicked)="nodeClicked.emit($event)"
-    (plusButtonClicked)="plusButtonClicked.emit($event)">
+    (nodeClicked)="onRendererNodeClicked($event)"
+    (plusButtonClicked)="onRendererPlusButtonClicked($event)">
   </app-tree-renderer>
 </ng-template>

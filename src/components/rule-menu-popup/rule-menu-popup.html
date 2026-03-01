@@ -3,6 +3,9 @@
   <div
     class="rule-menu-popup"
     [ngStyle]="popupPosition"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="t.addRule"
     (mousemove)="onDragMove($event)"
     (mouseup)="onDragEnd()"
     (mouseleave)="onDragEnd()"

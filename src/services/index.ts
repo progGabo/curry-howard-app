@@ -1,6 +1,5 @@
 export { FormulaTypeService } from './formula-type-service';
 export { I18nService, type AppTranslations, type AppLanguage, type QuantifierRuleLabels, type QuantifierErrors } from './i18n.service';
-export { LambdaBuilderService } from './lambda-builder-service';
 export { LambdaParserService } from './lambda-parser-service';
 export { LambdaToExpressionService } from './lambda-to-expression-service';
 export { LogicParserService } from './logic-parser-service';

@@ -2,11 +2,9 @@ import { Component, ChangeDetectorRef, Inject, Injector } from '@angular/core';
 import { LogicParserService } from '../services/logic-parser-service';
 import { ProofTreeBuilderService } from '../services/proof-tree-builder';
 import { DerivationNode, SequentNode, FormulaNode, TermNode } from '../models/formula-node';
-import { LambdaBuilderService } from '../services/lambda-builder-service';
 import { LambdaParserService } from '../services/lambda-parser-service';
 import { LambdaToExpressionService } from '../services/lambda-to-expression-service';
 import { TypeInferenceService, TypeInferenceNode } from '../services/type-inference-service';
-import { FormulaTypeService } from '../services/formula-type-service';
 import { NaturalDeductionBuilderService } from '../services/natural-deduction-builder.service';
 import { NdLambdaBuilderService } from '../services/nd-lambda-builder.service';
 import { I18nService, AppTranslations } from '@services/i18n.service';
@@ -16,15 +14,16 @@ import { RuleFilterService } from '../services/rule-filter.service';
 import { RuleFormulaService } from '../services/rule-formula.service';
 import { FormulaRenderService } from '../services/formula-render.service';
 import { KatexDirective } from '../directives/katex.directive';
-import { ExprNode, TypeNode } from '../models/lambda-node';
+import { ExprNode } from '../models/lambda-node';
 import { NdNode } from '../models/nd-node';
-import { NdJudgement } from '../models/nd-judgement';
 import { NdRule, NdRuleApplicationOptions } from '../models/nd-rule';
-import { FormulaFactories } from '../utils/ast-factories';
 import { Equality } from '../utils/equality';
 import { parseTerm, freeVarsFormula } from '../utils/quantifier-utils';
 import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
 import { DialogService } from 'primeng/dynamicdialog';
+import { SplitterResizeEndEvent } from 'primeng/splitter';
+import { firstValueFrom } from 'rxjs';
+import { AppParseFacadeService } from '../services/app-parse-facade.service';
 import {
   CONCLUSION_RULES,
   ASSUMPTION_RULES,
@@ -67,11 +66,7 @@ export class App {
   conversionMode: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction' = 'natural-deduction';
   resultExpression: string = '';
   typeInferenceTree: TypeInferenceNode | null = null;
-  typeInferenceTreeForLambda: TypeInferenceNode | null = null;
   isPredicateLogic: boolean = false; // Track if predicate logic is detected
-  activeTab: 'proof' | 'typeInference' = 'proof'; // Active tab in expression-to-lambda mode
-  /** When user proves in expression→lambda, store assumption types so lambda→expression can use them for the generated lambda. */
-  storedLambdaInitialAssumptions: Map<string, TypeNode> | null = null;
 
   // UI state (non-logic)
   helpVisible: boolean = false;
@@ -113,6 +108,8 @@ export class App {
   selectedNdNode: NdNode | null = null;
   selectedTypeNode: TypeInferenceNode | null = null;
   ruleError: string | null = null;
+  private predictionRuleRequestId = 0;
+  private predictionTypeRuleRequestId = 0;
 
   // Popup state
   popupVisible: boolean = false;
@@ -120,8 +117,8 @@ export class App {
   popupX: number = 0;
   popupY: number = 0;
   popupNode: DerivationNode | NdNode | TypeInferenceNode | null = null;
-  predictionRuleRequest: { node: DerivationNode, rule: string } | null = null;
-  predictionTypeRuleRequest: { node: TypeInferenceNode, rule: string } | null = null;
+  predictionRuleRequest: { node: DerivationNode, rule: string, requestId: number } | null = null;
+  predictionTypeRuleRequest: { node: TypeInferenceNode, rule: string, requestId: number } | null = null;
   ndPredictionRequest: {
     node: NdNode;
     rule: NdRule;
@@ -168,13 +165,12 @@ export class App {
   constructor(
     private logicParser: LogicParserService,
     private proofBuilder: ProofTreeBuilderService,
-    private lambdaBuilder: LambdaBuilderService,
     private lambdaParser: LambdaParserService,
     private lambdaToExpression: LambdaToExpressionService,
     private typeInference: TypeInferenceService,
     private naturalDeductionBuilder: NaturalDeductionBuilderService,
     private ndLambdaBuilder: NdLambdaBuilderService,
-    private formulaType: FormulaTypeService,
+    private parseFacade: AppParseFacadeService,
     @Inject(I18nService) private i18n: I18nService,
     private notification: NotificationService,
     private treeHistory: TreeHistoryService,
@@ -192,8 +188,12 @@ export class App {
     return this.dialogService;
   }
 
-  onSplitterResizeEnd(e?: { sizes?: number[] }): void {
-    const sizes = e?.sizes ?? this.panelSizes;
+  onSplitterResizeEnd(e?: SplitterResizeEndEvent): void {
+    const rawSizes = e?.sizes ?? this.panelSizes;
+    const sizes = Array.isArray(rawSizes)
+      ? rawSizes.map((value) => typeof value === 'string' ? Number(value) : value).filter((value) => Number.isFinite(value))
+      : this.panelSizes;
+
     if (Array.isArray(sizes) && sizes.length >= 2 && sizes[0] > 50) {
       this.panelSizes = [50, 50];
       this.cdr.detectChanges();
@@ -221,6 +221,14 @@ export class App {
   applyExample(exampleCode: string) {
     if (!exampleCode) return;
     this.code = exampleCode;
+  }
+
+  get examplesPlaceholder(): string {
+    return this.isLambdaToExpressionWorkflow ? this.t.chooseExampleLambda : this.t.chooseExampleExpr;
+  }
+
+  get currentExamples(): Array<{ label: string; code: string }> {
+    return this.isLambdaToExpressionWorkflow ? this.lambdaExamples : this.expressionExamples;
   }
 
   isTypeInferenceSidebarFullRow(rule: string): boolean {
@@ -286,9 +294,7 @@ export class App {
     this.sequent = null;
     this.lambdaExpr = '';
     this.lambdaExprNode = null;
-    this.typeInferenceTreeForLambda = null;
     this.isPredicateLogic = false;
-    this.activeTab = 'proof';
     this.resultExpression = '';
     this.typeInferenceTree = null;
     this.selectedNode = null;
@@ -448,14 +454,11 @@ export class App {
     const node = popupNode as DerivationNode;
     
     if (this.interactiveSubmode === 'predict') {
-      // For predict mode, trigger prediction setup in proof-tree component
-      // Reset first to ensure change detection triggers
-      this.predictionRuleRequest = null;
-      // Use setTimeout to ensure change detection runs
-      setTimeout(() => {
-        // Create new object to ensure change detection
-        this.predictionRuleRequest = { node, rule };
-      }, 0);
+      this.predictionRuleRequest = {
+        node,
+        rule,
+        requestId: ++this.predictionRuleRequestId
+      };
     } else {
       this.applyRuleToNode({ node, rule });
     }
@@ -467,14 +470,11 @@ export class App {
     this.closePopup();
     
     if (this.interactiveSubmode === 'predict') {
-      // For predict mode, trigger prediction setup in type-inference-tree component
-      // Reset first to ensure change detection triggers
-      this.predictionTypeRuleRequest = null;
-      // Use setTimeout to ensure change detection runs
-      setTimeout(() => {
-        // Create new object to ensure change detection
-        this.predictionTypeRuleRequest = { node, rule };
-      }, 0);
+      this.predictionTypeRuleRequest = {
+        node,
+        rule,
+        requestId: ++this.predictionTypeRuleRequestId
+      };
     } else {
       this.applyTypeRuleToNode({ node, rule });
     }
@@ -542,24 +542,6 @@ export class App {
     updateParents(this.typeInferenceTree, changedNode);
   }
 
-  buildLambda() {
-    if( this.proofTree && this.sequent){
-      const lambda = this.lambdaBuilder.buildLambda(this.proofTree, this.sequent);
-      this.lambdaExpr = this.lambdaBuilder.exprToString(lambda);
-      this.lambdaExprNode = lambda; // Store the ExprNode for type inference
-      // Build type inference tree for the lambda expression with initial assumptions from sequent
-      if (lambda) {
-        try {
-          const initialAssumptions = this.buildInitialAssumptionsForLambda();
-          this.storedLambdaInitialAssumptions = initialAssumptions;
-          this.typeInferenceTreeForLambda = this.typeInference.buildTypeInferenceTree(lambda, initialAssumptions);
-        } catch {
-          this.typeInferenceTreeForLambda = null;
-        }
-      }
-    }
-  }
-
   private buildNdLambda(): void {
     if (!this.naturalDeductionTree) {
       this.lambdaExpr = '';
@@ -578,19 +560,6 @@ export class App {
     this.lambdaExpr = this.lambdaParser.formatLambdaExpression(ndLambda);
   }
 
-  /** Build map of free variable names to types from sequent assumptions (for proof-generated lambdas). */
-  private buildInitialAssumptionsForLambda(): Map<string, TypeNode> {
-    const assumptions = new Map<string, TypeNode>();
-    if (!this.sequent?.assumptionVars) return assumptions;
-    for (const formula of this.sequent.assumptions) {
-      const varName = this.sequent.assumptionVars.get(formula);
-      if (varName) {
-        assumptions.set(varName, this.formulaType.formulaToType(formula));
-      }
-    }
-    return assumptions;
-  }
-
 
   async applyRuleToNode(event: { node: DerivationNode; rule: string }) {
     const { node, rule } = event;
@@ -607,13 +576,8 @@ export class App {
         node.children = applied.children;
         node.usedFormula = applied.usedFormula;
         node.metadata = applied.metadata;
-        if (this.shouldGenerateLambdaFromProof) {
-          this.buildLambda();
-        } else {
-          this.lambdaExpr = '';
-          this.lambdaExprNode = null;
-          this.typeInferenceTreeForLambda = null;
-        }
+        this.lambdaExpr = '';
+        this.lambdaExprNode = null;
       } else {
         this.treeHistory.popProofState();
         this.showError('errorRuleCannotBeApplied', { rule });
@@ -884,8 +848,9 @@ export class App {
         width: '500px',
         modal: true
       });
+      if (!dialogRef) return null;
 
-      const result = await dialogRef.onClose.toPromise();
+      const result = await firstValueFrom(dialogRef.onClose);
       if (!result) return null;
 
       const value = String(result).trim();
@@ -904,8 +869,9 @@ export class App {
       width: '500px',
       modal: true
     });
+    if (!dialogRef) return null;
 
-    const result = await dialogRef.onClose.toPromise();
+    const result = await firstValueFrom(dialogRef.onClose);
     if (!result) return null;
 
     const parsedTerm = parseTerm(String(result).trim());
@@ -938,7 +904,7 @@ export class App {
     
     try {
       if (this.conversionMode === 'expression-to-lambda') {
-        await this.parseExpressionToLambda(this.shouldGenerateLambdaFromProof);
+        await this.parseExpressionToLambda();
       } else if (this.isNaturalDeductionWorkflow) {
         await this.parseNaturalDeduction(this.shouldGenerateLambdaFromProof);
       } else {
@@ -950,7 +916,6 @@ export class App {
       this.lambdaExpr = '';
       this.lambdaExprNode = null;
       this.naturalDeductionTree = null;
-      this.typeInferenceTreeForLambda = null;
       this.resultExpression = '';
       const errorMsg = e instanceof Error ? `: ${e.message}` : '';
       const fullMessage = this.t.errorParsing + errorMsg;
@@ -961,64 +926,36 @@ export class App {
     }
   }
 
-  private async parseExpressionToLambda(generateLambdaFromProof: boolean = false) {
-    this.sequent = this.logicParser.parseFormula(this.code);
+  private async parseExpressionToLambda() {
+    const parsed = await this.parseFacade.parseSequentInput(this.code, this.mode);
+    this.sequent = parsed.sequent;
+    this.proofTree = parsed.proofTree;
+    this.isPredicateLogic = parsed.isPredicateLogic;
+    this.mode = parsed.nextMode;
     this.naturalDeductionTree = null;
-
-    // Check if predicate logic is used
-    this.isPredicateLogic = this.containsPredicateLogic(this.sequent);
-    
-    // If predicate logic is detected, automatically switch to interactive mode
-    if (this.isPredicateLogic && this.mode === 'auto') {
-      this.mode = 'interactive';
-    }
-
-    if (this.mode === 'auto' && !this.isPredicateLogic) {
-      this.proofTree = await this.proofBuilder.buildProof(this.sequent);
-    } else {
-      this.proofTree = this.proofBuilder.buildInteractiveRoot(this.sequent);
-    }
-
-    if (generateLambdaFromProof) {
-      this.buildLambda();
-    } else {
-      this.lambdaExpr = '';
-      this.lambdaExprNode = null;
-      this.typeInferenceTreeForLambda = null;
-    }
+    this.lambdaExpr = '';
+    this.lambdaExprNode = null;
   }
 
   private async parseNaturalDeduction(generateLambdaFromProof: boolean = false) {
-    const parsed = this.logicParser.parseFormula(this.code);
-    this.isPredicateLogic = this.containsPredicateLogic(parsed);
-    if (this.isPredicateLogic && this.mode === 'auto') {
-      this.mode = 'interactive';
-    }
-
-    const ndJudgement: NdJudgement = {
-      context: [...parsed.assumptions],
-      goal: parsed.conclusions[0] ?? FormulaFactories.false()
-    };
+    const parsed = await this.parseFacade.parseNaturalDeductionInput(this.code, this.mode);
+    this.isPredicateLogic = parsed.isPredicateLogic;
+    this.mode = parsed.nextMode;
 
     this.sequent = null;
     this.proofTree = null;
     this.lambdaExpr = '';
     this.lambdaExprNode = null;
-    this.typeInferenceTreeForLambda = null;
 
-    if (this.mode === 'auto' && !this.isPredicateLogic) {
-      this.naturalDeductionTree = await this.naturalDeductionBuilder.buildProof(ndJudgement);
-      if (!this.naturalDeductionTree) {
-        const message = this.currentLanguage === 'sk'
-          ? 'Vzorec nie je dokázateľný v intuicionistickej prirodzenej dedukcii.'
-          : 'Formula is not provable in intuitionistic natural deduction.';
-        this.notification.showError(message, {
-          summary: this.i18n.errorSummary(this.currentLanguage),
-          life: 7000
-        });
-      }
-    } else {
-      this.naturalDeductionTree = this.naturalDeductionBuilder.buildInteractiveRoot(ndJudgement);
+    this.naturalDeductionTree = parsed.naturalDeductionTree;
+    if (parsed.notProvable) {
+      const message = this.currentLanguage === 'sk'
+        ? 'Vzorec nie je dokázateľný v intuicionistickej prirodzenej dedukcii.'
+        : 'Formula is not provable in intuitionistic natural deduction.';
+      this.notification.showError(message, {
+        summary: this.i18n.errorSummary(this.currentLanguage),
+        life: 7000
+      });
     }
 
     if (generateLambdaFromProof) {
@@ -1029,62 +966,13 @@ export class App {
     }
   }
 
-  /**
-   * Check if a sequent contains predicate logic (quantifiers or predicates)
-   */
-  private containsPredicateLogic(sequent: SequentNode | null): boolean {
-    if (!sequent) return false;
-    
-    const checkFormula = (f: FormulaNode): boolean => {
-      switch (f.kind) {
-        case 'Forall':
-        case 'Exists':
-        case 'Predicate':
-          return true;
-        case 'Implies':
-          return checkFormula(f.left) || checkFormula(f.right);
-        case 'And':
-        case 'Or':
-          return checkFormula(f.left) || checkFormula(f.right);
-        case 'Not':
-        case 'Paren':
-          return checkFormula(f.inner);
-        default:
-          return false;
-      }
-    };
-    
-    // Check assumptions and conclusions
-    for (const assumption of sequent.assumptions) {
-      if (checkFormula(assumption)) return true;
-    }
-    for (const conclusion of sequent.conclusions) {
-      if (checkFormula(conclusion)) return true;
-    }
-    
-    return false;
-  }
-
   private parseLambdaToExpression() {
     try {
       this.naturalDeductionTree = null;
-      const lambdaExpr = this.lambdaParser.parseLambdaExpression(this.code);
-      // Use stored assumption types from expression→lambda when available (e.g. user pasted the generated lambda)
-      const initialAssumptions = this.storedLambdaInitialAssumptions ?? undefined;
-
-      if (this.mode === 'auto') {
-        this.typeInferenceTree = this.typeInference.buildTypeInferenceTree(lambdaExpr, initialAssumptions);
-      } else {
-        this.typeInferenceTree = initialAssumptions
-          ? this.typeInference.buildInteractiveRoot(lambdaExpr, initialAssumptions)
-          : this.typeInference.buildInteractiveRoot(lambdaExpr);
-      }
-      
-      if (this.typeInferenceTree) {
-        this.resultExpression = this.lambdaToExpression.convertLambdaToExpression(lambdaExpr, this.typeInferenceTree.inferredType);
-      }
-      
-      this.lambdaExpr = this.lambdaParser.formatLambdaExpression(lambdaExpr);
+      const parsed = this.parseFacade.parseLambdaInput(this.code, this.mode);
+      this.typeInferenceTree = parsed.typeInferenceTree;
+      this.resultExpression = parsed.resultExpression;
+      this.lambdaExpr = parsed.lambdaExpr;
     } catch (error: unknown) {
       this.resultExpression = '';
       this.lambdaExpr = this.code;
@@ -1103,7 +991,8 @@ export class App {
       const restored = this.treeHistory.popProofState();
       if (restored) {
         this.proofTree = restored;
-        this.buildLambda();
+        this.lambdaExpr = '';
+        this.lambdaExprNode = null;
         this.selectedNode = null;
         this.ruleError = null;
       }

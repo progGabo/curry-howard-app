@@ -1,11 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { ProofNode } from '../../models/proof-node';
-import { LogicParserService } from '../../services/logic-parser-service';
-import { ProofTreeBuilderService } from '../../services/proof-tree-builder';
-import { LambdaBuilderService } from '../../services/lambda-builder-service';
-import { DerivationNode, SequentNode } from '../../models/formula-node';
-import { Lambda } from '../../models/lambda';
-import { FormulaNode } from '../../models/formula-node';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-proof-lambda',
@@ -16,9 +9,4 @@ import { FormulaNode } from '../../models/formula-node';
 export class ProofLambda{         
   @Input() lambdaExpr: string = '';
   @Input() label: string = 'Lambda-výraz';
-
-  constructor(
-    private lambdaBuilder: LambdaBuilderService
-  ) {}
-
 }

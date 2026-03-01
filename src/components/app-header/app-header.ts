@@ -8,9 +8,7 @@ import type { AppTranslations } from '../../services/i18n.service';
   styleUrl: './app-header.scss'
 })
 export class AppHeaderComponent {
-  @Input() headerSection: 'curry-howard' | 'proofs' = 'curry-howard';
   @Input() headerOption: 'ch-expression-to-lambda' | 'ch-lambda-to-expression' | 'proofs-sequent' | 'proofs-natural-deduction' = 'ch-expression-to-lambda';
-  @Input() conversionMode: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction' = 'expression-to-lambda';
   @Input() mode: 'auto' | 'interactive' = 'auto';
   @Input() interactiveSubmode: 'applicable' | 'all' | 'predict' = 'all';
   @Input() isPredicateLogic = false;
@@ -18,17 +16,18 @@ export class AppHeaderComponent {
   @Input() currentLanguage: 'sk' | 'en' = 'sk';
   @Input() t!: AppTranslations;
 
-  @Output() headerSectionChange = new EventEmitter<'curry-howard' | 'proofs'>();
   @Output() headerOptionChange = new EventEmitter<'ch-expression-to-lambda' | 'ch-lambda-to-expression' | 'proofs-sequent' | 'proofs-natural-deduction'>();
-  @Output() conversionModeChange = new EventEmitter<'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction'>();
   @Output() modeChange = new EventEmitter<'auto' | 'interactive'>();
   @Output() submodeChange = new EventEmitter<'applicable' | 'all' | 'predict'>();
   @Output() stepBack = new EventEmitter<void>();
   @Output() helpClick = new EventEmitter<void>();
   @Output() languageChange = new EventEmitter<'sk' | 'en'>();
 
+  get currentSection(): 'curry-howard' | 'proofs' {
+    return this.headerOption.startsWith('proofs') ? 'proofs' : 'curry-howard';
+  }
+
   onHeaderSection(section: 'curry-howard' | 'proofs'): void {
-    this.headerSectionChange.emit(section);
     if (section === 'curry-howard') {
       const nextOption: 'ch-expression-to-lambda' | 'ch-lambda-to-expression' =
         this.headerOption === 'ch-lambda-to-expression' ? 'ch-lambda-to-expression' : 'ch-expression-to-lambda';
@@ -43,10 +42,6 @@ export class AppHeaderComponent {
 
   onHeaderOption(option: 'ch-expression-to-lambda' | 'ch-lambda-to-expression' | 'proofs-sequent' | 'proofs-natural-deduction'): void {
     this.headerOptionChange.emit(option);
-  }
-
-  onConversionMode(m: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction'): void {
-    this.conversionModeChange.emit(m);
   }
 
   onModeAuto(): void {
@@ -74,7 +69,7 @@ export class AppHeaderComponent {
   }
 
   get autoModeDisabled(): boolean {
-    return this.isPredicateLogic && this.conversionMode !== 'lambda-to-expression';
+    return this.isPredicateLogic && this.headerOption !== 'ch-lambda-to-expression';
   }
 
   get autoModeTitle(): string {

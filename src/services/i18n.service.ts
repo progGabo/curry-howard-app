@@ -69,6 +69,16 @@ export interface AppTranslations {
   predictSequent: string;
   predictExpression: string;
   predictFormula: string;
+  seqIdentityCut: string;
+  seqLogicalNegation: string;
+  negation: string;
+  conjunction: string;
+  disjunction: string;
+  implication: string;
+  quantifiers: string;
+  seqWeakening: string;
+  constants: string;
+  hypotheses: string;
 }
 
 export interface QuantifierRuleLabels {
@@ -145,6 +155,16 @@ const SK: AppTranslations = {
   predictSequent: 'Predikuj sekvent',
   predictExpression: 'Predikuj výraz',
   predictFormula: 'Predikuj formulu',
+  seqIdentityCut: 'Pravidlo identity a rezu:',
+  seqLogicalNegation: 'Logické pravidlá: Negácia',
+  negation: 'Negácia',
+  conjunction: 'Konjunkcia',
+  disjunction: 'Disjunkcia',
+  implication: 'Implikácia',
+  quantifiers: 'Kvantifikátory',
+  seqWeakening: 'Pravidlá zoslabenia',
+  constants: 'Konštanty',
+  hypotheses: 'Hypotézy',
 };
 
 const EN: AppTranslations = {
@@ -205,6 +225,16 @@ const EN: AppTranslations = {
   predictSequent: 'Predict sequent',
   predictExpression: 'Predict expression',
   predictFormula: 'Predict formula',
+  seqIdentityCut: 'Identity and cut rule:',
+  seqLogicalNegation: 'Logical rules: Negation',
+  negation: 'Negation',
+  conjunction: 'Conjunction',
+  disjunction: 'Disjunction',
+  implication: 'Implication',
+  quantifiers: 'Quantifiers',
+  seqWeakening: 'Weakening rules',
+  constants: 'Constants',
+  hypotheses: 'Hypotheses',
 };
 
 const QUANTIFIER_LABELS_SK: Record<string, QuantifierRuleLabels> = {

@@ -1,14 +1,11 @@
 <app-header
-  [headerSection]="headerSection"
   [headerOption]="headerOption"
-  [conversionMode]="conversionMode"
   [mode]="mode"
   [interactiveSubmode]="interactiveSubmode"
   [isPredicateLogic]="isPredicateLogic"
   [canStepBack]="canStepBack"
   [currentLanguage]="currentLanguage"
   [t]="t"
-  (headerSectionChange)="onHeaderSectionChange($event)"
   (headerOptionChange)="onHeaderOptionChange($event)"
   (modeChange)="onHeaderModeChange($event)"
   (submodeChange)="interactiveSubmode = $event"
@@ -18,12 +15,19 @@
 ></app-header>
 
 <!-- Slide Panel Toggle Button -->
-<button class="slide-panel-toggle" (click)="slidePanelVisible = !slidePanelVisible" [class.active]="slidePanelVisible">
+<button
+  class="slide-panel-toggle"
+  (click)="slidePanelVisible = !slidePanelVisible"
+  [class.active]="slidePanelVisible"
+  [attr.aria-label]="slidePanelVisible ? (currentLanguage === 'sk' ? 'Skryť panel pravidiel' : 'Hide rules panel') : (currentLanguage === 'sk' ? 'Zobraziť panel pravidiel' : 'Show rules panel')"
+  [attr.aria-expanded]="slidePanelVisible"
+  aria-controls="rules-slide-panel"
+>
   <i [class]="slidePanelVisible ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"></i>
 </button>
 
 <!-- Slide Panel -->
-<div class="slide-panel" [class.open]="slidePanelVisible">
+<div id="rules-slide-panel" class="slide-panel" [class.open]="slidePanelVisible" [attr.aria-hidden]="!slidePanelVisible">
   <div class="slide-panel-content">
     <div class="rule-formula-panel">
       <h3 class="formula-title">{{ t.ruleReference }}</h3>
@@ -31,91 +35,91 @@
       <!-- All Rules Formulas Display -->
       <div class="formulas-list">
         <div class="formula-section" *ngIf="isSequentWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Pravidlo identity a rezu:' : 'Identity and cut rule:' }}</h4>
+          <h4 class="formula-section-header">{{ t.seqIdentityCut }}</h4>
           <div class="formula-item" *ngFor="let rule of seqSidebarIdentityCutRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isSequentWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Logické pravidlá: Negácia' : 'Logical rules: Negation' }}</h4>
+          <h4 class="formula-section-header">{{ t.seqLogicalNegation }}</h4>
           <div class="formula-item" *ngFor="let rule of seqSidebarNegationRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isSequentWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Konjunkcia' : 'Conjunction' }}</h4>
+          <h4 class="formula-section-header">{{ t.conjunction }}</h4>
           <div class="formula-item" *ngFor="let rule of seqSidebarConjunctionRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isSequentWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Disjunkcia' : 'Disjunction' }}</h4>
+          <h4 class="formula-section-header">{{ t.disjunction }}</h4>
           <div class="formula-item" *ngFor="let rule of seqSidebarDisjunctionRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isSequentWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Implikácia' : 'Implication' }}</h4>
+          <h4 class="formula-section-header">{{ t.implication }}</h4>
           <div class="formula-item" *ngFor="let rule of seqSidebarImplicationRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isSequentWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Kvantifikátory' : 'Quantifiers' }}</h4>
+          <h4 class="formula-section-header">{{ t.quantifiers }}</h4>
           <div class="formula-item" *ngFor="let rule of seqSidebarQuantifierRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isSequentWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Pravidlá zoslabenia' : 'Weakening rules' }}</h4>
+          <h4 class="formula-section-header">{{ t.seqWeakening }}</h4>
           <div class="formula-item" *ngFor="let rule of seqSidebarWeakeningRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Konštanty' : 'Constants' }}</h4>
+          <h4 class="formula-section-header">{{ t.constants }}</h4>
           <div class="formula-item" *ngFor="let rule of ndSidebarCoreRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Negácia' : 'Negation' }}</h4>
+          <h4 class="formula-section-header">{{ t.negation }}</h4>
           <div class="formula-item" *ngFor="let rule of ndSidebarNegationRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Konjunkcia' : 'Conjunction' }}</h4>
+          <h4 class="formula-section-header">{{ t.conjunction }}</h4>
           <div class="formula-item" *ngFor="let rule of ndSidebarConjunctionRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Disjunkcia' : 'Disjunction' }}</h4>
+          <h4 class="formula-section-header">{{ t.disjunction }}</h4>
           <div class="formula-item" *ngFor="let rule of ndSidebarDisjunctionRules">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Implikácia' : 'Implication' }}</h4>
+          <h4 class="formula-section-header">{{ t.implication }}</h4>
           <div class="formula-item" *ngFor="let rule of ndSidebarImplicationRules" [class.formula-item--imp-e]="rule === '→E'">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
         </div>
 
         <div class="formula-section" *ngIf="isNaturalDeductionWorkflow">
-          <h4 class="formula-section-header">{{ currentLanguage === 'sk' ? 'Kvantifikátory' : 'Quantifiers' }}</h4>
+          <h4 class="formula-section-header">{{ t.quantifiers }}</h4>
           <div class="formula-item" *ngFor="let rule of ndSidebarQuantifierRules" [class.formula-item--full-row]="rule === '∃E'">
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
@@ -192,17 +196,9 @@
         <div class="examples">
           <label class="examples-label">{{ t.examples }}</label>
           <div class="examples-row">
-            <select *ngIf="isSequentWorkflow" class="select examples-select" (change)="applyExample($any($event.target).value)">
-              <option value="" selected disabled>{{ t.chooseExampleExpr }}</option>
-              <option *ngFor="let ex of expressionExamples" [value]="ex.code">{{ ex.label }}</option>
-            </select>
-            <select *ngIf="isNaturalDeductionWorkflow" class="select examples-select" (change)="applyExample($any($event.target).value)">
-              <option value="" selected disabled>{{ t.chooseExampleExpr }}</option>
-              <option *ngFor="let ex of expressionExamples" [value]="ex.code">{{ ex.label }}</option>
-            </select>
-            <select *ngIf="isLambdaToExpressionWorkflow" class="select examples-select" (change)="applyExample($any($event.target).value)">
-              <option value="" selected disabled>{{ t.chooseExampleLambda }}</option>
-              <option *ngFor="let ex of lambdaExamples" [value]="ex.code">{{ ex.label }}</option>
+            <select class="select examples-select" (change)="applyExample($any($event.target).value)">
+              <option value="" selected disabled>{{ examplesPlaceholder }}</option>
+              <option *ngFor="let ex of currentExamples" [value]="ex.code">{{ ex.label }}</option>
             </select>
             <p-button (click)="parseAndBuild()" styleClass="btn btn-primary examples-btn">
               {{ isLambdaToExpressionWorkflow ? t.convertLambda : t.generateProof }}
@@ -252,7 +248,7 @@
           <div *ngIf="isNaturalDeductionWorkflow">
             <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger" [initialZoom]="0.85">
               <div canvas-overlay class="nd-hypotheses-floating" *ngIf="ndHypotheses.length">
-                <span class="title">{{ currentLanguage === 'sk' ? 'Hypotézy' : 'Hypotheses' }}</span>
+                <span class="title">{{ t.hypotheses }}</span>
                 <div class="hyp-row" *ngFor="let hypothesis of ndHypotheses" [class.hyp-row--closed]="hypothesis.isClosed" [class.hyp-row--open]="!hypothesis.isClosed">
                   <span class="label">{{ hypothesis.label }} =</span>
                   <span class="expr" [appKatex]="hypothesis.formulaLatex"></span>

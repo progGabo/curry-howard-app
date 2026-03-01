@@ -51,6 +51,8 @@ export class RuleFilterService {
         case 'WL':
         case 'WR':
         case 'Ax':
+        case 'id':
+        case 'ID':
           return true;
         default:
           return true;

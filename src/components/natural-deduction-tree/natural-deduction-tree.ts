@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { NdNode } from '../../models/nd-node';
 import { termToText } from '../../utils/quantifier-utils';
-import { applySymbolShortcut } from '../../utils/symbol-shortcuts';
+import { getElementCenter } from '../../utils/dom-position';
+import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
 
 @Component({
   selector: 'app-natural-deduction-tree',
@@ -77,21 +78,11 @@ export class NaturalDeductionTreeComponent {
   }
 
   onPredictionInput(index: number, event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const cursor = target.selectionStart ?? target.value.length;
-    const transformed = applySymbolShortcut(target.value, cursor);
-    this.localPredictionInputs[index] = transformed.text;
-
-    if (transformed.changed) {
-      target.value = transformed.text;
-      queueMicrotask(() => {
-        target.setSelectionRange(transformed.cursor, transformed.cursor);
-      });
-    }
+    this.localPredictionInputs[index] = applyPredictionShortcut(event);
   }
 
   onPredictionKeyDown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
+    if (isEscapeCancel(event)) {
       this.ndPredictionCancel.emit();
     }
   }
@@ -105,15 +96,28 @@ export class NaturalDeductionTreeComponent {
     this.nodeClicked.emit(node);
   }
 
+  onNodeKeyDown(node: NdNode, event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.onNodeClick(node);
+    }
+  }
+
+  get nodeAriaLabel(): string {
+    return this.mode === 'interactive'
+      ? (this.currentLanguage === 'sk' ? 'Vybrať uzol dôkazu' : 'Select proof node')
+      : (this.currentLanguage === 'sk' ? 'Uzol dôkazu' : 'Proof node');
+  }
+
   onPlusButtonClick(node: NdNode, event: MouseEvent): void {
     event.stopPropagation();
     if (!this.canShowPlusButton(node)) return;
     const button = event.currentTarget as HTMLElement;
-    const rect = button.getBoundingClientRect();
+    const center = getElementCenter(button);
     this.plusButtonClicked.emit({
       node,
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2
+      x: center.x,
+      y: center.y
     });
   }
 }
