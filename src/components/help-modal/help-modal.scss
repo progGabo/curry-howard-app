@@ -40,53 +40,81 @@
   padding: 1.5rem;
   overflow: auto;
   min-height: 200px;
-  max-height: calc(80vh - 150px);
+  max-height: calc(80vh - 90px);
 }
 
-.tutorial-content {
-  line-height: 1.6;
-}
-
-.tutorial-content h4 {
-  margin: 1.5rem 0 0.75rem 0;
-  color: #0f172a;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.tutorial-content h4:first-child {
-  margin-top: 0;
-}
-
-.tutorial-content p {
-  margin: 0.5rem 0 1rem 0;
-  color: #475569;
-}
-
-.tutorial-content ul,
-.tutorial-content ol {
-  margin: 0.5rem 0 1rem 1.5rem;
-  color: #475569;
-}
-
-.tutorial-content li {
-  margin: 0.5rem 0;
-}
-
-.tutorial-content ul ul {
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-}
-
-.tutorial-content strong {
-  color: #0f172a;
-  font-weight: 600;
-}
-
-.help-modal__footer {
-  padding: 0.75rem 1rem 1rem 1rem;
+.help-gallery {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.help-gallery__item h4 {
+  margin: 0 0 0.5rem 0;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.help-gallery__item p {
+  margin: 0 0 0.75rem 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.help-gallery__subtext {
+  margin: 0.75rem 0 0.4rem 0;
+}
+
+.help-shortcuts {
+  margin: 0;
+  padding-left: 1rem;
+  color: #475569;
+}
+
+.help-shortcuts li {
+  margin: 0.25rem 0;
+}
+
+.help-shortcuts code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #0f172a;
+}
+
+.help-gallery__placeholder {
+  width: min(100%, 560px);
+  min-height: 110px;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px dashed #94a3b8;
+  border-radius: 10px;
+  color: #64748b;
+  background: #f8fafc;
+  line-height: 1.4;
+}
+
+.help-gallery__image {
+  display: block;
+  width: min(100%, 360px);
+  max-height: 140px;
+  height: auto;
+  object-fit: contain;
+  margin: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.help-flow {
+  margin: 0 0 0.75rem 0;
+  padding-left: 1.15rem;
+  color: #475569;
+}
+
+.help-flow li {
+  margin: 0.25rem 0;
 }
 
 .modal-close {
