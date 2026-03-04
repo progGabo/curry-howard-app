@@ -23,7 +23,8 @@
     <div
       class="conclusion"
       #conclusionEl
-      [style.--nd-line-width.px]="treeType === 'nd' ? lineWidthPx : null"
+      [style.--line-width.px]="lineWidthPx"
+      [style.--line-offset.px]="lineOffsetPx"
       [class.selected]="isSelected"
       [class.nd]="treeType === 'nd'"
       [class.leaf]="isLeaf"

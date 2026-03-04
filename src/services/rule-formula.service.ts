@@ -270,6 +270,18 @@ export class RuleFormulaService {
       description: 'Pair construction',
       type: 'other'
     },
+    'Fst': {
+      name: 'Fst',
+      formula: '\\frac{\\Gamma \\vdash e : \\tau_1 \\times \\tau_2}{\\Gamma \\vdash \\mathrm{fst}(e) : \\tau_1}',
+      description: 'First projection',
+      type: 'other'
+    },
+    'Snd': {
+      name: 'Snd',
+      formula: '\\frac{\\Gamma \\vdash e : \\tau_1 \\times \\tau_2}{\\Gamma \\vdash \\mathrm{snd}(e) : \\tau_2}',
+      description: 'Second projection',
+      type: 'other'
+    },
     'LetPair': {
       name: 'LetPair',
       formula: '\\frac{\\Gamma \\vdash e : \\tau_1 \\times \\tau_2 \\quad \\Gamma, x:\\tau_1, y:\\tau_2 \\vdash e\\prime : \\tau}{\\Gamma \\vdash \\text{let} \\langle x,y\\rangle = e \\text{ in } e\\prime : \\tau}',
@@ -599,6 +611,18 @@ export class RuleFormulaService {
       name: 'Pair (Pár)',
       formula: '\\frac{\\Gamma \\vdash e_1 : \\tau_1 \\quad \\Gamma \\vdash e_2 : \\tau_2}{\\Gamma \\vdash \\langle e_1, e_2 \\rangle : \\tau_1 \\times \\tau_2}',
       description: 'Konštrukcia páru',
+      type: 'other'
+    },
+    'Fst': {
+      name: 'Fst (Prvá projekcia)',
+      formula: '\\frac{\\Gamma \\vdash e : \\tau_1 \\times \\tau_2}{\\Gamma \\vdash \\mathrm{fst}(e) : \\tau_1}',
+      description: 'Prvá projekcia páru',
+      type: 'other'
+    },
+    'Snd': {
+      name: 'Snd (Druhá projekcia)',
+      formula: '\\frac{\\Gamma \\vdash e : \\tau_1 \\times \\tau_2}{\\Gamma \\vdash \\mathrm{snd}(e) : \\tau_2}',
+      description: 'Druhá projekcia páru',
       type: 'other'
     },
     'LetPair': {

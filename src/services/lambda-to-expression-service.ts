@@ -51,11 +51,15 @@ export class LambdaToExpressionService {
       case 'Prod':
         const leftF = this.convertTypeToLogicalFormula(type.left);
         const rightF = this.convertTypeToLogicalFormula(type.right);
-        return `${leftF} ∧ ${rightF}`;
+        const leftFNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const rightFNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${leftFNeedsParens ? `(${leftF})` : leftF} ∧ ${rightFNeedsParens ? `(${rightF})` : rightF}`;
       case 'Sum':
         const sumL = this.convertTypeToLogicalFormula(type.left);
         const sumR = this.convertTypeToLogicalFormula(type.right);
-        return `${sumL} ∨ ${sumR}`;
+        const sumLNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const sumRNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${sumLNeedsParens ? `(${sumL})` : sumL} ∨ ${sumRNeedsParens ? `(${sumR})` : sumR}`;
       case 'PredicateType':
         const predArgs = type.argTypes.map(t => this.convertTypeToLogicalFormula(t)).join(', ');
         return `${type.name}(${predArgs})`;
@@ -93,6 +97,12 @@ export class LambdaToExpressionService {
         const leftFormula = this.convertExprToFormula(expr.left);
         const rightFormula = this.convertExprToFormula(expr.right);
         return `${leftFormula} ∧ ${rightFormula}`;
+
+      case 'Fst':
+        return `fst(${this.convertExprToFormula(expr.pair)})`;
+
+      case 'Snd':
+        return `snd(${this.convertExprToFormula(expr.pair)})`;
       
       case 'Inl':
         const inlFormula = this.convertExprToFormula(expr.expr);
@@ -194,11 +204,15 @@ export class LambdaToExpressionService {
       case 'Prod':
         const leftFormula = this.convertTypeToFormula(type.left);
         const rightFormula = this.convertTypeToFormula(type.right);
-        return `${leftFormula} ∧ ${rightFormula}`;
+        const leftFormulaNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const rightFormulaNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${leftFormulaNeedsParens ? `(${leftFormula})` : leftFormula} ∧ ${rightFormulaNeedsParens ? `(${rightFormula})` : rightFormula}`;
       case 'Sum':
         const sumLeft = this.convertTypeToFormula(type.left);
         const sumRight = this.convertTypeToFormula(type.right);
-        return `${sumLeft} ∨ ${sumRight}`;
+        const sumLeftNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const sumRightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${sumLeftNeedsParens ? `(${sumLeft})` : sumLeft} ∨ ${sumRightNeedsParens ? `(${sumRight})` : sumRight}`;
       case 'PredicateType':
         const predArgs = type.argTypes.map(t => this.convertTypeToFormula(t)).join(', ');
         return `${type.name}(${predArgs})`;
@@ -229,6 +243,10 @@ export class LambdaToExpressionService {
     if (type.kind === 'DependentFunc' || type.kind === 'DependentProd') return true;
     if (type.kind === 'Func') return side === 'left' || side === 'right';
     return false;
+  }
+
+  private needsParensForProductOrSumOperand(type: TypeNode): boolean {
+    return type.kind === 'Func' || type.kind === 'DependentFunc' || type.kind === 'DependentProd';
   }
 
   // Helper method to create a sequent from a lambda expression
@@ -275,6 +293,9 @@ export class LambdaToExpressionService {
           left: this.createFormulaFromLambda(expr.left),
           right: this.createFormulaFromLambda(expr.right)
         };
+      case 'Fst':
+      case 'Snd':
+        return this.createFormulaFromLambda(expr.pair);
       case 'DependentPair':
         // ∃x. (proof type) — proof of existential
         return {

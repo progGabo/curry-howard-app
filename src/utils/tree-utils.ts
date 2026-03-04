@@ -16,6 +16,9 @@ export class TreeUtils {
         return { ...mapped, fn: this.mapExpr(mapped.fn, fn), arg: this.mapExpr(mapped.arg, fn) };
       case 'Pair':
         return { ...mapped, left: this.mapExpr(mapped.left, fn), right: this.mapExpr(mapped.right, fn) };
+      case 'Fst':
+      case 'Snd':
+        return { ...mapped, pair: this.mapExpr(mapped.pair, fn) };
       case 'LetPair':
         return { ...mapped, pair: this.mapExpr(mapped.pair, fn), inExpr: this.mapExpr(mapped.inExpr, fn) };
       case 'Inl':
@@ -60,6 +63,9 @@ export class TreeUtils {
         return this.findExpr(expr.fn, predicate) || this.findExpr(expr.arg, predicate);
       case 'Pair':
         return this.findExpr(expr.left, predicate) || this.findExpr(expr.right, predicate);
+      case 'Fst':
+      case 'Snd':
+        return this.findExpr(expr.pair, predicate);
       case 'LetPair':
         return this.findExpr(expr.pair, predicate) || this.findExpr(expr.inExpr, predicate);
       case 'Inl':
@@ -96,6 +102,10 @@ export class TreeUtils {
         break;
       case 'Pair':
         count += this.countNodes(expr.left) + this.countNodes(expr.right);
+        break;
+      case 'Fst':
+      case 'Snd':
+        count += this.countNodes(expr.pair);
         break;
       case 'LetPair':
         count += this.countNodes(expr.pair) + this.countNodes(expr.inExpr);
@@ -145,6 +155,9 @@ export class TreeUtils {
           ...this.getFreeVars(expr.left, bound),
           ...this.getFreeVars(expr.right, bound)
         ]);
+      case 'Fst':
+      case 'Snd':
+        return this.getFreeVars(expr.pair, bound);
       case 'LetPair':
         return new Set([
           ...this.getFreeVars(expr.pair, bound),

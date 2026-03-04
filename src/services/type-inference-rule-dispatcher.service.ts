@@ -38,6 +38,8 @@ export class TypeInferenceRuleDispatcherService {
       inferAbs: () => T;
       inferApp: () => T;
       inferPair: () => T;
+      inferFst: () => T;
+      inferSnd: () => T;
       inferLetPair: () => T;
       inferInl: () => T;
       inferInr: () => T;
@@ -59,6 +61,8 @@ export class TypeInferenceRuleDispatcherService {
     if (rule === 'Abs' && expr.kind === 'Abs') return handlers.inferAbs();
     if (rule === 'App' && expr.kind === 'App') return handlers.inferApp();
     if (rule === 'Pair' && expr.kind === 'Pair') return handlers.inferPair();
+    if (rule === 'Fst' && expr.kind === 'Fst') return handlers.inferFst();
+    if (rule === 'Snd' && expr.kind === 'Snd') return handlers.inferSnd();
     if (rule === 'LetPair' && expr.kind === 'LetPair') return handlers.inferLetPair();
     if (rule === 'Inl' && expr.kind === 'Inl') return handlers.inferInl();
     if (rule === 'Inr' && expr.kind === 'Inr') return handlers.inferInr();

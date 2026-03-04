@@ -47,6 +47,12 @@ export class TypeInferenceService {
       
       case 'Pair':
         return this.inferPair(expr, assumptions);
+
+      case 'Fst':
+        return this.inferFst(expr, assumptions);
+
+      case 'Snd':
+        return this.inferSnd(expr, assumptions);
       
       case 'Inl':
         return this.inferInl(expr, assumptions);
@@ -265,6 +271,64 @@ export class TypeInferenceService {
       assumptions: new Map(assumptions),
       children: [leftInference, rightInference]
     };
+  }
+
+  private inferFst(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'Fst') throw new Error('Expected Fst expression');
+
+    const pairInference = this.inferType(expr.pair, assumptions);
+    const pairType = pairInference.inferredType;
+
+    if (pairType.kind === 'Prod') {
+      return {
+        rule: 'Fst',
+        expression: expr,
+        inferredType: pairType.left,
+        assumptions: new Map(assumptions),
+        children: [pairInference]
+      };
+    }
+
+    if (pairType.kind === 'TypeVar' && pairType.name === '?') {
+      return {
+        rule: 'Fst',
+        expression: expr,
+        inferredType: TypeFactories.typeVar('?'),
+        assumptions: new Map(assumptions),
+        children: [pairInference]
+      };
+    }
+
+    throw new Error('fst requires a product type');
+  }
+
+  private inferSnd(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'Snd') throw new Error('Expected Snd expression');
+
+    const pairInference = this.inferType(expr.pair, assumptions);
+    const pairType = pairInference.inferredType;
+
+    if (pairType.kind === 'Prod') {
+      return {
+        rule: 'Snd',
+        expression: expr,
+        inferredType: pairType.right,
+        assumptions: new Map(assumptions),
+        children: [pairInference]
+      };
+    }
+
+    if (pairType.kind === 'TypeVar' && pairType.name === '?') {
+      return {
+        rule: 'Snd',
+        expression: expr,
+        inferredType: TypeFactories.typeVar('?'),
+        assumptions: new Map(assumptions),
+        children: [pairInference]
+      };
+    }
+
+    throw new Error('snd requires a product type');
   }
 
   private inferInl(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
@@ -652,11 +716,15 @@ export class TypeInferenceService {
       case 'Prod':
         const leftStr = this.formatType(type.left);
         const rightStr = this.formatType(type.right);
-        return `${leftStr} × ${rightStr}`;
+        const leftNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const rightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${leftNeedsParens ? `(${leftStr})` : leftStr} × ${rightNeedsParens ? `(${rightStr})` : rightStr}`;
       case 'Sum':
         const sumLeftStr = this.formatType(type.left);
         const sumRightStr = this.formatType(type.right);
-        return `${sumLeftStr} + ${sumRightStr}`;
+        const sumLeftNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const sumRightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${sumLeftNeedsParens ? `(${sumLeftStr})` : sumLeftStr} + ${sumRightNeedsParens ? `(${sumRightStr})` : sumRightStr}`;
       case 'PredicateType':
         const args = type.argTypes.map(arg => this.formatType(arg)).join(', ');
         return `${type.name}(${args})`;
@@ -689,6 +757,10 @@ export class TypeInferenceService {
     return false;
   }
 
+  private needsParensForProductOrSumOperand(type: TypeNode): boolean {
+    return type.kind === 'Func' || type.kind === 'DependentFunc' || type.kind === 'DependentProd';
+  }
+
   buildInteractiveRoot(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
     const assumptions = initialAssumptions ? new Map(initialAssumptions) : new Map<string, TypeNode>();
     const freeVars = TreeUtils.getFreeVars(lambdaExpr);
@@ -716,6 +788,8 @@ export class TypeInferenceService {
         inferAbs: () => this.inferAbsInteractive(expr, assumptions),
         inferApp: () => this.inferAppInteractive(expr, assumptions),
         inferPair: () => this.inferPairInteractive(expr, assumptions),
+        inferFst: () => this.inferFstInteractive(expr, assumptions),
+        inferSnd: () => this.inferSndInteractive(expr, assumptions),
         inferLetPair: () => this.inferLetPairInteractive(expr, assumptions),
         inferInl: () => this.inferInlInteractive(expr, assumptions),
         inferInr: () => this.inferInrInteractive(expr, assumptions),
@@ -821,6 +895,20 @@ export class TypeInferenceService {
           };
         }
         break;
+
+      case 'Fst':
+        if (node.children.length === 1) {
+          const pairType = node.children[0].inferredType;
+          node.inferredType = pairType.kind === 'Prod' ? pairType.left : { kind: 'TypeVar', name: '?' };
+        }
+        break;
+
+      case 'Snd':
+        if (node.children.length === 1) {
+          const pairType = node.children[0].inferredType;
+          node.inferredType = pairType.kind === 'Prod' ? pairType.right : { kind: 'TypeVar', name: '?' };
+        }
+        break;
         
       case 'Let':
         if (node.children.length >= 2) {
@@ -922,6 +1010,54 @@ export class TypeInferenceService {
       inferredType: { kind: 'Prod', left: leftChild.inferredType, right: rightChild.inferredType },
       assumptions: new Map(assumptions),
       children: [leftChild, rightChild]
+    };
+  }
+
+  private inferFstInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'Fst') throw new Error('Expected Fst expression');
+
+    const pairChild: TypeInferenceNode = {
+      rule: '∅',
+      expression: expr.pair,
+      inferredType: {
+        kind: 'Prod',
+        left: { kind: 'TypeVar', name: '?' },
+        right: { kind: 'TypeVar', name: '?' }
+      },
+      assumptions: new Map(assumptions),
+      children: []
+    };
+
+    return {
+      rule: 'Fst',
+      expression: expr,
+      inferredType: pairChild.inferredType.kind === 'Prod' ? pairChild.inferredType.left : { kind: 'TypeVar', name: '?' },
+      assumptions: new Map(assumptions),
+      children: [pairChild]
+    };
+  }
+
+  private inferSndInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
+    if (expr.kind !== 'Snd') throw new Error('Expected Snd expression');
+
+    const pairChild: TypeInferenceNode = {
+      rule: '∅',
+      expression: expr.pair,
+      inferredType: {
+        kind: 'Prod',
+        left: { kind: 'TypeVar', name: '?' },
+        right: { kind: 'TypeVar', name: '?' }
+      },
+      assumptions: new Map(assumptions),
+      children: []
+    };
+
+    return {
+      rule: 'Snd',
+      expression: expr,
+      inferredType: pairChild.inferredType.kind === 'Prod' ? pairChild.inferredType.right : { kind: 'TypeVar', name: '?' },
+      assumptions: new Map(assumptions),
+      children: [pairChild]
     };
   }
 
