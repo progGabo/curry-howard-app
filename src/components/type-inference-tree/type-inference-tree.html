@@ -1,7 +1,7 @@
 <ng-container *ngIf="mode === 'interactive' && interactiveSubmode === 'predict'; else sharedRendererTree">
   <div class="main" *ngIf="root as r">
     <div class="inference-node">
-      <div class="children" *ngIf="r.children?.length">
+      <div class="children" *ngIf="r.children?.length" #childrenEl>
         <app-type-inference-tree
           *ngFor="let child of r.children"
           [root]="child"
@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <div class="conclusion" [ngClass]="{ selected: isSelected }">
+      <div class="conclusion" #conclusionEl [style.--line-width.px]="lineWidthPx" [style.--line-offset.px]="lineOffsetPx" [ngClass]="{ selected: isSelected }">
         <button 
           *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Var' && r.rule !== 'True' && r.rule !== 'False' && r.rule !== 'Zero'"
           class="rule-plus-btn"

@@ -5,43 +5,143 @@
       <button class="modal-close" type="button" (click)="onClose()" [attr.aria-label]="t.close">✕</button>
     </div>
     <div class="help-modal__body">
-      <div class="tutorial-content">
-        <ng-container *ngFor="let section of sections">
-          <h4>{{ section.title }}</h4>
-          <p *ngIf="section.paragraph">{{ section.paragraph }}</p>
-          <ng-container *ngIf="section.items?.length">
-            <ol *ngIf="section.ordered; else unorderedList">
-              <li *ngFor="let item of section.items">
-                <strong *ngIf="item.label">{{ item.label }}</strong>
-                {{ item.text }}
-                <ul *ngIf="item.children?.length">
-                  <li *ngFor="let child of item.children">
-                    <strong *ngIf="child.label">{{ child.label }}</strong>
-                    {{ child.text }}
-                  </li>
-                </ul>
-              </li>
-            </ol>
-            <ng-template #unorderedList>
-              <ul>
-                <li *ngFor="let item of section.items">
-                  <strong *ngIf="item.label">{{ item.label }}</strong>
-                  {{ item.text }}
-                  <ul *ngIf="item.children?.length">
-                    <li *ngFor="let child of item.children">
-                      <strong *ngIf="child.label">{{ child.label }}</strong>
-                      {{ child.text }}
-                    </li>
-                  </ul>
-                </li>
-              </ul>
-            </ng-template>
-          </ng-container>
-        </ng-container>
+      <div class="help-gallery">
+        <section class="help-gallery__item">
+          <h4>{{ currentLanguage === 'sk' ? 'Vstup' : 'Input' }}</h4>
+          <p>
+            {{
+              currentLanguage === 'sk'
+                ? 'Sem zadávate logický alebo lambda výraz podľa zvoleného režimu.'
+                : 'Enter a logical or lambda expression here based on the selected mode.'
+            }}
+          </p>
+          <img
+            class="help-gallery__image"
+            src="assets/image/editor.png"
+            [alt]="currentLanguage === 'sk' ? 'Editor vstupu' : 'Input editor'"
+          />
+          <p class="help-gallery__subtext">
+            {{
+              currentLanguage === 'sk'
+                ? 'V editore môžete používať textové skratky pre špeciálne symboly (po dopísaní sa automaticky nahradia):'
+                : 'In the editor, you can use text shortcuts for special symbols (they are replaced automatically after typing):'
+            }}
+          </p>
+          <ul class="help-shortcuts">
+            <li><code>\impl</code>, <code>\to</code> → <code>⇒</code></li>
+            <li><code>\and</code> → <code>∧</code></li>
+            <li><code>\or</code> → <code>∨</code></li>
+            <li><code>\not</code> → <code>¬</code></li>
+            <li><code>\forall</code> → <code>∀</code></li>
+            <li><code>\exists</code> → <code>∃</code></li>
+            <li><code>\turnstile</code>, <code>\vdash</code> → <code>⊢</code></li>
+            <li><code>\lambda</code> → <code>λ</code></li>
+          </ul>
+        </section>
+
+        <section class="help-gallery__item">
+          <h4>{{ currentLanguage === 'sk' ? 'Smer izomorfizmu' : 'Isomorphism direction' }}</h4>
+          <p>
+            {{
+              currentLanguage === 'sk'
+                ? 'V hlavičke zvoľte smer Curry-Howardovho izomorfizmu: Výraz → Lambda alebo Lambda → Výraz.'
+                : 'In the header, choose the Curry-Howard isomorphism direction: Expression → Lambda or Lambda → Expression.'
+            }}
+          </p>
+          <img
+            class="help-gallery__image"
+            src="assets/image/isomorphism.png"
+            [alt]="currentLanguage === 'sk' ? 'Smer izomorfizmu' : 'Isomorphism direction'"
+          />
+        </section>
+
+        <section class="help-gallery__item">
+          <h4>{{ currentLanguage === 'sk' ? 'Dokazovanie výroku' : 'Proposition proving' }}</h4>
+          <p>
+            {{
+              currentLanguage === 'sk'
+                ? 'V sekcii Dôkazy si vyberáte medzi sekvenčným kalkulom a prirodzenou dedukciou.'
+                : 'In the Proofs section, you can choose between Sequent calculus and Natural deduction.'
+            }}
+          </p>
+          <img
+            class="help-gallery__image"
+            src="assets/image/proofs.png"
+            [alt]="currentLanguage === 'sk' ? 'Dokazovanie výroku' : 'Proposition proving'"
+          />
+        </section>
+
+        <section class="help-gallery__item">
+          <h4>{{ currentLanguage === 'sk' ? 'Režimy práce' : 'Working modes' }}</h4>
+          <p>
+            {{
+              currentLanguage === 'sk'
+                ? 'Auto režim generuje riešenie automaticky. Interaktívny režim umožňuje vyberať pravidlá manuálne.'
+                : 'Auto mode generates the solution automatically. Interactive mode lets you choose rules manually.'
+            }}
+          </p>
+          <p>
+            {{
+              currentLanguage === 'sk'
+                ? 'V interaktívnom režime sú dostupné podrežimy Len použiteľné, Všetky pravidlá a Predikcia, spolu s tlačidlom Krok späť.'
+                : 'In interactive mode, submodes Applicable only, All rules, and Predict are available, together with Step back.'
+            }}
+          </p>
+          <ul class="help-flow">
+            <li>
+              {{
+                currentLanguage === 'sk'
+                  ? 'Len použiteľné: aplikácia zobrazí iba pravidlá, ktoré sa dajú použiť na vybraný uzol.'
+                  : 'Applicable only: the app shows only rules that can be applied to the selected node.'
+              }}
+            </li>
+            <li>
+              {{
+                currentLanguage === 'sk'
+                  ? 'Všetky pravidlá: aplikácia zobrazí všetky pravidlá bez filtrovania podľa vybraného uzla.'
+                  : 'All rules: the app shows all rules without filtering by the selected node.'
+              }}
+            </li>
+            <li>
+              {{
+                currentLanguage === 'sk'
+                  ? 'Predikcia: najprv vyberiete pravidlo a potom doplníte očakávané výsledky ďalších krokov; pravidlo sa aplikuje až po správnej predikcii.'
+                  : 'Predict: first choose a rule, then fill in expected results of the next steps; the rule is applied only after a correct prediction.'
+              }}
+            </li>
+            <li>
+              {{
+                currentLanguage === 'sk'
+                  ? 'Krok späť: v interaktívnom režime vracia poslednú vykonanú zmenu v strome.'
+                  : 'Step back: in interactive mode, it restores the last change made in the tree.'
+              }}
+            </li>
+          </ul>
+          <img
+            class="help-gallery__image"
+            src="assets/image/auto-interactive.png"
+            [alt]="currentLanguage === 'sk' ? 'Režimy práce Auto a Interaktívny' : 'Auto and Interactive working modes'"
+          />
+        </section>
+
+        <section class="help-gallery__item">
+          <h4>{{ currentLanguage === 'sk' ? 'Postup práce' : 'Typical workflow' }}</h4>
+          <ol class="help-flow">
+            <li>
+              {{ currentLanguage === 'sk' ? 'Vyberte sekciu (Curry-Howard alebo Dôkazy) a konkrétny režim v hlavičke.' : 'Select the section (Curry-Howard or Proofs) and specific mode in the header.' }}
+            </li>
+            <li>
+              {{ currentLanguage === 'sk' ? 'Zadajte vstup do editora (alebo použite pripravený príklad).' : 'Enter input in the editor (or use a prepared example).' }}
+            </li>
+            <li>
+              {{ currentLanguage === 'sk' ? 'Spustite výpočet tlačidlom Generovať dôkaz alebo Konvertovať.' : 'Run processing with Generate proof or Convert.' }}
+            </li>
+            <li>
+              {{ currentLanguage === 'sk' ? 'Výsledok sa zobrazí v pravej časti ako dôkazový strom, typ alebo lambda výraz.' : 'The result appears on the right as a proof tree, type, or lambda expression.' }}
+            </li>
+          </ol>
+        </section>
       </div>
-    </div>
-    <div class="help-modal__footer">
-      <p-button [label]="t.close" (click)="onClose()" styleClass="btn btn-primary"></p-button>
     </div>
   </div>
   <div class="help-modal__backdrop"></div>

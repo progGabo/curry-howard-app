@@ -31,7 +31,7 @@ export const ABS_RULES = ['Abs'] as const;
 export const APP_RULES = ['App'] as const;
 
 /** Type inference: pairs */
-export const PAIR_RULES = ['Pair', 'LetPair'] as const;
+export const PAIR_RULES = ['Pair', 'Fst', 'Snd', 'LetPair'] as const;
 
 /** Type inference: dependent types (∀ / ∃) */
 export const DEPENDENT_RULES = ['DependentAbs', 'DependentPair', 'LetDependentPair'] as const;

@@ -536,9 +536,17 @@ export class LambdaParserService {
         const toNeedsParens = this.needsParensForArrowSide(type.to, 'right');
         return `${fromNeedsParens ? `(${from})` : from} -> ${toNeedsParens ? `(${to})` : to}`;
       case 'Prod':
-        return `${this.formatType(type.left)} * ${this.formatType(type.right)}`;
+        const prodLeft = this.formatType(type.left);
+        const prodRight = this.formatType(type.right);
+        const prodLeftNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const prodRightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${prodLeftNeedsParens ? `(${prodLeft})` : prodLeft} * ${prodRightNeedsParens ? `(${prodRight})` : prodRight}`;
       case 'Sum':
-        return `${this.formatType(type.left)} + ${this.formatType(type.right)}`;
+        const sumLeft = this.formatType(type.left);
+        const sumRight = this.formatType(type.right);
+        const sumLeftNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const sumRightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${sumLeftNeedsParens ? `(${sumLeft})` : sumLeft} + ${sumRightNeedsParens ? `(${sumRight})` : sumRight}`;
       case 'PredicateType':
         const args = type.argTypes.map((t: any) => this.formatType(t)).join(', ');
         return `${type.name}(${args})`;
@@ -561,5 +569,9 @@ export class LambdaParserService {
     if (type?.kind === 'DependentFunc' || type?.kind === 'DependentProd') return true;
     if (type?.kind === 'Func') return side === 'left' || side === 'right';
     return false;
+  }
+
+  private needsParensForProductOrSumOperand(type: any): boolean {
+    return type?.kind === 'Func' || type?.kind === 'DependentFunc' || type?.kind === 'DependentProd';
   }
 }

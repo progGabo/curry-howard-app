@@ -1,6 +1,6 @@
 <div class="main" *ngIf="root as r">
   <div class="tree-node">
-    <div class="children" *ngIf="r.premises?.length">
+    <div class="children" *ngIf="r.premises?.length" #childrenEl>
       <app-natural-deduction-tree
         *ngFor="let premise of r.premises"
         [root]="premise"
@@ -33,6 +33,9 @@
 
     <div
       class="conclusion"
+      #conclusionEl
+      [style.--nd-line-width.px]="lineWidthPx"
+      [style.--nd-line-offset.px]="lineOffsetPx"
       [class.selected]="selectedNode === r"
       [class.leaf]="!r.premises.length"
       [attr.role]="mode === 'interactive' ? 'button' : null"
