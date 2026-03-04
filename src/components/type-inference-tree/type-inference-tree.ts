@@ -641,8 +641,7 @@ export class TypeInferenceTree implements AfterViewChecked {
 
     switch (type.kind) {
       case 'TypeVar':
-        // Capitalize the first letter of type variable names
-        return type.name.charAt(0).toUpperCase() + type.name.slice(1);
+        return this.formatTypeVariableName(type.name);
       case 'Bool':
         return 'Bool';
       case 'Bottom':
@@ -677,6 +676,30 @@ export class TypeInferenceTree implements AfterViewChecked {
       default:
         return `[${type.kind}]`;
     }
+  }
+
+  private formatTypeVariableName(name: string): string {
+    const polyIndex = this.tryParsePolyIndex(name);
+    if (polyIndex !== null) {
+      return this.polyIndexToGreek(polyIndex);
+    }
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  private tryParsePolyIndex(name: string): number | null {
+    const match = /^__poly(\d+)$/.exec(name);
+    if (!match) {
+      return null;
+    }
+    const parsed = Number.parseInt(match[1], 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private polyIndexToGreek(index: number): string {
+    const greek = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'];
+    const base = greek[(index - 1) % greek.length];
+    const cycle = Math.floor((index - 1) / greek.length);
+    return cycle === 0 ? base : `${base}${cycle + 1}`;
   }
 
   private isNegationType(type: any): boolean {

@@ -19,11 +19,21 @@ export interface TypeInferenceNode {
   };
 }
 
+interface TypeScheme {
+  quantified: string[];
+  type: TypeNode;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TypeInferenceService {
+  private polymorphicBindings = new Map<string, TypeScheme>();
+  private polyVarCounter = 0;
+
   constructor(private ruleDispatcher: TypeInferenceRuleDispatcherService) {}
 
   buildTypeInferenceTree(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
+    this.polymorphicBindings.clear();
+    this.polyVarCounter = 0;
     let assumptions = initialAssumptions ? new Map(initialAssumptions) : new Map<string, TypeNode>();
     const freeVars = TreeUtils.getFreeVars(lambdaExpr);
     for (const v of freeVars) {
@@ -130,10 +140,13 @@ export class TypeInferenceService {
       throw new Error(`Unbound variable: ${expr.name}`);
     }
 
+    const scheme = this.polymorphicBindings.get(expr.name);
+    const inferredType = scheme ? this.instantiateScheme(scheme) : varType;
+
     return {
       rule: 'Var',
       expression: expr,
-      inferredType: varType,
+      inferredType,
       assumptions: new Map(assumptions),
       children: []
     };
@@ -147,7 +160,7 @@ export class TypeInferenceService {
     newAssumptions.set(expr.param, expr.paramType);
     
     // Infer type of body
-    const bodyInference = this.inferType(expr.body, newAssumptions);
+    const bodyInference = this.withShadowedPolymorphism([expr.param], () => this.inferType(expr.body, newAssumptions));
     
     // Result type is paramType -> bodyType
     const resultType: TypeNode = {
@@ -176,17 +189,20 @@ export class TypeInferenceService {
     let resultType: TypeNode;
 
     if (fnType.kind === 'Func') {
-      if (!this.typesEqual(fnType.from, argInference.inferredType)) {
+      const substitutions = new Map<string, TypeNode>();
+      if (!this.matchTypePattern(fnType.from, argInference.inferredType, substitutions)) {
         throw new Error('Type mismatch in application');
       }
-      resultType = fnType.to;
+      resultType = this.applyTypeSubstitutions(fnType.to, substitutions);
     } else if (fnType.kind === 'DependentFunc') {
-      if (!this.typesEqual(fnType.paramType, argInference.inferredType)) {
+      const substitutions = new Map<string, TypeNode>();
+      if (!this.matchTypePattern(fnType.paramType, argInference.inferredType, substitutions)) {
         throw new Error('Type mismatch in application');
       }
       // Substitute the bound variable with the witness in the body type (e.g. P(x)→Q(x) becomes P(a)→Q(a))
       const witnessName = expr.arg.kind === 'Var' ? expr.arg.name : fnType.param;
-      resultType = this.substituteInType(fnType.bodyType, fnType.param, TypeFactories.typeVar(witnessName));
+      const instantiatedBody = this.applyTypeSubstitutions(fnType.bodyType, substitutions);
+      resultType = this.substituteInType(instantiatedBody, fnType.param, TypeFactories.typeVar(witnessName));
     } else if (fnType.kind === 'TypeVar' && fnType.name === '?') {
       // Placeholder for free variables in lambda→expression: allow application, result unknown
       resultType = TypeFactories.typeVar('?');
@@ -373,11 +389,11 @@ export class TypeInferenceService {
     // Infer types of both branches
     const leftAssumptions = new Map(assumptions);
     leftAssumptions.set(expr.leftVar, expr.leftType);
-    const leftInference = this.inferType(expr.leftBranch, leftAssumptions);
+    const leftInference = this.withShadowedPolymorphism([expr.leftVar], () => this.inferType(expr.leftBranch, leftAssumptions));
     
     const rightAssumptions = new Map(assumptions);
     rightAssumptions.set(expr.rightVar, expr.rightType);
-    const rightInference = this.inferType(expr.rightBranch, rightAssumptions);
+    const rightInference = this.withShadowedPolymorphism([expr.rightVar], () => this.inferType(expr.rightBranch, rightAssumptions));
     
     // Both branches must have the same type
     if (!this.typesEqual(leftInference.inferredType, rightInference.inferredType)) {
@@ -397,10 +413,15 @@ export class TypeInferenceService {
     if (expr.kind !== 'Let') throw new Error('Expected Let expression');
     
     const valueInference = this.inferType(expr.value, assumptions);
+    const quantified = this.generalizeType(valueInference.inferredType, assumptions);
+    const scheme: TypeScheme = {
+      quantified,
+      type: valueInference.inferredType
+    };
     
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.name, valueInference.inferredType);
-    const bodyInference = this.inferType(expr.inExpr, newAssumptions);
+    const bodyInference = this.withPolymorphicBinding(expr.name, scheme, () => this.inferType(expr.inExpr, newAssumptions));
 
     return {
       rule: 'Let',
@@ -423,7 +444,7 @@ export class TypeInferenceService {
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.x, pairInference.inferredType.left);
     newAssumptions.set(expr.y, pairInference.inferredType.right);
-    const bodyInference = this.inferType(expr.inExpr, newAssumptions);
+    const bodyInference = this.withShadowedPolymorphism([expr.x, expr.y], () => this.inferType(expr.inExpr, newAssumptions));
 
     return {
       rule: 'LetPair',
@@ -440,7 +461,7 @@ export class TypeInferenceService {
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.param, expr.paramType);
     
-    const bodyInference = this.inferType(expr.body, newAssumptions);
+    const bodyInference = this.withShadowedPolymorphism([expr.param], () => this.inferType(expr.body, newAssumptions));
     
     const resultType: TypeNode = {
       kind: 'DependentFunc',
@@ -556,7 +577,7 @@ export class TypeInferenceService {
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.x, expr.xType);
     newAssumptions.set(expr.p, expr.pType);
-    const bodyInference = this.inferType(expr.inExpr, newAssumptions);
+    const bodyInference = this.withShadowedPolymorphism([expr.x, expr.p], () => this.inferType(expr.inExpr, newAssumptions));
     const closedResultType = this.closeLetDependentPairResultType(expr, bodyInference.inferredType);
 
     return {
@@ -691,6 +712,217 @@ export class TypeInferenceService {
     }
   }
 
+  private generalizeType(type: TypeNode, assumptions: Map<string, TypeNode>): string[] {
+    const typeVars = this.collectTypeVariables(type);
+    const envVars = this.collectTypeVariablesInAssumptions(assumptions);
+    return [...typeVars].filter((name) => !envVars.has(name));
+  }
+
+  private instantiateScheme(scheme: TypeScheme): TypeNode {
+    if (scheme.quantified.length === 0) {
+      return scheme.type;
+    }
+
+    const substitutions = new Map<string, TypeNode>();
+    for (const quantified of scheme.quantified) {
+      substitutions.set(quantified, TypeFactories.typeVar(`__poly${++this.polyVarCounter}`));
+    }
+    return this.applyTypeSubstitutions(scheme.type, substitutions);
+  }
+
+  private applyTypeSubstitutions(type: TypeNode, substitutions: Map<string, TypeNode>): TypeNode {
+    if (type.kind === 'TypeVar') {
+      const replacement = substitutions.get(type.name);
+      return replacement ?? type;
+    }
+
+    switch (type.kind) {
+      case 'Func':
+        return TypeFactories.func(
+          this.applyTypeSubstitutions(type.from, substitutions),
+          this.applyTypeSubstitutions(type.to, substitutions)
+        );
+      case 'Prod':
+        return TypeFactories.prod(
+          this.applyTypeSubstitutions(type.left, substitutions),
+          this.applyTypeSubstitutions(type.right, substitutions)
+        );
+      case 'Sum':
+        return TypeFactories.sum(
+          this.applyTypeSubstitutions(type.left, substitutions),
+          this.applyTypeSubstitutions(type.right, substitutions)
+        );
+      case 'PredicateType':
+        return TypeFactories.predicate(
+          type.name,
+          type.argTypes.map((arg) => this.applyTypeSubstitutions(arg, substitutions))
+        );
+      case 'DependentFunc':
+        return TypeFactories.dependentFunc(
+          type.param,
+          this.applyTypeSubstitutions(type.paramType, substitutions),
+          this.applyTypeSubstitutions(type.bodyType, substitutions)
+        );
+      case 'DependentProd':
+        return TypeFactories.dependentProd(
+          type.param,
+          this.applyTypeSubstitutions(type.paramType, substitutions),
+          this.applyTypeSubstitutions(type.bodyType, substitutions)
+        );
+      case 'Bool':
+      case 'Bottom':
+      case 'Nat':
+        return type;
+      default:
+        return type;
+    }
+  }
+
+  private matchTypePattern(pattern: TypeNode, actual: TypeNode, substitutions: Map<string, TypeNode>): boolean {
+    if (pattern.kind === 'TypeVar') {
+      if (pattern.name === '?') {
+        return true;
+      }
+      if (this.isPolymorphicTypeVar(pattern.name)) {
+        const existing = substitutions.get(pattern.name);
+        if (!existing) {
+          substitutions.set(pattern.name, actual);
+          return true;
+        }
+        return this.typesEqual(existing, actual);
+      }
+      return this.typesEqual(pattern, actual);
+    }
+
+    if (pattern.kind !== actual.kind) {
+      return false;
+    }
+
+    switch (pattern.kind) {
+      case 'Bool':
+      case 'Bottom':
+      case 'Nat':
+        return true;
+      case 'Func':
+        return this.matchTypePattern(pattern.from, (actual as any).from, substitutions)
+          && this.matchTypePattern(pattern.to, (actual as any).to, substitutions);
+      case 'Prod':
+        return this.matchTypePattern(pattern.left, (actual as any).left, substitutions)
+          && this.matchTypePattern(pattern.right, (actual as any).right, substitutions);
+      case 'Sum':
+        return this.matchTypePattern(pattern.left, (actual as any).left, substitutions)
+          && this.matchTypePattern(pattern.right, (actual as any).right, substitutions);
+      case 'PredicateType':
+        if (pattern.name !== (actual as any).name || pattern.argTypes.length !== (actual as any).argTypes.length) {
+          return false;
+        }
+        return pattern.argTypes.every((arg, index) => this.matchTypePattern(arg, (actual as any).argTypes[index], substitutions));
+      case 'DependentFunc':
+        return pattern.param === (actual as any).param
+          && this.matchTypePattern(pattern.paramType, (actual as any).paramType, substitutions)
+          && this.matchTypePattern(pattern.bodyType, (actual as any).bodyType, substitutions);
+      case 'DependentProd':
+        return pattern.param === (actual as any).param
+          && this.matchTypePattern(pattern.paramType, (actual as any).paramType, substitutions)
+          && this.matchTypePattern(pattern.bodyType, (actual as any).bodyType, substitutions);
+      default:
+        return false;
+    }
+  }
+
+  private collectTypeVariables(type: TypeNode, bucket: Set<string> = new Set<string>()): Set<string> {
+    switch (type.kind) {
+      case 'TypeVar':
+        if (type.name !== '?') {
+          bucket.add(type.name);
+        }
+        break;
+      case 'Func':
+        this.collectTypeVariables(type.from, bucket);
+        this.collectTypeVariables(type.to, bucket);
+        break;
+      case 'Prod':
+      case 'Sum':
+        this.collectTypeVariables(type.left, bucket);
+        this.collectTypeVariables(type.right, bucket);
+        break;
+      case 'PredicateType':
+        type.argTypes.forEach((arg) => this.collectTypeVariables(arg, bucket));
+        break;
+      case 'DependentFunc':
+      case 'DependentProd':
+        this.collectTypeVariables(type.paramType, bucket);
+        this.collectTypeVariables(type.bodyType, bucket);
+        break;
+      case 'Bool':
+      case 'Bottom':
+      case 'Nat':
+        break;
+    }
+    return bucket;
+  }
+
+  private collectTypeVariablesInAssumptions(assumptions: Map<string, TypeNode>): Set<string> {
+    const bucket = new Set<string>();
+    assumptions.forEach((assumedType, variable) => {
+      const scheme = this.polymorphicBindings.get(variable);
+      const local = this.collectTypeVariables(assumedType);
+      if (!scheme) {
+        local.forEach((name) => bucket.add(name));
+        return;
+      }
+      local.forEach((name) => {
+        if (!scheme.quantified.includes(name)) {
+          bucket.add(name);
+        }
+      });
+    });
+    return bucket;
+  }
+
+  private isPolymorphicTypeVar(typeName: string): boolean {
+    return typeName.startsWith('__poly');
+  }
+
+  private withPolymorphicBinding<T>(name: string, scheme: TypeScheme, action: () => T): T {
+    const previous = this.polymorphicBindings.has(name) ? this.polymorphicBindings.get(name) : undefined;
+    this.polymorphicBindings.set(name, scheme);
+    try {
+      return action();
+    } finally {
+      if (previous) {
+        this.polymorphicBindings.set(name, previous);
+      } else {
+        this.polymorphicBindings.delete(name);
+      }
+    }
+  }
+
+  private withShadowedPolymorphism<T>(names: string[], action: () => T): T {
+    const previous = new Map<string, TypeScheme>();
+    const hadEntry = new Set<string>();
+
+    for (const name of names) {
+      if (this.polymorphicBindings.has(name)) {
+        hadEntry.add(name);
+        previous.set(name, this.polymorphicBindings.get(name)!);
+        this.polymorphicBindings.delete(name);
+      }
+    }
+
+    try {
+      return action();
+    } finally {
+      for (const name of names) {
+        if (hadEntry.has(name)) {
+          this.polymorphicBindings.set(name, previous.get(name)!);
+        } else {
+          this.polymorphicBindings.delete(name);
+        }
+      }
+    }
+  }
+
   formatType(type: TypeNode): string {
     if (type.kind === 'Func' && this.isNegationType(type)) {
       const inner = this.formatType(type.from);
@@ -700,7 +932,7 @@ export class TypeInferenceService {
 
     switch (type.kind) {
       case 'TypeVar':
-        return type.name;
+        return this.formatTypeVariableName(type.name);
       case 'Bool':
         return 'Bool';
       case 'Bottom':
@@ -741,6 +973,31 @@ export class TypeInferenceService {
     }
   }
 
+  private formatTypeVariableName(name: string): string {
+    const polyIndex = this.tryParsePolyIndex(name);
+    if (polyIndex === null) {
+      return name;
+    }
+
+    return this.polyIndexToGreek(polyIndex);
+  }
+
+  private tryParsePolyIndex(name: string): number | null {
+    const match = /^__poly(\d+)$/.exec(name);
+    if (!match) {
+      return null;
+    }
+    const parsed = Number.parseInt(match[1], 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private polyIndexToGreek(index: number): string {
+    const greek = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'];
+    const base = greek[(index - 1) % greek.length];
+    const cycle = Math.floor((index - 1) / greek.length);
+    return cycle === 0 ? base : `${base}${cycle + 1}`;
+  }
+
   private isNegationType(type: TypeNode): boolean {
     return type.kind === 'Func' && type.to.kind === 'Bottom';
   }
@@ -762,6 +1019,8 @@ export class TypeInferenceService {
   }
 
   buildInteractiveRoot(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
+    this.polymorphicBindings.clear();
+    this.polyVarCounter = 0;
     const assumptions = initialAssumptions ? new Map(initialAssumptions) : new Map<string, TypeNode>();
     const freeVars = TreeUtils.getFreeVars(lambdaExpr);
     for (const v of freeVars) {

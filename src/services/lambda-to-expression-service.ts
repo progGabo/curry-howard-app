@@ -35,7 +35,7 @@ export class LambdaToExpressionService {
 
     switch (type.kind) {
       case 'TypeVar':
-        return type.name;
+        return this.formatTypeVariableName(type.name);
       case 'Bool':
         return 'Bool';
       case 'Bottom':
@@ -188,7 +188,7 @@ export class LambdaToExpressionService {
 
     switch (type.kind) {
       case 'TypeVar':
-        return type.name;
+        return this.formatTypeVariableName(type.name);
       case 'Bool':
         return 'Bool';
       case 'Bottom':
@@ -247,6 +247,31 @@ export class LambdaToExpressionService {
 
   private needsParensForProductOrSumOperand(type: TypeNode): boolean {
     return type.kind === 'Func' || type.kind === 'DependentFunc' || type.kind === 'DependentProd';
+  }
+
+  private formatTypeVariableName(name: string): string {
+    const polyIndex = this.tryParsePolyIndex(name);
+    if (polyIndex === null) {
+      return name;
+    }
+
+    return this.polyIndexToGreek(polyIndex);
+  }
+
+  private tryParsePolyIndex(name: string): number | null {
+    const match = /^__poly(\d+)$/.exec(name);
+    if (!match) {
+      return null;
+    }
+    const parsed = Number.parseInt(match[1], 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private polyIndexToGreek(index: number): string {
+    const greek = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'];
+    const base = greek[(index - 1) % greek.length];
+    const cycle = Math.floor((index - 1) / greek.length);
+    return cycle === 0 ? base : `${base}${cycle + 1}`;
   }
 
   // Helper method to create a sequent from a lambda expression

@@ -136,13 +136,15 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .expression {
   color: #1f2937;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .type-separator {
@@ -157,5 +159,6 @@
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.9em;
+  white-space: nowrap;
 }
 
