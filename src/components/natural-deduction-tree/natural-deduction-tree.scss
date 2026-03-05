@@ -67,6 +67,8 @@
 }
 
 .conclusion {
+  --nd-line-width: 100%;
+  --nd-line-offset: 0px;
   position: relative;
   display: inline-block;
   font-weight: 600;
@@ -78,8 +80,10 @@
   content: "";
   position: absolute;
   top: 0.6rem;
-  left: 0;
-  right: 0;
+  left: 50%;
+  width: var(--nd-line-width);
+  right: auto;
+  transform: translateX(calc(-50% + var(--nd-line-offset)));
   height: 2px;
   background: #111;
 }
@@ -95,8 +99,8 @@
 .rule {
   position: absolute;
   top: -0.15rem;
-  left: 100%;
-  margin-left: 0.6rem;
+  left: calc(50% + var(--nd-line-offset) + (var(--nd-line-width) / 2));
+  margin-left: 0.35rem;
   background: #fff;
   padding: 0 0.35rem;
   white-space: nowrap;

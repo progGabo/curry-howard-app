@@ -246,26 +246,84 @@
           </div>
 
           <div *ngIf="isNaturalDeductionWorkflow">
-            <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger" [initialZoom]="0.85">
-              <div canvas-overlay class="nd-hypotheses-floating" *ngIf="ndHypotheses.length">
-                <span class="title">{{ t.hypotheses }}</span>
-                <div class="hyp-row" *ngFor="let hypothesis of ndHypotheses" [class.hyp-row--closed]="hypothesis.isClosed" [class.hyp-row--open]="!hypothesis.isClosed">
-                  <span class="label">{{ hypothesis.label }} =</span>
-                  <span class="expr" [appKatex]="hypothesis.formulaLatex"></span>
+            <div class="tabs-container" *ngIf="showExpressionLambdaTypeTab; else naturalDeductionOnlyView">
+              <div class="tabs-header">
+                <button
+                  type="button"
+                  class="tab-button"
+                  [class.active]="activeExpressionLambdaTab === 'proof'"
+                  (click)="setExpressionLambdaTab('proof')"
+                >
+                  {{ t.proofTree }}
+                </button>
+                <button
+                  type="button"
+                  class="tab-button"
+                  [class.active]="activeExpressionLambdaTab === 'type'"
+                  (click)="setExpressionLambdaTab('type')"
+                >
+                  {{ t.typeInference }}
+                </button>
+              </div>
+              <div class="tabs-content">
+                <div class="tab-panel" *ngIf="activeExpressionLambdaTab === 'proof'">
+                  <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger" [initialZoom]="0.85">
+                    <div canvas-overlay class="nd-hypotheses-floating" *ngIf="ndHypotheses.length">
+                      <span class="title">{{ t.hypotheses }}</span>
+                      <div class="hyp-row" *ngFor="let hypothesis of ndHypotheses" [class.hyp-row--closed]="hypothesis.isClosed" [class.hyp-row--open]="!hypothesis.isClosed">
+                        <span class="label">{{ hypothesis.label }} =</span>
+                        <span class="expr" [appKatex]="hypothesis.formulaLatex"></span>
+                      </div>
+                    </div>
+                    <app-natural-deduction-tree
+                      [root]="naturalDeductionTree"
+                      [mode]="mode"
+                      [selectedNode]="selectedNdNode"
+                      [ndPredictionRequest]="ndPredictionRequest"
+                      [currentLanguage]="currentLanguage"
+                      (nodeClicked)="onNdNodeClicked($event)"
+                      (plusButtonClicked)="onNdPlusButtonClicked($event)"
+                      (ndPredictionConfirm)="confirmNdPrediction($event)"
+                      (ndPredictionCancel)="cancelNdPrediction()"
+                    ></app-natural-deduction-tree>
+                  </app-tree-canvas>
+                </div>
+                <div class="tab-panel" *ngIf="activeExpressionLambdaTab === 'type'">
+                  <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger">
+                    <div class="type-inference-section">
+                      <app-type-inference-tree
+                        [root]="typeInferenceTree"
+                        [mode]="'auto'"
+                        [currentLanguage]="currentLanguage"
+                      ></app-type-inference-tree>
+                    </div>
+                  </app-tree-canvas>
                 </div>
               </div>
-              <app-natural-deduction-tree
-                [root]="naturalDeductionTree"
-                [mode]="mode"
-                [selectedNode]="selectedNdNode"
-                [ndPredictionRequest]="ndPredictionRequest"
-                [currentLanguage]="currentLanguage"
-                (nodeClicked)="onNdNodeClicked($event)"
-                (plusButtonClicked)="onNdPlusButtonClicked($event)"
-                (ndPredictionConfirm)="confirmNdPrediction($event)"
-                (ndPredictionCancel)="cancelNdPrediction()"
-              ></app-natural-deduction-tree>
-            </app-tree-canvas>
+            </div>
+
+            <ng-template #naturalDeductionOnlyView>
+              <app-tree-canvas [resetTrigger]="treeCanvasResetTrigger" [initialZoom]="0.85">
+                <div canvas-overlay class="nd-hypotheses-floating" *ngIf="ndHypotheses.length">
+                  <span class="title">{{ t.hypotheses }}</span>
+                  <div class="hyp-row" *ngFor="let hypothesis of ndHypotheses" [class.hyp-row--closed]="hypothesis.isClosed" [class.hyp-row--open]="!hypothesis.isClosed">
+                    <span class="label">{{ hypothesis.label }} =</span>
+                    <span class="expr" [appKatex]="hypothesis.formulaLatex"></span>
+                  </div>
+                </div>
+                <app-natural-deduction-tree
+                  [root]="naturalDeductionTree"
+                  [mode]="mode"
+                  [selectedNode]="selectedNdNode"
+                  [ndPredictionRequest]="ndPredictionRequest"
+                  [currentLanguage]="currentLanguage"
+                  (nodeClicked)="onNdNodeClicked($event)"
+                  (plusButtonClicked)="onNdPlusButtonClicked($event)"
+                  (ndPredictionConfirm)="confirmNdPrediction($event)"
+                  (ndPredictionCancel)="cancelNdPrediction()"
+                ></app-natural-deduction-tree>
+              </app-tree-canvas>
+            </ng-template>
           </div>
           
           <div *ngIf="isLambdaToExpressionWorkflow">

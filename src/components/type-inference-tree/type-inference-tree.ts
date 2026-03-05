@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from '@angular/core';
 import { TypeInferenceNode } from '../../services/type-inference-service';
 import { ExprNode } from '../../models/lambda-node';
 import { LambdaParserService } from '../../services/lambda-parser-service';
@@ -15,7 +15,7 @@ import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
   templateUrl: './type-inference-tree.html',
   styleUrl: './type-inference-tree.scss'
 })
-export class TypeInferenceTree implements OnChanges {
+export class TypeInferenceTree implements AfterViewChecked {
   @Input() root: TypeInferenceNode | null = null;
   @Input() selectedNode: TypeInferenceNode | null = null;
   @Input() mode: 'auto' | 'interactive' = 'auto';
@@ -25,6 +25,8 @@ export class TypeInferenceTree implements OnChanges {
   @Output() nodeClicked = new EventEmitter<TypeInferenceNode>();
   @Output() plusButtonClicked = new EventEmitter<{ node: TypeInferenceNode, x: number, y: number }>();
   @Output() ruleSelected = new EventEmitter<{ node: TypeInferenceNode, rule: string }>();
+  @ViewChild('conclusionEl') conclusionEl?: ElementRef<HTMLElement>;
+  @ViewChild('childrenEl') childrenEl?: ElementRef<HTMLElement>;
 
   rendererExpression = (expression: ExprNode): string => this.formatExpression(expression);
   rendererType = (type: any): string => this.formatType(type);
@@ -91,6 +93,20 @@ export class TypeInferenceTree implements OnChanges {
   pendingRule: string | null = null;
   pendingRuleNode: TypeInferenceNode | null = null;
   userPredictions: string[] = [];
+  lineWidthPx: number | null = null;
+  lineOffsetPx = 0;
+  private measureScheduled = false;
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (!(this.mode === 'interactive' && this.interactiveSubmode === 'predict')) return;
+    this.scheduleLineMeasure();
+  }
+
+  ngAfterViewChecked(): void {
+    if (!(this.mode === 'interactive' && this.interactiveSubmode === 'predict')) return;
+    this.scheduleLineMeasure();
+  }
 
   ngOnChanges(changes: any) {
     if (changes['predictionRuleRequest'] && this.predictionRuleRequest && this.root === this.predictionRuleRequest.node) {
@@ -133,7 +149,7 @@ export class TypeInferenceTree implements OnChanges {
       return 0;
     }
     // Rules with 1 child
-    if (['Abs', 'DependentAbs', 'Succ', 'Pred', 'IsZero', 'Inl', 'Inr'].includes(rule)) {
+    if (['Abs', 'DependentAbs', 'Succ', 'Pred', 'IsZero', 'Inl', 'Inr', 'Fst', 'Snd'].includes(rule)) {
       return 1;
     }
     // Rules with 2 children
@@ -218,6 +234,103 @@ export class TypeInferenceTree implements OnChanges {
     this.userPredictions = [];
   }
 
+  private scheduleLineMeasure(): void {
+    if (this.measureScheduled) return;
+    this.measureScheduled = true;
+
+    requestAnimationFrame(() => {
+      this.measureScheduled = false;
+      this.updateLineWidth();
+    });
+  }
+
+  private getOwnFormulaBounds(host: HTMLElement, relativeTo: HTMLElement): { left: number; right: number; width: number } {
+    const main = host.firstElementChild as HTMLElement | null;
+    const treeNode = main?.firstElementChild as HTMLElement | null;
+    if (!treeNode) {
+      return {
+        left: host.offsetLeft,
+        right: host.offsetLeft + host.offsetWidth,
+        width: host.offsetWidth
+      };
+    }
+
+    const ownConclusion = Array.from(treeNode.children).find((child) =>
+      (child as HTMLElement).classList.contains('conclusion')
+    ) as HTMLElement | undefined;
+
+    if (!ownConclusion) {
+      return {
+        left: host.offsetLeft,
+        right: host.offsetLeft + host.offsetWidth,
+        width: host.offsetWidth
+      };
+    }
+
+    const formulaEl = ownConclusion.querySelector('.inference-content') as HTMLElement | null;
+    const targetEl = formulaEl ?? ownConclusion;
+    const containerRect = relativeTo.getBoundingClientRect();
+    const targetRect = targetEl.getBoundingClientRect();
+    const scaleX = targetEl.offsetWidth > 0 ? (targetRect.width / targetEl.offsetWidth) : 1;
+    const safeScaleX = scaleX > 0 ? scaleX : 1;
+    const left = (targetRect.left - containerRect.left) / safeScaleX;
+    const width = targetRect.width / safeScaleX;
+    const right = left + width;
+
+    return {
+      left,
+      right,
+      width: Math.max(0, width)
+    };
+  }
+
+  private updateLineWidth(): void {
+    const conclusionEl = this.conclusionEl?.nativeElement;
+    const formulaEl = conclusionEl?.querySelector('.inference-content') as HTMLElement | null;
+    const conclusionWidth = conclusionEl?.offsetWidth ?? 0;
+    const ownFormulaWidth = formulaEl?.offsetWidth ?? conclusionWidth;
+    const childrenContainer = this.childrenEl?.nativeElement;
+    this.lineOffsetPx = 0;
+
+    if (!childrenContainer) {
+      this.lineWidthPx = ownFormulaWidth;
+      return;
+    }
+
+    const childHosts = Array.from(childrenContainer.children) as HTMLElement[];
+    if (childHosts.length === 0) {
+      this.lineWidthPx = ownFormulaWidth;
+      return;
+    }
+
+    if (childHosts.length === 1) {
+      const child = this.getOwnFormulaBounds(childHosts[0], childrenContainer);
+      this.lineWidthPx = Math.max(ownFormulaWidth, child.width);
+      return;
+    }
+
+    if (!conclusionEl) {
+      this.lineWidthPx = childrenContainer.offsetWidth;
+      return;
+    }
+
+    const childBounds = childHosts.map((host) => this.getOwnFormulaBounds(host, childrenContainer));
+    const minLeft = Math.min(...childBounds.map((bounds) => bounds.left));
+    const maxRight = Math.max(...childBounds.map((bounds) => bounds.right));
+    const spanWidth = Math.max(0, maxRight - minLeft);
+    const twoPremiseExtra = childHosts.length === 2 ? 16 : 0;
+    this.lineWidthPx = spanWidth + twoPremiseExtra;
+
+    const spanCenterWithinChildren = minLeft + spanWidth / 2;
+    const childrenRect = childrenContainer.getBoundingClientRect();
+    const conclusionRect = conclusionEl.getBoundingClientRect();
+    const scaleX = conclusionEl.offsetWidth > 0 ? (conclusionRect.width / conclusionEl.offsetWidth) : 1;
+    const safeScaleX = scaleX > 0 ? scaleX : 1;
+    const spanCenterViewport = childrenRect.left + (spanCenterWithinChildren * safeScaleX);
+    const conclusionCenterViewport = conclusionRect.left + (conclusionRect.width / 2);
+    this.lineOffsetPx = (spanCenterViewport - conclusionCenterViewport) / safeScaleX;
+  }
+
   computeExpectedExpressions(expr: ExprNode, rule: string): ExprNode[] {
     switch (rule) {
       case 'Var':
@@ -241,6 +354,18 @@ export class TypeInferenceTree implements OnChanges {
       case 'Pair':
         if (expr.kind === 'Pair') {
           return [expr.left, expr.right];
+        }
+        break;
+
+      case 'Fst':
+        if (expr.kind === 'Fst') {
+          return [expr.pair];
+        }
+        break;
+
+      case 'Snd':
+        if (expr.kind === 'Snd') {
+          return [expr.pair];
         }
         break;
       
@@ -338,6 +463,18 @@ export class TypeInferenceTree implements OnChanges {
         if (actual.kind === 'Pair') {
           return this.compareExpressions(expected.left, actual.left) &&
                  this.compareExpressions(expected.right, actual.right);
+        }
+        return false;
+
+      case 'Fst':
+        if (actual.kind === 'Fst') {
+          return this.compareExpressions(expected.pair, actual.pair);
+        }
+        return false;
+
+      case 'Snd':
+        if (actual.kind === 'Snd') {
+          return this.compareExpressions(expected.pair, actual.pair);
         }
         return false;
       
@@ -452,6 +589,10 @@ export class TypeInferenceTree implements OnChanges {
         return `${fnStr} ${needsParens ? `(${argStr})` : argStr}`;
       case 'Pair':
         return `(${this.formatExpr(expr.left)}, ${this.formatExpr(expr.right)})`;
+      case 'Fst':
+        return `fst(${this.formatExpr(expr.pair)})`;
+      case 'Snd':
+        return `snd(${this.formatExpr(expr.pair)})`;
       case 'Inl':
         return `inl ${this.formatExpr(expr.expr)} as ${this.formatType(expr.asType)}`;
       case 'Inr':
@@ -500,8 +641,7 @@ export class TypeInferenceTree implements OnChanges {
 
     switch (type.kind) {
       case 'TypeVar':
-        // Capitalize the first letter of type variable names
-        return type.name.charAt(0).toUpperCase() + type.name.slice(1);
+        return this.formatTypeVariableName(type.name);
       case 'Bool':
         return 'Bool';
       case 'Bottom':
@@ -517,11 +657,15 @@ export class TypeInferenceTree implements OnChanges {
       case 'Prod':
         const leftStr = this.formatType(type.left);
         const rightStr = this.formatType(type.right);
-        return `${leftStr} × ${rightStr}`;
+        const leftNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const rightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${leftNeedsParens ? `(${leftStr})` : leftStr} × ${rightNeedsParens ? `(${rightStr})` : rightStr}`;
       case 'Sum':
         const sumLeftStr = this.formatType(type.left);
         const sumRightStr = this.formatType(type.right);
-        return `${sumLeftStr} + ${sumRightStr}`;
+        const sumLeftNeedsParens = this.needsParensForProductOrSumOperand(type.left);
+        const sumRightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
+        return `${sumLeftNeedsParens ? `(${sumLeftStr})` : sumLeftStr} + ${sumRightNeedsParens ? `(${sumRightStr})` : sumRightStr}`;
       case 'PredicateType':
         const args = type.argTypes.map((t: any) => this.formatType(t)).join(', ');
         return `${type.name}(${args})`;
@@ -532,6 +676,30 @@ export class TypeInferenceTree implements OnChanges {
       default:
         return `[${type.kind}]`;
     }
+  }
+
+  private formatTypeVariableName(name: string): string {
+    const polyIndex = this.tryParsePolyIndex(name);
+    if (polyIndex !== null) {
+      return this.polyIndexToGreek(polyIndex);
+    }
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  private tryParsePolyIndex(name: string): number | null {
+    const match = /^__poly(\d+)$/.exec(name);
+    if (!match) {
+      return null;
+    }
+    const parsed = Number.parseInt(match[1], 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private polyIndexToGreek(index: number): string {
+    const greek = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'];
+    const base = greek[(index - 1) % greek.length];
+    const cycle = Math.floor((index - 1) / greek.length);
+    return cycle === 0 ? base : `${base}${cycle + 1}`;
   }
 
   private isNegationType(type: any): boolean {
@@ -548,6 +716,10 @@ export class TypeInferenceTree implements OnChanges {
     if (type?.kind === 'DependentFunc' || type?.kind === 'DependentProd') return true;
     if (type?.kind === 'Func') return side === 'left' || side === 'right';
     return false;
+  }
+
+  private needsParensForProductOrSumOperand(type: any): boolean {
+    return type?.kind === 'Func' || type?.kind === 'DependentFunc' || type?.kind === 'DependentProd';
   }
 
 }

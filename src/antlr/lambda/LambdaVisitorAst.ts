@@ -136,10 +136,15 @@ function spanOf(ctx: { start: any; stop: any }): Span {
 // Pomocné: ľavo-asoc. reťazenie aplikácií a typových operátorov
 function appChain(nodes: ExprNode[], span?: Span): ExprNode {
   if (nodes.length === 0) throw new Error("empty application chain");
-  return nodes.slice(1).reduce<ExprNode>(
-    (fn, arg) => ExprFactories.app(fn, arg, span),
-    nodes[0]!
-  );
+  return nodes.slice(1).reduce<ExprNode>((fn, arg) => {
+    if (fn.kind === 'Var' && fn.name === 'fst') {
+      return ExprFactories.fst(arg, span);
+    }
+    if (fn.kind === 'Var' && fn.name === 'snd') {
+      return ExprFactories.snd(arg, span);
+    }
+    return ExprFactories.app(fn, arg, span);
+  }, nodes[0]!);
 }
 
 function sumChain(nodes: TypeNode[], span?: Span): TypeNode {

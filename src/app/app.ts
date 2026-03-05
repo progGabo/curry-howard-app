@@ -66,6 +66,7 @@ export class App {
   conversionMode: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction' = 'natural-deduction';
   resultExpression: string = '';
   typeInferenceTree: TypeInferenceNode | null = null;
+  activeExpressionLambdaTab: 'proof' | 'type' = 'proof';
   isPredicateLogic: boolean = false; // Track if predicate logic is detected
 
   // UI state (non-logic)
@@ -258,6 +259,7 @@ export class App {
     this.headerOption = option;
     this.headerSection = option.startsWith('proofs') ? 'proofs' : 'curry-howard';
     this.conversionMode = this.deriveConversionMode(option);
+    this.activeExpressionLambdaTab = 'proof';
     this.resetWorkspaceState();
   }
 
@@ -302,7 +304,16 @@ export class App {
     this.selectedTypeNode = null;
     this.ruleError = null;
     this.ndPredictionRequest = null;
+    this.activeExpressionLambdaTab = 'proof';
     this.treeHistory.clear();
+  }
+
+  get showExpressionLambdaTypeTab(): boolean {
+    return this.shouldGenerateLambdaFromProof && !!this.typeInferenceTree;
+  }
+
+  setExpressionLambdaTab(tab: 'proof' | 'type'): void {
+    this.activeExpressionLambdaTab = tab;
   }
 
   onNodeClicked(node: DerivationNode) {
@@ -546,6 +557,7 @@ export class App {
     if (!this.naturalDeductionTree) {
       this.lambdaExpr = '';
       this.lambdaExprNode = null;
+      this.typeInferenceTree = null;
       return;
     }
 
@@ -553,11 +565,26 @@ export class App {
     if (!ndLambda) {
       this.lambdaExpr = '';
       this.lambdaExprNode = null;
+      this.typeInferenceTree = null;
       return;
     }
 
     this.lambdaExprNode = ndLambda;
     this.lambdaExpr = this.lambdaParser.formatLambdaExpression(ndLambda);
+
+    if (!this.shouldGenerateLambdaFromProof) {
+      this.typeInferenceTree = null;
+      return;
+    }
+
+    try {
+      const initialAssumptions = undefined;
+      this.typeInferenceTree = this.mode === 'auto'
+        ? this.typeInference.buildTypeInferenceTree(ndLambda, initialAssumptions)
+        : this.typeInference.buildInteractiveRoot(ndLambda, initialAssumptions);
+    } catch {
+      this.typeInferenceTree = null;
+    }
   }
 
 
@@ -916,6 +943,7 @@ export class App {
       this.lambdaExpr = '';
       this.lambdaExprNode = null;
       this.naturalDeductionTree = null;
+      this.typeInferenceTree = null;
       this.resultExpression = '';
       const errorMsg = e instanceof Error ? `: ${e.message}` : '';
       const fullMessage = this.t.errorParsing + errorMsg;
@@ -933,6 +961,7 @@ export class App {
     this.isPredicateLogic = parsed.isPredicateLogic;
     this.mode = parsed.nextMode;
     this.naturalDeductionTree = null;
+    this.typeInferenceTree = null;
     this.lambdaExpr = '';
     this.lambdaExprNode = null;
   }
@@ -946,6 +975,7 @@ export class App {
     this.proofTree = null;
     this.lambdaExpr = '';
     this.lambdaExprNode = null;
+    this.typeInferenceTree = null;
 
     this.naturalDeductionTree = parsed.naturalDeductionTree;
     if (parsed.notProvable) {
