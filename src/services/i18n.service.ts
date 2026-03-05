@@ -100,7 +100,7 @@ export interface QuantifierErrors {
 const SK: AppTranslations = {
   curryHoward: 'Curry-Howard',
   proofs: 'Dôkazy',
-  sequentCalculus: 'Sekvenčný kalkul',
+  sequentCalculus: 'Sekventový kalkul',
   exprToLambda: 'Výraz → Lambda',
   lambdaToExpr: 'Lambda → Výraz',
   naturalDeduction: 'Prirodzená dedukcia',
