@@ -512,7 +512,7 @@ export class LambdaParserService {
         return `⟨${this.formatExpr(expr.witness)}, ${proofWithType}⟩`;
       
       case 'LetDependentPair':
-        return `let (${expr.x}: ${this.formatType(expr.xType)}) = ${this.formatExpr(expr.pair)} in ${this.formatExpr(expr.inExpr)}`;
+        return `let (${expr.x}: ${this.formatType(expr.xType)}, ${expr.p}: ${this.formatType(expr.pType)}) = ${this.formatExpr(expr.pair)} in ${this.formatExpr(expr.inExpr)}`;
       
       default:
         return `[${(expr as any).kind}]`;

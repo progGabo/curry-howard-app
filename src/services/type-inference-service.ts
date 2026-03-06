@@ -248,12 +248,29 @@ export class TypeInferenceService {
           type.argTypes.map(t => this.substituteInType(t, paramName, replacement))
         );
       case 'DependentFunc':
+        // Avoid substituting into a dependent body when the same binder name is reintroduced.
+        // This prevents accidental capture (e.g. turning ∃x:T. Q(x) into ∃x:T. Q(fst(a))).
+        if (type.param === paramName) {
+          return TypeFactories.dependentFunc(
+            type.param,
+            this.substituteInType(type.paramType, paramName, replacement),
+            type.bodyType
+          );
+        }
         return TypeFactories.dependentFunc(
           type.param,
           this.substituteInType(type.paramType, paramName, replacement),
           this.substituteInType(type.bodyType, paramName, replacement)
         );
       case 'DependentProd':
+        // Same shadowing rule as DependentFunc.
+        if (type.param === paramName) {
+          return TypeFactories.dependentProd(
+            type.param,
+            this.substituteInType(type.paramType, paramName, replacement),
+            type.bodyType
+          );
+        }
         return TypeFactories.dependentProd(
           type.param,
           this.substituteInType(type.paramType, paramName, replacement),

@@ -56,6 +56,13 @@
   font-weight: 600;
 }
 
+.help-gallery__item h5 {
+  margin: 0 0 0.45rem 0;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
 .help-gallery__item p {
   margin: 0 0 0.75rem 0;
   color: #475569;
@@ -117,10 +124,39 @@
   margin: 0.25rem 0;
 }
 
+.help-syntax-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.help-syntax-list {
+  margin: 0;
+  padding-left: 1rem;
+  color: #475569;
+}
+
+.help-syntax-list li {
+  margin: 0.25rem 0;
+  line-height: 1.4;
+}
+
+.help-syntax-list code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #0f172a;
+}
+
 .modal-close {
   appearance: none;
   background: transparent;
   border: none;
   font-size: 1.1rem;
   cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .help-syntax-grid {
+    grid-template-columns: 1fr;
+  }
 }

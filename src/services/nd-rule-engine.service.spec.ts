@@ -104,4 +104,64 @@ describe('NdRuleEngineService quantifiers', () => {
 
     expect(applied).toBeNull();
   });
+
+  it('applies →E with a universal source by creating an explicit implication premise', () => {
+    const root = service.createRoot({
+      context: [
+        predicate('P', 'a'),
+        FormulaFactories.forall(
+          'x',
+          FormulaFactories.implies(predicate('P', 'x'), predicate('Q', 'x'))
+        )
+      ],
+      goal: predicate('Q', 'a')
+    });
+
+    const applied = service.applyRule(root, '→E');
+
+    expect(applied).not.toBeNull();
+    expect(applied?.premises.length).toBe(2);
+    expect(applied?.premises[0].judgement.goal.kind).toBe('Implies');
+    expect(applied?.premises[0].judgement.goal).toEqual(
+      FormulaFactories.implies(predicate('P', 'a'), predicate('Q', 'a'))
+    );
+    expect(applied?.premises[1].judgement.goal).toEqual(predicate('P', 'a'));
+  });
+
+  it('requires explicit ∀E before →E in the interactive ND path for ∃x.P(x), ∀x(P(x)→Q(x)) ⊢ ∃x.Q(x)', () => {
+    const root = service.createRoot({
+      context: [
+        FormulaFactories.exists('x', predicate('P', 'x')),
+        FormulaFactories.forall('x', FormulaFactories.implies(predicate('P', 'x'), predicate('Q', 'x')))
+      ],
+      goal: FormulaFactories.exists('x', predicate('Q', 'x'))
+    });
+
+    const existsElim = service.applyRule(root, '∃E', { eigenVariable: 'a' });
+    expect(existsElim).not.toBeNull();
+    if (!existsElim) return;
+
+    const witnessBranch = existsElim.premises[1];
+    const existsIntro = service.applyRule(witnessBranch, '∃I', { instantiationTerm: TermFactories.var('a') });
+    expect(existsIntro).not.toBeNull();
+    if (!existsIntro) return;
+
+    const qGoal = existsIntro.premises[0];
+    const implElim = service.applyRule(qGoal, '→E');
+    expect(implElim).not.toBeNull();
+    if (!implElim) return;
+
+    expect(implElim.premises[0].judgement.goal.kind).toBe('Implies');
+    expect(implElim.premises[0].judgement.goal).toEqual(
+      FormulaFactories.implies(predicate('P', 'a'), predicate('Q', 'a'))
+    );
+    expect(implElim.premises[1].judgement.goal).toEqual(predicate('P', 'a'));
+
+    const forallElim = service.applyRule(implElim.premises[0], '∀E', { instantiationTerm: TermFactories.var('a') });
+    expect(forallElim).not.toBeNull();
+    if (!forallElim) return;
+
+    expect(service.isHypothesisLeaf(forallElim.premises[0])).toBeTrue();
+    expect(service.isHypothesisLeaf(implElim.premises[1])).toBeTrue();
+  });
 });

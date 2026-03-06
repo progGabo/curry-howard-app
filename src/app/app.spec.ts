@@ -15,6 +15,9 @@ import { RuleFilterService } from '../services/rule-filter.service';
 import { RuleFormulaService } from '../services/rule-formula.service';
 import { FormulaRenderService } from '../services/formula-render.service';
 import { AppParseFacadeService } from '../services/app-parse-facade.service';
+import { of } from 'rxjs';
+import { NdNode } from '../models/nd-node';
+import { FormulaFactories, TermFactories } from '../utils/ast-factories';
 
 describe('App', () => {
   let fixture: ComponentFixture<App>;
@@ -53,7 +56,8 @@ describe('App', () => {
   const naturalDeductionBuilderMock = {
     buildProof: jasmine.createSpy('buildProof').and.resolveTo(null),
     buildInteractiveRoot: jasmine.createSpy('buildInteractiveRoot').and.returnValue(null),
-    applyRuleManually: jasmine.createSpy('applyRuleManually').and.resolveTo(null)
+    applyRuleManually: jasmine.createSpy('applyRuleManually').and.resolveTo(null),
+    canApply: jasmine.createSpy('canApply').and.returnValue(true)
   };
 
   const ndLambdaBuilderMock = {
@@ -102,6 +106,9 @@ describe('App', () => {
       errorExpectedCount: 'Expected {expected} expression(s), got {got}.',
       errorInvalidExpressionAtPosition: 'Invalid expression at position {position}.',
       errorIncorrectAtPosition: 'Incorrect value at position {position}.',
+      errorInvalidQuantifierTerm: 'Invalid term for quantifier rule.',
+      errorQuantifierTermMismatch: 'The provided term/witness does not fit rule {rule} for the current goal.',
+      errorQuantifierVariableInvalid: 'The provided variable does not satisfy rule {rule} side conditions (fresh and valid).',
       ruleReference: 'Rules',
       conclusionRules: 'Conclusion Rules',
       assumptionRules: 'Assumption Rules',
@@ -226,5 +233,84 @@ describe('App', () => {
     expect(component.conversionMode).toBe('natural-deduction');
     expect(component.isNaturalDeductionWorkflow).toBeTrue();
     expect(component.shouldGenerateLambdaFromProof).toBeTrue();
+  });
+
+  it('shows translated error when ND quantifier modal term is invalid', async () => {
+    const node: NdNode = {
+      id: 'nd-invalid-term',
+      rule: '∅',
+      judgement: {
+        context: [FormulaFactories.forall('x', FormulaFactories.predicate('P', [TermFactories.var('x')]))],
+        goal: FormulaFactories.predicate('P', [TermFactories.var('a')])
+      },
+      premises: [],
+      openHypotheses: [],
+      discharges: [],
+      branchStatus: 'open'
+    };
+
+    component.currentLanguage = 'en';
+    (component as any).dialogService = {
+      open: jasmine.createSpy('open').and.returnValue({ onClose: of('@@@') })
+    };
+
+    await (component as any).resolveNdRuleOptions(node, '∀E');
+
+    expect(i18nMock.translate).toHaveBeenCalledWith('en', 'errorInvalidQuantifierTerm', undefined);
+    expect(notificationMock.showError).toHaveBeenCalled();
+  });
+
+  it('shows quantifier term mismatch error for wrong but parseable ∀E term', async () => {
+    const node: NdNode = {
+      id: 'nd-term-mismatch',
+      rule: '∅',
+      judgement: {
+        context: [FormulaFactories.forall('x', FormulaFactories.predicate('P', [TermFactories.var('x')]))],
+        goal: FormulaFactories.predicate('P', [TermFactories.var('a')])
+      },
+      premises: [],
+      openHypotheses: [],
+      discharges: [],
+      branchStatus: 'open'
+    };
+
+    component.currentLanguage = 'en';
+    naturalDeductionBuilderMock.canApply.and.returnValue(false);
+    (component as any).dialogService = {
+      open: jasmine.createSpy('open').and.returnValue({ onClose: of('f(a)') })
+    };
+
+    const result = await (component as any).resolveNdRuleOptions(node, '∀E');
+
+    expect(result).toBeNull();
+    expect(i18nMock.translate).toHaveBeenCalledWith('en', 'errorQuantifierTermMismatch', { rule: '∀E' });
+    expect(notificationMock.showError).toHaveBeenCalled();
+  });
+
+  it('shows quantifier variable-side-condition error when ∃E eigenvariable is rejected', async () => {
+    const node: NdNode = {
+      id: 'nd-variable-mismatch',
+      rule: '∅',
+      judgement: {
+        context: [FormulaFactories.exists('x', FormulaFactories.predicate('P', [TermFactories.var('x')]))],
+        goal: FormulaFactories.predicate('Q', [TermFactories.var('a')])
+      },
+      premises: [],
+      openHypotheses: [],
+      discharges: [],
+      branchStatus: 'open'
+    };
+
+    component.currentLanguage = 'en';
+    naturalDeductionBuilderMock.canApply.and.returnValue(false);
+    (component as any).dialogService = {
+      open: jasmine.createSpy('open').and.returnValue({ onClose: of('x') })
+    };
+
+    const result = await (component as any).resolveNdRuleOptions(node, '∃E');
+
+    expect(result).toBeNull();
+    expect(i18nMock.translate).toHaveBeenCalledWith('en', 'errorQuantifierVariableInvalid', { rule: '∃E' });
+    expect(notificationMock.showError).toHaveBeenCalled();
   });
 });

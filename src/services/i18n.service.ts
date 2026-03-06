@@ -51,6 +51,9 @@ export interface AppTranslations {
   errorExpectedCount: string;
   errorInvalidExpressionAtPosition: string;
   errorIncorrectAtPosition: string;
+  errorInvalidQuantifierTerm: string;
+  errorQuantifierTermMismatch: string;
+  errorQuantifierVariableInvalid: string;
   // Sidebar translations
   ruleReference: string;
   conclusionRules: string;
@@ -97,6 +100,15 @@ export interface QuantifierErrors {
   emptyTerm: string;
 }
 
+export interface QuantifierRuntimeErrors {
+  dialogOpenFailed: string;
+  cancelled: string;
+  invalidTerm: string;
+  invalidVariable: string;
+  notFreshInAssumptions: string;
+  notFreshInAssumptionsConclusions: string;
+}
+
 const SK: AppTranslations = {
   curryHoward: 'Curry-Howard',
   proofs: 'Dôkazy',
@@ -138,6 +150,9 @@ const SK: AppTranslations = {
   errorExpectedCount: 'Očakávaných výrazov: {expected}, zadaných: {got}.',
   errorInvalidExpressionAtPosition: 'Neplatný výraz na pozícii {position}.',
   errorIncorrectAtPosition: 'Nesprávna hodnota na pozícii {position}.',
+  errorInvalidQuantifierTerm: 'Neplatný term pre kvantifikačné pravidlo.',
+  errorQuantifierTermMismatch: 'Zadaný term/svedok nie je vhodný pre pravidlo {rule} v aktuálnom cieli.',
+  errorQuantifierVariableInvalid: 'Zadaná premenná nespĺňa podmienky pravidla {rule} (musí byť čerstvá a platná).',
   ruleReference: 'Pravidlá',
   conclusionRules: 'Pravidlá pre záver',
   assumptionRules: 'Pravidlá pre predpoklad',
@@ -208,6 +223,9 @@ const EN: AppTranslations = {
   errorExpectedCount: 'Expected {expected} expression(s), got {got}.',
   errorInvalidExpressionAtPosition: 'Invalid expression at position {position}.',
   errorIncorrectAtPosition: 'Incorrect value at position {position}.',
+  errorInvalidQuantifierTerm: 'Invalid term for quantifier rule.',
+  errorQuantifierTermMismatch: 'The provided term/witness does not fit rule {rule} for the current goal.',
+  errorQuantifierVariableInvalid: 'The provided variable does not satisfy rule {rule} side conditions (fresh and valid).',
   ruleReference: 'Rules',
   conclusionRules: 'Conclusion Rules',
   assumptionRules: 'Assumption Rules',
@@ -242,6 +260,10 @@ const QUANTIFIER_LABELS_SK: Record<string, QuantifierRuleLabels> = {
   'forall-left': { title: '∀L – inštancia', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
   'exists-right': { title: '∃R – svedok', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
   'exists-left': { title: '∃L – eigenvariable', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'forall-intro': { title: '∀I – eigenpremenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'forall-elim': { title: '∀E – inštancia', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'exists-intro': { title: '∃I – svedok', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'exists-elim': { title: '∃E – eigenpremenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
 };
 
 const QUANTIFIER_LABELS_EN: Record<string, QuantifierRuleLabels> = {
@@ -249,20 +271,42 @@ const QUANTIFIER_LABELS_EN: Record<string, QuantifierRuleLabels> = {
   'forall-left': { title: '∀L – instantiation', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
   'exists-right': { title: '∃R – witness', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
   'exists-left': { title: '∃L – eigenvariable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'forall-intro': { title: '∀I – eigenvariable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'forall-elim': { title: '∀E – instantiation', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'exists-intro': { title: '∃I – witness', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'exists-elim': { title: '∃E – eigenvariable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
 };
 
 const QUANTIFIER_ERRORS_SK: QuantifierErrors = {
   empty: 'Pole nesmie byť prázdne.',
-  invalidVar: 'Neplatná premenná (začnite písmenom).',
+  invalidVar: 'Neplatná premenná (začnite malým písmenom).',
   notFresh: 'Premenná {var} už bola použitá. Zvoľte inú.',
   emptyTerm: 'Term nesmie byť prázdny.',
 };
 
 const QUANTIFIER_ERRORS_EN: QuantifierErrors = {
   empty: 'Field cannot be empty.',
-  invalidVar: 'Invalid variable (must start with a letter).',
+  invalidVar: 'Invalid variable (must start with a lowercase letter).',
   notFresh: 'Variable {var} is already in use. Choose another.',
   emptyTerm: 'Term cannot be empty.',
+};
+
+const QUANTIFIER_RUNTIME_ERRORS_SK: QuantifierRuntimeErrors = {
+  dialogOpenFailed: 'Nepodarilo sa otvoriť dialóg pre kvantifikátorové pravidlo.',
+  cancelled: 'Používateľ zrušil aplikáciu kvantifikátorového pravidla.',
+  invalidTerm: 'Neplatný term: {term}. Musí byť premenná, konštanta alebo aplikácia funkcie.',
+  invalidVariable: 'Neplatný názov premennej: {var}. Musí byť identifikátor začínajúci malým písmenom.',
+  notFreshInAssumptions: 'Premenná {var} nie je čerstvá: vyskytuje sa voľne v predpokladoch.',
+  notFreshInAssumptionsConclusions: 'Premenná {var} nie je čerstvá: vyskytuje sa voľne v predpokladoch alebo záveroch.'
+};
+
+const QUANTIFIER_RUNTIME_ERRORS_EN: QuantifierRuntimeErrors = {
+  dialogOpenFailed: 'Failed to open quantifier input dialog.',
+  cancelled: 'User cancelled quantifier rule application.',
+  invalidTerm: 'Invalid term: {term}. Must be a variable, constant, or function application.',
+  invalidVariable: 'Invalid variable name: {var}. Must be a lowercase identifier.',
+  notFreshInAssumptions: 'Variable {var} is not fresh: it occurs free in the assumptions.',
+  notFreshInAssumptionsConclusions: 'Variable {var} is not fresh: it occurs free in the assumptions or conclusions.'
 };
 
 function interpolate(text: string, params?: { [key: string]: string | number }): string {
@@ -300,5 +344,9 @@ export class I18nService {
 
   quantifierErrors(lang: AppLanguage): QuantifierErrors {
     return lang === 'sk' ? QUANTIFIER_ERRORS_SK : QUANTIFIER_ERRORS_EN;
+  }
+
+  quantifierRuntimeErrors(lang: AppLanguage): QuantifierRuntimeErrors {
+    return lang === 'sk' ? QUANTIFIER_RUNTIME_ERRORS_SK : QUANTIFIER_RUNTIME_ERRORS_EN;
   }
 }

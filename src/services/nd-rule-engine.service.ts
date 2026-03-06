@@ -102,11 +102,11 @@ export class NdRuleEngineService {
         }
 
       case '→E': {
-        const implication = context.find((formula) => formula.kind === 'Implies' && Equality.formulasEqual(formula.right, goal));
-        if (!implication || implication.kind !== 'Implies') return null;
+        const eliminationTarget = this.findImplicationEliminationTarget(context, goal, options.instantiationTerm);
+        if (!eliminationTarget) return null;
         return this.createNode('→E', judgement, [
-          this.createNode('∅', { context, goal: implication }, [], node.openHypotheses, []),
-          this.createNode('∅', { context, goal: implication.left }, [], node.openHypotheses, [])
+          this.createNode('∅', { context, goal: eliminationTarget.premiseGoal }, [], node.openHypotheses, []),
+          this.createNode('∅', { context, goal: eliminationTarget.antecedent }, [], node.openHypotheses, [])
         ], node.openHypotheses, []);
       }
 
@@ -291,6 +291,42 @@ export class NdRuleEngineService {
       const instantiated = substituteFormula(body, variable, candidate);
       if (Equality.formulasEqual(instantiated, target)) {
         return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  private findImplicationEliminationTarget(
+    context: FormulaNode[],
+    goal: FormulaNode,
+    selectedTerm?: TermNode
+  ): { premiseGoal: FormulaNode; antecedent: FormulaNode } | null {
+    const implication = context.find((formula) => formula.kind === 'Implies' && Equality.formulasEqual(formula.right, goal));
+    if (implication && implication.kind === 'Implies') {
+      return {
+        premiseGoal: implication,
+        antecedent: implication.left
+      };
+    }
+
+    const universals = context.filter((formula) => formula.kind === 'Forall');
+    for (const universal of universals) {
+      if (universal.kind !== 'Forall') continue;
+
+      const termCandidates = selectedTerm
+        ? [selectedTerm]
+        : [...this.collectTerms(goal), TermFactories.var(universal.variable)];
+
+      for (const term of termCandidates) {
+        const instantiated = substituteFormula(universal.body, universal.variable, term);
+        if (instantiated.kind !== 'Implies') continue;
+        if (!Equality.formulasEqual(instantiated.right, goal)) continue;
+
+        return {
+          premiseGoal: instantiated,
+          antecedent: instantiated.left
+        };
       }
     }
 

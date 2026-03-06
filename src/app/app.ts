@@ -13,8 +13,9 @@ import { TreeHistoryService } from '../services/tree-history.service';
 import { RuleFilterService } from '../services/rule-filter.service';
 import { RuleFormulaService } from '../services/rule-formula.service';
 import { FormulaRenderService } from '../services/formula-render.service';
+import { FormulaTypeService } from '../services/formula-type-service';
 import { KatexDirective } from '../directives/katex.directive';
-import { ExprNode } from '../models/lambda-node';
+import { ExprNode, TypeNode } from '../models/lambda-node';
 import { NdNode } from '../models/nd-node';
 import { NdRule, NdRuleApplicationOptions } from '../models/nd-rule';
 import { Equality } from '../utils/equality';
@@ -178,6 +179,7 @@ export class App {
     private ruleFilter: RuleFilterService,
     private ruleFormula: RuleFormulaService,
     private formulaRender: FormulaRenderService,
+    private formulaType: FormulaTypeService,
     private cdr: ChangeDetectorRef,
     private injector: Injector
   ) {}
@@ -578,13 +580,45 @@ export class App {
     }
 
     try {
-      const initialAssumptions = undefined;
-      this.typeInferenceTree = this.mode === 'auto'
-        ? this.typeInference.buildTypeInferenceTree(ndLambda, initialAssumptions)
-        : this.typeInference.buildInteractiveRoot(ndLambda, initialAssumptions);
+      const initialAssumptions = this.buildNdTypeAssumptions();
+      // In the ND type tab we always show the evaluated inference tree,
+      // independent of proof-building mode (auto/interactive).
+      this.typeInferenceTree = this.typeInference.buildTypeInferenceTree(ndLambda, initialAssumptions);
     } catch {
       this.typeInferenceTree = null;
     }
+  }
+
+  private buildNdTypeAssumptions(): Map<string, TypeNode> | undefined {
+    if (!this.naturalDeductionTree) {
+      return undefined;
+    }
+
+    const rootHypotheses = this.naturalDeductionTree.openHypotheses ?? [];
+    if (!rootHypotheses.length) {
+      return undefined;
+    }
+
+    const assumptions = new Map<string, TypeNode>();
+    rootHypotheses.forEach((hypothesis, index) => {
+      const variableName = this.alphaName(index);
+      assumptions.set(variableName, this.formulaType.formulaToType(hypothesis.formula));
+    });
+
+    return assumptions;
+  }
+
+  private alphaName(index: number): string {
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+    let value = index;
+    let suffix = '';
+
+    do {
+      suffix = alphabet[value % 26] + suffix;
+      value = Math.floor(value / 26) - 1;
+    } while (value >= 0);
+
+    return suffix;
   }
 
 
@@ -849,7 +883,6 @@ export class App {
       return undefined;
     }
 
-    const language = this.currentLanguage;
     const collectFreeVars = (formulas: FormulaNode[]): string[] => {
       const vars = new Set<string>();
       for (const formula of formulas) {
@@ -865,52 +898,55 @@ export class App {
         ? collectFreeVars(node.judgement.context)
         : collectFreeVars([...node.judgement.context, node.judgement.goal]);
 
-      const ruleType = rule === '∀I' ? 'forall-right' : 'exists-left';
-      const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
-        data: {
-          ruleType,
-          freeVars,
-          language
-        },
-        width: '500px',
-        modal: true
-      });
-      if (!dialogRef) return null;
-
-      const result = await firstValueFrom(dialogRef.onClose);
+      const ruleType = rule === '∀I' ? 'forall-intro' : 'exists-elim';
+      const result = await this.requestNdQuantifierInput(ruleType, freeVars);
       if (!result) return null;
 
       const value = String(result).trim();
-      if (rule === '∀I') {
-        return { eigenVariable: value };
+      const variableOptions: NdRuleApplicationOptions = { eigenVariable: value };
+      if (!this.naturalDeductionBuilder.canApply(node, rule, variableOptions)) {
+        this.showError('errorQuantifierVariableInvalid', { rule });
+        return null;
       }
-      return { eigenVariable: value };
+      return variableOptions;
     }
 
-    const ruleType = rule === '∀E' ? 'forall-left' : 'exists-right';
+    const ruleType = rule === '∀E' ? 'forall-elim' : 'exists-intro';
+    const result = await this.requestNdQuantifierInput(ruleType);
+    if (!result) return null;
+
+    const parsedTerm = parseTerm(String(result).trim());
+    if (!parsedTerm) {
+      this.showError('errorInvalidQuantifierTerm');
+      return null;
+    }
+
+    const termOptions: NdRuleApplicationOptions = { instantiationTerm: parsedTerm };
+    if (!this.naturalDeductionBuilder.canApply(node, rule, termOptions)) {
+      this.showError('errorQuantifierTermMismatch', { rule });
+      return null;
+    }
+
+    return termOptions;
+  }
+
+  private async requestNdQuantifierInput(
+    ruleType: 'forall-intro' | 'exists-elim' | 'forall-elim' | 'exists-intro',
+    freeVars?: string[]
+  ): Promise<string | null> {
     const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
       data: {
         ruleType,
-        language
+        freeVars,
+        language: this.currentLanguage
       },
-      width: '500px',
+      width: '440px',
       modal: true
     });
     if (!dialogRef) return null;
 
     const result = await firstValueFrom(dialogRef.onClose);
-    if (!result) return null;
-
-    const parsedTerm = parseTerm(String(result).trim());
-    if (!parsedTerm) {
-      throw new Error(
-        this.currentLanguage === 'sk'
-          ? 'Neplatný term pre kvantifikačné pravidlo.'
-          : 'Invalid term for quantifier rule.'
-      );
-    }
-
-    return { instantiationTerm: parsedTerm };
+    return result ? String(result).trim() : null;
   }
 
   async parseAndBuild() {

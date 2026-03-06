@@ -17,7 +17,15 @@ import { I18nService } from '../../services/i18n.service';
 export class QuantifierInputModalComponent implements OnInit {
   inputValue: string = '';
   errorMessage: string = '';
-  ruleType: 'forall-right' | 'forall-left' | 'exists-right' | 'exists-left' = 'forall-right';
+  ruleType:
+    | 'forall-right'
+    | 'forall-left'
+    | 'exists-right'
+    | 'exists-left'
+    | 'forall-intro'
+    | 'forall-elim'
+    | 'exists-intro'
+    | 'exists-elim' = 'forall-right';
   placeholder: string = '';
   isVariableInput: boolean = true; // true for eigenvariable, false for term
   freeVars: string[] = []; // Free variables to check freshness against
@@ -55,10 +63,14 @@ export class QuantifierInputModalComponent implements OnInit {
     switch (this.ruleType) {
       case 'forall-right':
       case 'exists-left':
+      case 'forall-intro':
+      case 'exists-elim':
         this.isVariableInput = true;
         break;
       case 'forall-left':
       case 'exists-right':
+      case 'forall-elim':
+      case 'exists-intro':
         this.isVariableInput = false;
         break;
     }

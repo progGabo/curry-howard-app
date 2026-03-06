@@ -56,6 +56,36 @@
         </section>
 
         <section class="help-gallery__item">
+          <h4>{{ currentLanguage === 'sk' ? 'Syntax vstupu (výrazy a lambda)' : 'Input syntax (expressions and lambda)' }}</h4>
+
+          <div class="help-syntax-grid">
+            <div>
+              <h5>{{ currentLanguage === 'sk' ? 'Logické výrazy / sekventy' : 'Logical expressions / sequents' }}</h5>
+              <ul class="help-syntax-list">
+                <li><code>A => B</code> / <code>A ⇒ B</code></li>
+                <li><code>A && B</code> / <code>A ∧ B</code></li>
+                <li><code>A || B</code> / <code>A ∨ B</code></li>
+                <li><code>!A</code> / <code>¬A</code></li>
+                <li><code>forall x. P(x)</code> / <code>∀x. P(x)</code></li>
+                <li><code>exists x. P(x)</code> / <code>∃x. P(x)</code></li>
+              </ul>
+            </div>
+
+            <div>
+              <h5>{{ currentLanguage === 'sk' ? 'Lambda výrazy' : 'Lambda expressions' }}</h5>
+              <ul class="help-syntax-list">
+                <li><code>\x:T. t</code> / <code>λx:T. t</code></li>
+                <li><code>f x</code> </li>
+                <li><code>&lt;a, b&gt;</code> / <code>⟨a, b⟩</code></li>
+                <li><code>let (x, y) = p in t</code></li>
+                <li><code>(x:T) -&gt; B(x)</code> / <code>(x:T) → B(x)</code></li>
+                <li><code>∃x:T. P(x)</code> </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="help-gallery__item">
           <h4>{{ currentLanguage === 'sk' ? 'Dokazovanie výroku' : 'Proposition proving' }}</h4>
           <p>
             {{

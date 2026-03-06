@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
-import { DerivationNode } from '../models/formula-node';
+import { DerivationNode, FormulaNode, TermNode } from '../models/formula-node';
 import { NdNode } from '../models/nd-node';
 import { TypeInferenceNode } from './type-inference-service';
+import { Equality } from '../utils/equality';
+import { substituteFormula } from '../utils/quantifier-utils';
+import { TermFactories } from '../utils/ast-factories';
 
 type InteractiveSubmode = 'applicable' | 'all' | 'predict';
 
@@ -65,7 +68,7 @@ export class RuleFilterService {
     popupNode: DerivationNode | NdNode | TypeInferenceNode | null,
     interactiveSubmode: InteractiveSubmode
   ): string[] {
-    if (interactiveSubmode !== 'applicable' || !popupNode || !('judgement' in popupNode)) {
+    if (interactiveSubmode === 'all' || !popupNode || !('judgement' in popupNode)) {
       return [...rules];
     }
 
@@ -97,11 +100,11 @@ export class RuleFilterService {
         case '→I':
           return goal.kind === 'Implies';
         case '→E':
-          return hasInContext('Implies');
+          return this.canApplyNdImplicationElimination(goal, context);
         case '∀I':
           return goal.kind === 'Forall';
         case '∀E':
-          return hasInContext('Forall');
+          return this.canApplyNdForallElimination(goal, context);
         case '∃I':
           return goal.kind === 'Exists';
         case '∃E':
@@ -110,6 +113,106 @@ export class RuleFilterService {
           return true;
       }
     });
+  }
+
+  private unwrapParen(formula: FormulaNode): FormulaNode {
+    let current = formula;
+    while (current.kind === 'Paren') {
+      current = current.inner;
+    }
+    return current;
+  }
+
+  private canApplyNdImplicationElimination(goal: FormulaNode, context: FormulaNode[]): boolean {
+    for (const formula of context) {
+      const unwrapped = this.unwrapParen(formula);
+      if (unwrapped.kind === 'Implies' && Equality.formulasEqual(unwrapped.right, goal)) {
+        return true;
+      }
+    }
+
+    const goalTerms = this.collectTerms(goal);
+
+    for (const formula of context) {
+      const unwrapped = this.unwrapParen(formula);
+      if (unwrapped.kind !== 'Forall') {
+        continue;
+      }
+
+      const termCandidates = [...goalTerms, TermFactories.var(unwrapped.variable)];
+      for (const term of termCandidates) {
+        const instantiated = this.unwrapParen(substituteFormula(unwrapped.body, unwrapped.variable, term));
+        if (instantiated.kind !== 'Implies') {
+          continue;
+        }
+        if (Equality.formulasEqual(instantiated.right, goal)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private canApplyNdForallElimination(goal: FormulaNode, context: FormulaNode[]): boolean {
+    const goalTerms = this.collectTerms(goal);
+
+    for (const formula of context) {
+      const unwrapped = this.unwrapParen(formula);
+      if (unwrapped.kind !== 'Forall') {
+        continue;
+      }
+
+      const termCandidates = [...goalTerms, TermFactories.var(unwrapped.variable)];
+      for (const term of termCandidates) {
+        const instantiated = this.unwrapParen(substituteFormula(unwrapped.body, unwrapped.variable, term));
+        if (Equality.formulasEqual(instantiated, goal)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private collectTerms(formula: FormulaNode): TermNode[] {
+    const terms: TermNode[] = [];
+
+    const visitTerm = (term: TermNode): void => {
+      terms.push(term);
+      if (term.kind === 'TermFunc') {
+        for (const arg of term.args) {
+          visitTerm(arg);
+        }
+      }
+    };
+
+    const visitFormula = (current: FormulaNode): void => {
+      switch (current.kind) {
+        case 'Predicate':
+          current.args.forEach(visitTerm);
+          break;
+        case 'Implies':
+        case 'And':
+        case 'Or':
+          visitFormula(current.left);
+          visitFormula(current.right);
+          break;
+        case 'Forall':
+        case 'Exists':
+          visitFormula(current.body);
+          break;
+        case 'Not':
+        case 'Paren':
+          visitFormula(current.inner);
+          break;
+        default:
+          break;
+      }
+    };
+
+    visitFormula(formula);
+    return terms;
   }
 
   /**

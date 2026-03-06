@@ -6,6 +6,7 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
 import { parseTerm, freeVarsFormula, freeVarsTerm, substituteFormula, substituteTerm } from '../utils/quantifier-utils';
 import { FormulaRenderService } from './formula-render.service';
+import { I18nService } from './i18n.service';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -14,7 +15,8 @@ export class ProofTreeBuilderService {
 
   constructor(
     private injector: Injector,
-    private formulaRender: FormulaRenderService
+    private formulaRender: FormulaRenderService,
+    private i18n: I18nService
   ) {}
 
   private getDialogService(): DialogService {
@@ -313,41 +315,16 @@ export class ProofTreeBuilderService {
     let eigenVar: string;
     
     if (isInteractive) {
-      const freeVarsInGamma = new Set<string>();
-      sequent.assumptions.forEach(f => {
-        const fv = freeVarsFormula(f);
-        fv.forEach(v => freeVarsInGamma.add(v));
-      });
-      
-      const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
-        header: language === 'sk' ? '∀R: Zvoľte eigenpremennú' : '∀R: Choose Eigenvariable',
-        data: {
-          ruleType: 'forall-right',
-          title: language === 'sk' ? '∀R: Zvoľte eigenpremennú' : '∀R: Choose Eigenvariable',
-          freeVars: Array.from(freeVarsInGamma),
-          language: language
-        },
-        width: '500px',
-        modal: true
-      });
-      if (!dialogRef) {
-        throw new Error('Failed to open quantifier input dialog');
-      }
-      
-      const result = await firstValueFrom(dialogRef.onClose);
-      if (!result) {
-        throw new Error('User cancelled quantifier rule application');
-      }
-      
-      eigenVar = result.trim();
+      const freeVarsInGamma = this.collectFreeVarsFromFormulas(sequent.assumptions);
+      eigenVar = await this.promptQuantifierInput('forall-right', language, freeVarsInGamma);
       
       const varMatch = eigenVar.match(/^[a-z][a-zA-Z0-9_]*$/);
       if (!varMatch) {
-        throw new Error(`Invalid variable name: ${eigenVar}. Must be a lowercase identifier.`);
+        throw new Error(this.i18n.quantifierRuntimeErrors(language).invalidVariable.replace('{var}', eigenVar));
       }
       
-      if (freeVarsInGamma.has(eigenVar)) {
-        throw new Error(`Variable ${eigenVar} is not fresh: it occurs free in the assumptions.`);
+      if (new Set(freeVarsInGamma).has(eigenVar)) {
+        throw new Error(this.i18n.quantifierRuntimeErrors(language).notFreshInAssumptions.replace('{var}', eigenVar));
       }
     } else {
       const freeVars = new Set<string>();
@@ -387,38 +364,7 @@ export class ProofTreeBuilderService {
     const variable = forall.variable;
     const body = forall.body;
     
-    let term: TermNode;
-    
-    if (isInteractive) {
-      const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
-        header: language === 'sk' ? '∀L: Zvoľte instanciačný term' : '∀L: Choose Instantiation Term',
-        data: {
-          ruleType: 'forall-left',
-          title: language === 'sk' ? '∀L: Zvoľte instanciačný term' : '∀L: Choose Instantiation Term',
-          language: language
-        },
-        width: '500px',
-        modal: true
-      });
-      if (!dialogRef) {
-        throw new Error('Failed to open quantifier input dialog');
-      }
-      
-      const result = await firstValueFrom(dialogRef.onClose);
-      if (!result) {
-        throw new Error('User cancelled quantifier rule application');
-      }
-      
-      const termStr = result.trim();
-      const parsedTerm = parseTerm(termStr);
-      if (!parsedTerm) {
-        throw new Error(`Invalid term: ${termStr}. Must be a variable, constant, or function application.`);
-      }
-      
-      term = parsedTerm;
-    } else {
-      term = TermFactories.var(variable);
-    }
+    const term = await this.resolveQuantifierTerm(variable, isInteractive, language, 'forall-left');
     
     const substituted = substituteFormula(body, variable, term);
     
@@ -428,7 +374,7 @@ export class ProofTreeBuilderService {
       conclusions: sequent.conclusions
     };
     
-    const child = isInteractive ? this.buildInteractiveRoot(newSeq) : await this.applyRules(newSeq);
+    const child = await this.deriveChildNode(newSeq, isInteractive);
     return {
       rule: '∀L',
       sequent,
@@ -446,38 +392,7 @@ export class ProofTreeBuilderService {
     const variable = existsF.variable;
     const body = existsF.body;
     
-    let term: TermNode;
-    
-    if (isInteractive) {
-      const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
-        header: language === 'sk' ? '∃R: Zvoľte svedecký term' : '∃R: Choose Witness Term',
-        data: {
-          ruleType: 'exists-right',
-          title: language === 'sk' ? '∃R: Zvoľte svedecký term' : '∃R: Choose Witness Term',
-          language: language
-        },
-        width: '500px',
-        modal: true
-      });
-      if (!dialogRef) {
-        throw new Error('Failed to open quantifier input dialog');
-      }
-      
-      const result = await firstValueFrom(dialogRef.onClose);
-      if (!result) {
-        throw new Error('User cancelled quantifier rule application');
-      }
-      
-      const termStr = result.trim();
-      const parsedTerm = parseTerm(termStr);
-      if (!parsedTerm) {
-        throw new Error(`Invalid term: ${termStr}. Must be a variable, constant, or function application.`);
-      }
-      
-      term = parsedTerm;
-    } else {
-      term = TermFactories.var(variable);
-    }
+    const term = await this.resolveQuantifierTerm(variable, isInteractive, language, 'exists-right');
     
     const substituted = substituteFormula(body, variable, term);
     
@@ -489,7 +404,7 @@ export class ProofTreeBuilderService {
       conclusions: newConclusions
     };
     
-    const child = isInteractive ? this.buildInteractiveRoot(newSeq) : await this.applyRules(newSeq);
+    const child = await this.deriveChildNode(newSeq, isInteractive);
     return {
       rule: '∃R',
       sequent,
@@ -514,45 +429,16 @@ export class ProofTreeBuilderService {
     let eigenVar: string;
     
     if (isInteractive) {
-      const freeVarsInGammaDelta = new Set<string>();
-      otherAssumptions.forEach(f => {
-        const fv = freeVarsFormula(f);
-        fv.forEach(v => freeVarsInGammaDelta.add(v));
-      });
-      sequent.conclusions.forEach(f => {
-        const fv = freeVarsFormula(f);
-        fv.forEach(v => freeVarsInGammaDelta.add(v));
-      });
-      
-      const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
-        header: language === 'sk' ? '∃L: Zvoľte eigenpremennú' : '∃L: Choose Eigenvariable',
-        data: {
-          ruleType: 'exists-left',
-          title: language === 'sk' ? '∃L: Zvoľte eigenpremennú' : '∃L: Choose Eigenvariable',
-          freeVars: Array.from(freeVarsInGammaDelta),
-          language: language
-        },
-        width: '500px',
-        modal: true
-      });
-      if (!dialogRef) {
-        throw new Error('Failed to open quantifier input dialog');
-      }
-      
-      const result = await firstValueFrom(dialogRef.onClose);
-      if (!result) {
-        throw new Error('User cancelled quantifier rule application');
-      }
-      
-      eigenVar = result.trim();
+      const freeVarsInGammaDelta = this.collectFreeVarsFromFormulas([...otherAssumptions, ...sequent.conclusions]);
+      eigenVar = await this.promptQuantifierInput('exists-left', language, freeVarsInGammaDelta);
       
       const varMatch = eigenVar.match(/^[a-z][a-zA-Z0-9_]*$/);
       if (!varMatch) {
-        throw new Error(`Invalid variable name: ${eigenVar}. Must be a lowercase identifier.`);
+        throw new Error(this.i18n.quantifierRuntimeErrors(language).invalidVariable.replace('{var}', eigenVar));
       }
       
-      if (freeVarsInGammaDelta.has(eigenVar)) {
-        throw new Error(`Variable ${eigenVar} is not fresh: it occurs free in the assumptions or conclusions.`);
+      if (new Set(freeVarsInGammaDelta).has(eigenVar)) {
+        throw new Error(this.i18n.quantifierRuntimeErrors(language).notFreshInAssumptionsConclusions.replace('{var}', eigenVar));
       }
     } else {
       const freeVars = new Set<string>();
@@ -586,6 +472,72 @@ export class ProofTreeBuilderService {
     };
   }
 
+  private collectFreeVarsFromFormulas(formulas: FormulaNode[]): string[] {
+    const freeVars = new Set<string>();
+    for (const formula of formulas) {
+      for (const variable of freeVarsFormula(formula)) {
+        freeVars.add(variable);
+      }
+    }
+    return Array.from(freeVars);
+  }
+
+  private parseTermOrThrow(termStr: string, language: 'sk' | 'en'): TermNode {
+    const parsedTerm = parseTerm(termStr);
+    if (!parsedTerm) {
+      throw new Error(this.i18n.quantifierRuntimeErrors(language).invalidTerm.replace('{term}', termStr));
+    }
+    return parsedTerm;
+  }
+
+  private async resolveQuantifierTerm(
+    variable: string,
+    isInteractive: boolean,
+    language: 'sk' | 'en',
+    ruleType: 'forall-left' | 'exists-right'
+  ): Promise<TermNode> {
+    if (!isInteractive) {
+      return TermFactories.var(variable);
+    }
+
+    const termStr = await this.promptQuantifierInput(ruleType, language);
+    return this.parseTermOrThrow(termStr, language);
+  }
+
+  private async deriveChildNode(sequent: SequentNode, isInteractive: boolean): Promise<DerivationNode> {
+    return isInteractive ? this.buildInteractiveRoot(sequent) : this.applyRules(sequent);
+  }
+
+  private async promptQuantifierInput(
+    ruleType: 'forall-right' | 'forall-left' | 'exists-right' | 'exists-left',
+    language: 'sk' | 'en',
+    freeVars?: string[]
+  ): Promise<string> {
+    const title = this.i18n.quantifierRuleLabels(language, ruleType).title;
+    const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
+      header: title,
+      data: {
+        ruleType,
+        title,
+        freeVars,
+        language
+      },
+      width: '440px',
+      modal: true
+    });
+
+    if (!dialogRef) {
+      throw new Error(this.i18n.quantifierRuntimeErrors(language).dialogOpenFailed);
+    }
+
+    const result = await firstValueFrom(dialogRef.onClose);
+    if (!result) {
+      throw new Error(this.i18n.quantifierRuntimeErrors(language).cancelled);
+    }
+
+    return String(result).trim();
+  }
+
   private async applyWeakeningRight(sequent: SequentNode, isInteractive: boolean = false): Promise<DerivationNode | null> {
     const match = sequent.conclusions.find(c =>
       sequent.assumptions.some(a => Equality.formulasEqual(a, c))
@@ -612,304 +564,6 @@ export class ProofTreeBuilderService {
     );
   }
 
-  private formulasEqual(a: FormulaNode, b: FormulaNode): boolean {
-    if (!a || !b || a.kind !== b.kind) return false;
-    
-    switch (a.kind) {
-      case 'Var':
-        return a.name === (b as any).name;
-      case 'Not':
-        return Equality.formulasEqual(a.inner, (b as any).inner);
-      case 'Implies':
-      case 'And':
-      case 'Or':
-        return Equality.formulasEqual(a.left, (b as any).left) && 
-               Equality.formulasEqual(a.right, (b as any).right);
-      case 'Forall':
-      case 'Exists':
-        return a.variable === (b as any).variable && 
-               Equality.formulasEqual(a.body, (b as any).body);
-      case 'Predicate':
-        if (a.name !== (b as any).name || a.args.length !== (b as any).args.length) {
-          return false;
-        }
-        return a.args.every((arg, i) => this.termsEqual(arg, (b as any).args[i]));
-      case 'Paren':
-        return Equality.formulasEqual(a.inner, (b as any).inner);
-      case 'True':
-      case 'False':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  private termsEqual(t1: TermNode, t2: TermNode): boolean {
-    if (!t1 || !t2 || t1.kind !== t2.kind) return false;
-    
-    switch (t1.kind) {
-      case 'TermVar':
-      case 'TermConst':
-        return t1.name === (t2 as any).name;
-      case 'TermFunc':
-        if (t1.name !== (t2 as any).name || t1.args.length !== (t2 as any).args.length) {
-          return false;
-        }
-        return t1.args.every((arg, i) => this.termsEqual(arg, (t2 as any).args[i]));
-      default:
-        return false;
-    }
-  }
-
-  private isFreeIn(variable: string, formula: FormulaNode): boolean {
-    switch (formula.kind) {
-      case 'Var':
-        return formula.name === variable;
-      case 'Forall':
-      case 'Exists':
-        if (formula.variable === variable) return false; // bound variable
-        return this.isFreeIn(variable, formula.body);
-      case 'Implies':
-      case 'And':
-      case 'Or':
-        return this.isFreeIn(variable, formula.left) || this.isFreeIn(variable, formula.right);
-      case 'Not':
-        return this.isFreeIn(variable, formula.inner);
-      case 'Predicate':
-        return formula.args.some(term => this.isFreeInTerm(variable, term));
-      case 'Paren':
-        return this.isFreeIn(variable, formula.inner);
-      case 'True':
-      case 'False':
-        return false;
-      default:
-        return false;
-    }
-  }
-
-  private isFreeInTerm(variable: string, term: TermNode): boolean {
-    switch (term.kind) {
-      case 'TermVar':
-        return term.name === variable;
-      case 'TermConst':
-        return false;
-      case 'TermFunc':
-        return term.args.some(arg => this.isFreeInTerm(variable, arg));
-      default:
-        return false;
-    }
-  }
-
-  private getFreeVariables(formula: FormulaNode): string[] {
-    const vars = new Set<string>();
-    this.collectFreeVariables(formula, vars, new Set<string>());
-    return Array.from(vars);
-  }
-
-  private collectFreeVariables(formula: FormulaNode, freeVars: Set<string>, boundVars: Set<string>): void {
-    switch (formula.kind) {
-      case 'Var':
-        if (!boundVars.has(formula.name)) {
-          freeVars.add(formula.name);
-        }
-        break;
-      case 'Forall':
-      case 'Exists':
-        const newBound = new Set(boundVars);
-        newBound.add(formula.variable);
-        this.collectFreeVariables(formula.body, freeVars, newBound);
-        break;
-      case 'Implies':
-      case 'And':
-      case 'Or':
-        this.collectFreeVariables(formula.left, freeVars, boundVars);
-        this.collectFreeVariables(formula.right, freeVars, boundVars);
-        break;
-      case 'Not':
-        this.collectFreeVariables(formula.inner, freeVars, boundVars);
-        break;
-      case 'Predicate':
-        formula.args.forEach(term => this.collectFreeVariablesInTerm(term, freeVars, boundVars));
-        break;
-      case 'Paren':
-        this.collectFreeVariables(formula.inner, freeVars, boundVars);
-        break;
-      case 'True':
-      case 'False':
-        break;
-    }
-  }
-
-  private collectFreeVariablesInTerm(term: TermNode, freeVars: Set<string>, boundVars: Set<string>): void {
-    switch (term.kind) {
-      case 'TermVar':
-        if (!boundVars.has(term.name)) {
-          freeVars.add(term.name);
-        }
-        break;
-      case 'TermConst':
-        break;
-      case 'TermFunc':
-        term.args.forEach(arg => this.collectFreeVariablesInTerm(arg, freeVars, boundVars));
-        break;
-    }
-  }
-
-  private substituteTerm(formula: FormulaNode, variable: string, term: TermNode): FormulaNode {
-    switch (formula.kind) {
-      case 'Var':
-        return formula;
-      case 'Forall':
-        if (formula.variable === variable) {
-          return formula; 
-        }
-        const freeInTerm = this.getFreeVariablesInTerm(term);
-        if (freeInTerm.includes(formula.variable)) {
-          const newVar = this.freshVariable(formula.variable, this.getFreeVariables(formula.body), freeInTerm);
-          const renamedBody = this.renameVariable(formula.body, formula.variable, newVar);
-          return FormulaFactories.forall(newVar, this.substituteTerm(renamedBody, variable, term));
-        }
-        return FormulaFactories.forall(formula.variable, this.substituteTerm(formula.body, variable, term));
-      case 'Exists':
-        if (formula.variable === variable) {
-          return formula; 
-        }
-        const freeInTermExists = this.getFreeVariablesInTerm(term);
-        if (freeInTermExists.includes(formula.variable)) {
-          const newVarExists = this.freshVariable(formula.variable, this.getFreeVariables(formula.body), freeInTermExists);
-          const renamedBodyExists = this.renameVariable(formula.body, formula.variable, newVarExists);
-          return FormulaFactories.exists(
-            newVarExists,
-            this.substituteTerm(renamedBodyExists, variable, term)
-          );
-        }
-        return FormulaFactories.exists(
-          formula.variable,
-          this.substituteTerm(formula.body, variable, term)
-        );
-      case 'Implies':
-        return FormulaFactories.implies(
-          this.substituteTerm(formula.left, variable, term),
-          this.substituteTerm(formula.right, variable, term)
-        );
-      case 'And':
-        return FormulaFactories.and(
-          this.substituteTerm(formula.left, variable, term),
-          this.substituteTerm(formula.right, variable, term)
-        );
-      case 'Or':
-        return FormulaFactories.or(
-          this.substituteTerm(formula.left, variable, term),
-          this.substituteTerm(formula.right, variable, term)
-        );
-      case 'Not':
-        return FormulaFactories.not(
-          this.substituteTerm(formula.inner, variable, term)
-        );
-      case 'Predicate':
-        return FormulaFactories.predicate(
-          formula.name,
-          formula.args.map(arg => this.substituteInTerm(arg, variable, term))
-        );
-      case 'Paren':
-        return {
-          kind: 'Paren',
-          inner: this.substituteTerm(formula.inner, variable, term)
-        };
-      case 'True':
-      case 'False':
-        return formula;
-      default:
-        return formula;
-    }
-  }
-
-  private substituteInTerm(term: TermNode, variable: string, replacement: TermNode): TermNode {
-    switch (term.kind) {
-      case 'TermVar':
-        return term.name === variable ? replacement : term;
-      case 'TermConst':
-        return term;
-      case 'TermFunc':
-        return TermFactories.func(
-          term.name,
-          term.args.map(arg => this.substituteInTerm(arg, variable, replacement))
-        );
-      default:
-        return term;
-    }
-  }
-
-  private getFreeVariablesInTerm(term: TermNode): string[] {
-    const vars = new Set<string>();
-    this.collectFreeVariablesInTerm(term, vars, new Set<string>());
-    return Array.from(vars);
-  }
-
-  private renameVariable(formula: FormulaNode, oldVar: string, newVar: string): FormulaNode {
-    switch (formula.kind) {
-      case 'Var':
-        return formula.name === oldVar ? FormulaFactories.var(newVar) : formula;
-      case 'Forall':
-        if (formula.variable === oldVar) {
-          return FormulaFactories.forall(newVar, this.renameVariable(formula.body, oldVar, newVar));
-        }
-        return FormulaFactories.forall(formula.variable, this.renameVariable(formula.body, oldVar, newVar));
-      case 'Exists':
-        if (formula.variable === oldVar) {
-          return FormulaFactories.exists(newVar, this.renameVariable(formula.body, oldVar, newVar));
-        }
-        return FormulaFactories.exists(formula.variable, this.renameVariable(formula.body, oldVar, newVar));
-      case 'Implies':
-        return FormulaFactories.implies(
-          this.renameVariable(formula.left, oldVar, newVar),
-          this.renameVariable(formula.right, oldVar, newVar)
-        );
-      case 'And':
-        return FormulaFactories.and(
-          this.renameVariable(formula.left, oldVar, newVar),
-          this.renameVariable(formula.right, oldVar, newVar)
-        );
-      case 'Or':
-        return FormulaFactories.or(
-          this.renameVariable(formula.left, oldVar, newVar),
-          this.renameVariable(formula.right, oldVar, newVar)
-        );
-      case 'Not':
-        return FormulaFactories.not(this.renameVariable(formula.inner, oldVar, newVar));
-      case 'Predicate':
-        return {
-          kind: 'Predicate',
-          name: formula.name,
-          args: formula.args.map(term => this.renameVariableInTerm(term, oldVar, newVar))
-        };
-      case 'Paren':
-        return { kind: 'Paren', inner: this.renameVariable(formula.inner, oldVar, newVar) };
-      case 'True':
-      case 'False':
-        return formula;
-      default:
-        return formula;
-    }
-  }
-
-  private renameVariableInTerm(term: TermNode, oldVar: string, newVar: string): TermNode {
-    switch (term.kind) {
-      case 'TermVar':
-        return term.name === oldVar ? { kind: 'TermVar', name: newVar } : term;
-      case 'TermConst':
-        return term;
-      case 'TermFunc':
-        return {
-          kind: 'TermFunc',
-          name: term.name,
-          args: term.args.map(arg => this.renameVariableInTerm(arg, oldVar, newVar))
-        };
-      default:
-        return term;
-    }
-  }
-
   private freshVariable(base: string, usedVars: string[], avoidVars: string[]): string {
     const allUsed = new Set([...usedVars, ...avoidVars]);
     let candidate = base;
@@ -921,91 +575,75 @@ export class ProofTreeBuilderService {
     return candidate;
   }
 
+  private findConclusionByKind(sequent: SequentNode, kind: FormulaNode['kind']): FormulaNode | undefined {
+    return sequent.conclusions.find((formula) => formula.kind === kind);
+  }
+
+  private findAssumptionIndexByKind(sequent: SequentNode, kind: FormulaNode['kind']): number {
+    return sequent.assumptions.findIndex((formula) => formula.kind === kind);
+  }
+
   async applyRuleManually(sequent: SequentNode, rule: string, isInteractive = true, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode | null> {
-    let result: DerivationNode | null;
-    switch (rule) {
-      case '→R': {
-        const impl = sequent.conclusions.find(f => f.kind === 'Implies');
-        result = impl ? await this.applyImplRight(sequent, impl, isInteractive) : null;
-        break;
-      }
-      case '→L': {
-        const idx = sequent.assumptions.findIndex(f => f.kind === 'Implies');
-        result = idx !== -1 ? await this.applyImplLeft(sequent, idx, isInteractive) : null;
-        break;
-      }
-      case '∧R': {
-        const and = sequent.conclusions.find(f => f.kind === 'And');
-        result = and ? await this.applyAndRight(sequent, and, isInteractive) : null;
-        break;
-      }
-      case '∧L': {
-        const idx = sequent.assumptions.findIndex(f => f.kind === 'And');
-        result = idx !== -1 ? await this.applyAndLeft(sequent, idx, isInteractive) : null;
-        break;
-      }
-      case '∨R': {
-        const or = sequent.conclusions.find(f => f.kind === 'Or');
-        result = or ? await this.applyOrRight(sequent, or, isInteractive) : null;
-        break;
-      }
-      case '∨L': {
-        const idx = sequent.assumptions.findIndex(f => f.kind === 'Or');
-        result = idx !== -1 ? await this.applyOrLeft(sequent, idx, isInteractive) : null;
-        break;
-      }
-      case '¬R': {
-        const not = sequent.conclusions.find(f => f.kind === 'Not');
-        result = not ? await this.applyNotRight(sequent, not, isInteractive) : null;
-        break;
-      }
-      case '¬L': {
-        const idx = sequent.assumptions.findIndex(f => f.kind === 'Not');
-        result = idx !== -1 ? await this.applyNotLeft(sequent, idx, isInteractive) : null;
-        break;
-      }
-      case 'WL': {
-        result = await this.applyWeakeningLeft(sequent, isInteractive);
-        break;
-      }
-      case 'WR': {
-        result = await this.applyWeakeningRight(sequent, isInteractive);
-        break;
-      }
-      case '∀R': {
-        const forall = sequent.conclusions.find(f => f.kind === 'Forall');
-        result = forall ? await this.applyForallRight(sequent, forall, isInteractive, language) : null;
-        break;
-      }
-      case '∀L': {
-        const idx = sequent.assumptions.findIndex(f => f.kind === 'Forall');
-        result = idx !== -1 ? await this.applyForallLeft(sequent, idx, isInteractive, language) : null;
-        break;
-      }
-      case '∃R': {
-        const exists = sequent.conclusions.find(f => f.kind === 'Exists');
-        result = exists ? await this.applyExistsRight(sequent, exists, isInteractive, language) : null;
-        break;
-      }
-      case '∃L': {
-        const idx = sequent.assumptions.findIndex(f => f.kind === 'Exists');
-        result = idx !== -1 ? await this.applyExistsLeft(sequent, idx, isInteractive, language) : null;
-        break;
-      }
-      case 'Ax':
-      case 'id':
-      case 'ID': {
-        if (this.isAxiom(sequent)) {
-          result = { rule: 'Ax', sequent, children: [] };
-          break;
-        }
-        result = null;
-        break;
-      }
-      default:
-        result = null;
-        break;
+    if (rule === 'Ax' || rule === 'id' || rule === 'ID') {
+      const axiom = this.isAxiom(sequent) ? { rule: 'Ax', sequent, children: [] } : null;
+      return axiom ? this.annotateLatex(axiom) : null;
     }
+
+    const handlers: Record<string, () => Promise<DerivationNode | null>> = {
+      '→R': async () => {
+        const impl = this.findConclusionByKind(sequent, 'Implies');
+        return impl ? this.applyImplRight(sequent, impl, isInteractive) : null;
+      },
+      '→L': async () => {
+        const index = this.findAssumptionIndexByKind(sequent, 'Implies');
+        return index !== -1 ? this.applyImplLeft(sequent, index, isInteractive) : null;
+      },
+      '∧R': async () => {
+        const and = this.findConclusionByKind(sequent, 'And');
+        return and ? this.applyAndRight(sequent, and, isInteractive) : null;
+      },
+      '∧L': async () => {
+        const index = this.findAssumptionIndexByKind(sequent, 'And');
+        return index !== -1 ? this.applyAndLeft(sequent, index, isInteractive) : null;
+      },
+      '∨R': async () => {
+        const or = this.findConclusionByKind(sequent, 'Or');
+        return or ? this.applyOrRight(sequent, or, isInteractive) : null;
+      },
+      '∨L': async () => {
+        const index = this.findAssumptionIndexByKind(sequent, 'Or');
+        return index !== -1 ? this.applyOrLeft(sequent, index, isInteractive) : null;
+      },
+      '¬R': async () => {
+        const not = this.findConclusionByKind(sequent, 'Not');
+        return not ? this.applyNotRight(sequent, not, isInteractive) : null;
+      },
+      '¬L': async () => {
+        const index = this.findAssumptionIndexByKind(sequent, 'Not');
+        return index !== -1 ? this.applyNotLeft(sequent, index, isInteractive) : null;
+      },
+      'WL': async () => this.applyWeakeningLeft(sequent, isInteractive),
+      'WR': async () => this.applyWeakeningRight(sequent, isInteractive),
+      '∀R': async () => {
+        const forall = this.findConclusionByKind(sequent, 'Forall');
+        return forall ? this.applyForallRight(sequent, forall, isInteractive, language) : null;
+      },
+      '∀L': async () => {
+        const index = this.findAssumptionIndexByKind(sequent, 'Forall');
+        return index !== -1 ? this.applyForallLeft(sequent, index, isInteractive, language) : null;
+      },
+      '∃R': async () => {
+        const exists = this.findConclusionByKind(sequent, 'Exists');
+        return exists ? this.applyExistsRight(sequent, exists, isInteractive, language) : null;
+      },
+      '∃L': async () => {
+        const index = this.findAssumptionIndexByKind(sequent, 'Exists');
+        return index !== -1 ? this.applyExistsLeft(sequent, index, isInteractive, language) : null;
+      }
+    };
+
+    const handler = handlers[rule];
+    const result = handler ? await handler() : null;
     return result ? this.annotateLatex(result) : null;
   }
 

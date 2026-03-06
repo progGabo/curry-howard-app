@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { LambdaParserService } from './lambda-parser-service';
 import { TypeInferenceService, TypeInferenceNode } from './type-inference-service';
+import { TypeNode } from '../models/lambda-node';
+import { ExprFactories, TypeFactories } from '../utils/ast-factories';
 
 describe('Type inference interactive regression', () => {
   let lambdaParser: LambdaParserService;
@@ -61,5 +63,42 @@ describe('Type inference interactive regression', () => {
         expect(pairNode.inferredType.paramType.name).toBe('T');
       }
     }
+  });
+
+  it('keeps LetDependentPair root result constant for ∃x:T.P(x), ((x:T)->P(x)->Q(x)) ⊢ ∃x:T.Q(x)', () => {
+    const tType = TypeFactories.typeVar('T');
+    const pOfX = TypeFactories.predicate('P', [TypeFactories.typeVar('x')]);
+    const qOfX = TypeFactories.predicate('Q', [TypeFactories.typeVar('x')]);
+
+    const assumptions = new Map<string, TypeNode>([
+      ['a', TypeFactories.dependentProd('x', tType, pOfX)],
+      ['b', TypeFactories.dependentFunc('x', tType, TypeFactories.func(pOfX, qOfX))]
+    ]);
+
+    const expr = ExprFactories.letDependentPair(
+      'x',
+      tType,
+      'c',
+      pOfX,
+      ExprFactories.var('a'),
+      ExprFactories.dependentPair(
+        ExprFactories.var('x'),
+        tType,
+        ExprFactories.app(
+          ExprFactories.app(ExprFactories.var('b'), ExprFactories.var('x')),
+          ExprFactories.var('c')
+        ),
+        undefined,
+        qOfX
+      )
+    );
+
+    const inferred = typeInference.buildTypeInferenceTree(expr, assumptions);
+
+    expect(inferred.inferredType.kind).toBe('DependentProd');
+    if (inferred.inferredType.kind !== 'DependentProd') return;
+
+    expect(inferred.inferredType.paramType).toEqual(tType);
+    expect(inferred.inferredType.bodyType).toEqual(qOfX);
   });
 });
