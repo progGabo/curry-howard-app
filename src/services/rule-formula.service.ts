@@ -335,7 +335,7 @@ export class RuleFormulaService {
     },
     'Let': {
       name: 'Let (Local binding)',
-      formula: '\\frac{\\Gamma \\vdash e_1 : \\tau_1 \\quad \\Gamma, x:\\tau_1 \\vdash e_2 : \\tau_2}{\\Gamma \\vdash \\text{let}\\, x = e_1\\, \\text{in}\\, e_2 : \\tau_2}',
+      formula: '\\frac{\\Gamma \\vdash t_1 : T_1 \\qquad \\Gamma, x : \\mathrm{gen}(\\Gamma,T_1) \\vdash t_2 : T_2}{\\Gamma \\vdash \\mathrm{let}\\; x = t_1\\; \\mathrm{in}\\; t_2 : T_2}',
       description: 'Local variable binding',
       type: 'other'
     },
@@ -675,7 +675,7 @@ export class RuleFormulaService {
     },
     'Let': {
       name: 'Let (Lokálne viazanie)',
-      formula: '\\frac{\\Gamma \\vdash e_1 : \\tau_1 \\quad \\Gamma, x:\\tau_1 \\vdash e_2 : \\tau_2}{\\Gamma \\vdash \\text{let}\\, x = e_1\\, \\text{in}\\, e_2 : \\tau_2}',
+      formula: '\\frac{\\Gamma \\vdash t_1 : T_1 \\qquad \\Gamma, x : \\mathrm{gen}(\\Gamma,T_1) \\vdash t_2 : T_2}{\\Gamma \\vdash \\mathrm{let}\\; x = t_1\\; \\mathrm{in}\\; t_2 : T_2}',
       description: 'Lokálne viazanie premennej',
       type: 'other'
     },
