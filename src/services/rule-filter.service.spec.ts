@@ -62,7 +62,7 @@ describe('RuleFilterService ND applicability', () => {
     expect(filtered).toEqual(['→E']);
   });
 
-  it('filters ND rules in predict mode to only applicable ones', () => {
+  it('does not filter ND rules in predict mode', () => {
     const node: NdNode = {
       id: 'nd-node-predict-filter',
       rule: '∅',
@@ -76,8 +76,9 @@ describe('RuleFilterService ND applicability', () => {
       branchStatus: 'open'
     };
 
-    const filtered = service.filterNdRules(['→I', '∧I', '∀I', '∃I'], node, 'predict');
-    expect(filtered).toEqual(['→I']);
+    const inputRules = ['→I', '∧I', '∀I', '∃I'];
+    const filtered = service.filterNdRules(inputRules, node, 'predict');
+    expect(filtered).toEqual(inputRules);
   });
 
   it('does not filter ND rules in all mode', () => {

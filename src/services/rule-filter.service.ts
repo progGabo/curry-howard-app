@@ -68,7 +68,7 @@ export class RuleFilterService {
     popupNode: DerivationNode | NdNode | TypeInferenceNode | null,
     interactiveSubmode: InteractiveSubmode
   ): string[] {
-    if (interactiveSubmode === 'all' || !popupNode || !('judgement' in popupNode)) {
+    if (interactiveSubmode !== 'applicable' || !popupNode || !('judgement' in popupNode)) {
       return [...rules];
     }
 
