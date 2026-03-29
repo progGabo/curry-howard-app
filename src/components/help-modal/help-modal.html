@@ -21,59 +21,59 @@
       <!-- ==================== TAB: Syntax vstupu ==================== -->
       <div *ngIf="activeTab === 'syntax'" class="help-tab-content">
         <section class="help-section">
-          <h4>Textové skratky v editore</h4>
-          <p>Po dopísaní skratky sa automaticky nahradí špeciálnym symbolom:</p>
+          <h4>{{ currentLanguage === 'sk' ? 'Textové skratky v editore' : 'Text shortcuts in the editor' }}</h4>
+          <p>{{ currentLanguage === 'sk' ? 'Po dopísaní skratky sa automaticky nahradí špeciálnym symbolom:' : 'After typing a shortcut it is automatically replaced with a special symbol:' }}</p>
           <ul class="help-shortcuts">
-            <li><code>\impl</code>, <code>\to</code> → <code>⇒</code> (implikácia)</li>
-            <li><code>\and</code> → <code>∧</code> (konjunkcia)</li>
-            <li><code>\or</code> → <code>∨</code> (disjunkcia)</li>
-            <li><code>\not</code> → <code>¬</code> (negácia)</li>
-            <li><code>\forall</code> → <code>∀</code> (univerzálny kvantifikátor)</li>
-            <li><code>\exists</code> → <code>∃</code> (existenčný kvantifikátor)</li>
+            <li><code>\impl</code>, <code>\to</code> → <code>⇒</code> ({{ currentLanguage === 'sk' ? 'implikácia' : 'implication' }})</li>
+            <li><code>\and</code> → <code>∧</code> ({{ currentLanguage === 'sk' ? 'konjunkcia' : 'conjunction' }})</li>
+            <li><code>\or</code> → <code>∨</code> ({{ currentLanguage === 'sk' ? 'disjunkcia' : 'disjunction' }})</li>
+            <li><code>\not</code> → <code>¬</code> ({{ currentLanguage === 'sk' ? 'negácia' : 'negation' }})</li>
+            <li><code>\forall</code> → <code>∀</code> ({{ currentLanguage === 'sk' ? 'univerzálny kvantifikátor' : 'universal quantifier' }})</li>
+            <li><code>\exists</code> → <code>∃</code> ({{ currentLanguage === 'sk' ? 'existenčný kvantifikátor' : 'existential quantifier' }})</li>
             <li><code>\turnstile</code>, <code>\vdash</code> → <code>⊢</code> (turnstile)</li>
             <li><code>\lambda</code> → <code>λ</code></li>
-            <li><code>\bot</code>, <code>\bottom</code> → <code>⊥</code> (falzum)</li>
-            <li><code>\top</code> → <code>⊤</code> (verum)</li>
+            <li><code>\bot</code>, <code>\bottom</code> → <code>⊥</code> ({{ currentLanguage === 'sk' ? 'falzum' : 'falsum' }})</li>
+            <li><code>\top</code> → <code>⊤</code> ({{ currentLanguage === 'sk' ? 'verum' : 'verum' }})</li>
           </ul>
         </section>
 
         <section class="help-section">
-          <h4>Logické výrazy / sekventy</h4>
-          <p>Vstup pre smer <strong>Výraz → Lambda</strong> a sekciu <strong>Dôkazy</strong>:</p>
+          <h4>{{ currentLanguage === 'sk' ? 'Logické výrazy / sekventy' : 'Logical expressions / sequents' }}</h4>
+          <p>{{ currentLanguage === 'sk' ? 'Vstup pre smer' : 'Input for the' }} <strong>{{ currentLanguage === 'sk' ? 'Výraz → Lambda' : 'Expression → Lambda' }}</strong> {{ currentLanguage === 'sk' ? 'a sekciu' : 'direction and the' }} <strong>{{ currentLanguage === 'sk' ? 'Dôkazy' : 'Proofs' }}</strong>{{ currentLanguage === 'sk' ? ':' : ' section:' }}</p>
           <table class="help-table">
-            <thead><tr><th>Zápis</th><th>Význam</th></tr></thead>
+            <thead><tr><th>{{ currentLanguage === 'sk' ? 'Zápis' : 'Syntax' }}</th><th>{{ currentLanguage === 'sk' ? 'Význam' : 'Meaning' }}</th></tr></thead>
             <tbody>
-              <tr><td><code>A ⇒ B</code> / <code>A =&gt; B</code></td><td>implikácia</td></tr>
-              <tr><td><code>A ∧ B</code> / <code>A &amp;&amp; B</code></td><td>konjunkcia</td></tr>
-              <tr><td><code>A ∨ B</code> / <code>A || B</code></td><td>disjunkcia</td></tr>
-              <tr><td><code>¬A</code> / <code>!A</code></td><td>negácia</td></tr>
-              <tr><td><code>⊤</code> / <code>True</code></td><td>pravda (verum)</td></tr>
-              <tr><td><code>⊥</code> / <code>False</code></td><td>nepravda (falzum)</td></tr>
-              <tr><td><code>∀x. P(x)</code> / <code>forall x. P(x)</code></td><td>univerzálny kvantifikátor</td></tr>
-              <tr><td><code>∃x. P(x)</code> / <code>exists x. P(x)</code></td><td>existenčný kvantifikátor</td></tr>
+              <tr><td><code>A ⇒ B</code> / <code>A =&gt; B</code></td><td>{{ currentLanguage === 'sk' ? 'implikácia' : 'implication' }}</td></tr>
+              <tr><td><code>A ∧ B</code> / <code>A &amp;&amp; B</code></td><td>{{ currentLanguage === 'sk' ? 'konjunkcia' : 'conjunction' }}</td></tr>
+              <tr><td><code>A ∨ B</code> / <code>A || B</code></td><td>{{ currentLanguage === 'sk' ? 'disjunkcia' : 'disjunction' }}</td></tr>
+              <tr><td><code>¬A</code> / <code>!A</code></td><td>{{ currentLanguage === 'sk' ? 'negácia' : 'negation' }}</td></tr>
+              <tr><td><code>⊤</code> / <code>True</code></td><td>{{ currentLanguage === 'sk' ? 'pravda (verum)' : 'truth (verum)' }}</td></tr>
+              <tr><td><code>⊥</code> / <code>False</code></td><td>{{ currentLanguage === 'sk' ? 'nepravda (falzum)' : 'falsity (falsum)' }}</td></tr>
+              <tr><td><code>∀x. P(x)</code> / <code>forall x. P(x)</code></td><td>{{ currentLanguage === 'sk' ? 'univerzálny kvantifikátor' : 'universal quantifier' }}</td></tr>
+              <tr><td><code>∃x. P(x)</code> / <code>exists x. P(x)</code></td><td>{{ currentLanguage === 'sk' ? 'existenčný kvantifikátor' : 'existential quantifier' }}</td></tr>
             </tbody>
           </table>
-          <p class="help-hint">Sekvent sa zapisuje v tvare <code>A, B ⊢ C</code> kde ľavá strana sú predpoklady a pravá záver.</p>
+          <p class="help-hint">{{ currentLanguage === 'sk' ? 'Sekvent sa zapisuje v tvare' : 'A sequent is written in the form' }} <code>A, B ⊢ C</code> {{ currentLanguage === 'sk' ? 'kde ľavá strana sú predpoklady a pravá záver.' : 'where the left side contains assumptions and the right side the conclusion.' }}</p>
         </section>
 
         <section class="help-section">
-          <h4>Lambda výrazy</h4>
-          <p>Vstup pre smer <strong>Lambda → Výraz</strong>:</p>
+          <h4>{{ currentLanguage === 'sk' ? 'Lambda výrazy' : 'Lambda expressions' }}</h4>
+          <p>{{ currentLanguage === 'sk' ? 'Vstup pre smer' : 'Input for the' }} <strong>{{ currentLanguage === 'sk' ? 'Lambda → Výraz' : 'Lambda → Expression' }}</strong>{{ currentLanguage === 'sk' ? ':' : ' direction:' }}</p>
           <table class="help-table">
-            <thead><tr><th>Zápis</th><th>Význam</th></tr></thead>
+            <thead><tr><th>{{ currentLanguage === 'sk' ? 'Zápis' : 'Syntax' }}</th><th>{{ currentLanguage === 'sk' ? 'Význam' : 'Meaning' }}</th></tr></thead>
             <tbody>
-              <tr><td><code>λx:T. t</code> / <code>\x:T. t</code></td><td>abstrakcia</td></tr>
-              <tr><td><code>f x</code></td><td>aplikácia</td></tr>
-              <tr><td><code>⟨a, b⟩</code> / <code>&lt;a, b&gt;</code></td><td>pár</td></tr>
-              <tr><td><code>fst p</code> / <code>snd p</code></td><td>projekcia z páru</td></tr>
-              <tr><td><code>let (x, y) = p in t</code></td><td>dekompozícia páru</td></tr>
-              <tr><td><code>inl t</code> / <code>inr t</code></td><td>injekcia do súčtového typu</td></tr>
-              <tr><td><code>case s of inl x =&gt; t1 | inr y =&gt; t2</code></td><td>vzorové rozvetvenie</td></tr>
-              <tr><td><code>if c then t else e</code></td><td>podmienka</td></tr>
-              <tr><td><code>let x = e in t</code></td><td>let väzba</td></tr>
-              <tr><td><code>0</code>, <code>succ n</code>, <code>pred n</code>, <code>iszero n</code></td><td>prirodzené čísla</td></tr>
-              <tr><td><code>(x:T) → B(x)</code> / <code>(x:T) -&gt; B(x)</code></td><td>závislý typ (Π)</td></tr>
-              <tr><td><code>∃x:T. P(x)</code></td><td>závislý pár (Σ)</td></tr>
+              <tr><td><code>λx:T. t</code> / <code>\x:T. t</code></td><td>{{ currentLanguage === 'sk' ? 'abstrakcia' : 'abstraction' }}</td></tr>
+              <tr><td><code>f x</code></td><td>{{ currentLanguage === 'sk' ? 'aplikácia' : 'application' }}</td></tr>
+              <tr><td><code>⟨a, b⟩</code> / <code>&lt;a, b&gt;</code></td><td>{{ currentLanguage === 'sk' ? 'pár' : 'pair' }}</td></tr>
+              <tr><td><code>fst p</code> / <code>snd p</code></td><td>{{ currentLanguage === 'sk' ? 'projekcia z páru' : 'pair projection' }}</td></tr>
+              <tr><td><code>let (x, y) = p in t</code></td><td>{{ currentLanguage === 'sk' ? 'dekompozícia páru' : 'pair decomposition' }}</td></tr>
+              <tr><td><code>inl t</code> / <code>inr t</code></td><td>{{ currentLanguage === 'sk' ? 'injekcia do súčtového typu' : 'injection into sum type' }}</td></tr>
+              <tr><td><code>case s of inl x =&gt; t1 | inr y =&gt; t2</code></td><td>{{ currentLanguage === 'sk' ? 'vzorové rozvetvenie' : 'pattern matching' }}</td></tr>
+              <tr><td><code>if c then t else e</code></td><td>{{ currentLanguage === 'sk' ? 'podmienka' : 'conditional' }}</td></tr>
+              <tr><td><code>let x = e in t</code></td><td>{{ currentLanguage === 'sk' ? 'let väzba' : 'let binding' }}</td></tr>
+              <tr><td><code>0</code>, <code>succ n</code>, <code>pred n</code>, <code>iszero n</code></td><td>{{ currentLanguage === 'sk' ? 'prirodzené čísla' : 'natural numbers' }}</td></tr>
+              <tr><td><code>(x:T) → B(x)</code> / <code>(x:T) -&gt; B(x)</code></td><td>{{ currentLanguage === 'sk' ? 'závislý typ (Π)' : 'dependent type (Π)' }}</td></tr>
+              <tr><td><code>∃x:T. P(x)</code></td><td>{{ currentLanguage === 'sk' ? 'závislý pár (Σ)' : 'dependent pair (Σ)' }}</td></tr>
             </tbody>
           </table>
         </section>
@@ -82,45 +82,45 @@
       <!-- ==================== TAB: Ovládanie ==================== -->
       <div *ngIf="activeTab === 'controls'" class="help-tab-content">
         <section class="help-section">
-          <h4>Ovládanie stromu</h4>
-          <p>Dôkazový strom (aj strom odvodenia typov) sa zobrazuje v interaktívnom plátne:</p>
+          <h4>{{ currentLanguage === 'sk' ? 'Ovládanie stromu' : 'Tree controls' }}</h4>
+          <p>{{ currentLanguage === 'sk' ? 'Dôkazový strom (aj strom odvodenia typov) sa zobrazuje v interaktívnom plátne:' : 'The proof tree (and type derivation tree) is displayed on an interactive canvas:' }}</p>
           <ul class="help-flow">
-            <li><strong>Posúvanie:</strong> stlačte a držte stredné tlačidlo myši (scroll koliesko) a pohybujte myšou na posúvanie plátna.</li>
-            <li><strong>Zoomovanie:</strong> otáčajte scroll kolieskom pre priblíženie/oddialenie stromu.</li>
-            <li><strong>Kliknutie na uzol:</strong> v interaktívnom režime kliknutím na <code>+</code> pri uzle otvoríte menu pravidiel.</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Posúvanie:' : 'Panning:' }}</strong> {{ currentLanguage === 'sk' ? 'stlačte a držte stredné tlačidlo myši (scroll koliesko) a pohybujte myšou na posúvanie plátna.' : 'press and hold the middle mouse button (scroll wheel) and move the mouse to pan the canvas.' }}</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Zoomovanie:' : 'Zooming:' }}</strong> {{ currentLanguage === 'sk' ? 'otáčajte scroll kolieskom pre priblíženie/oddialenie stromu.' : 'scroll the mouse wheel to zoom in/out of the tree.' }}</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Kliknutie na uzol:' : 'Clicking a node:' }}</strong> {{ currentLanguage === 'sk' ? 'v interaktívnom režime kliknutím na' : 'in interactive mode, click' }} <code>+</code> {{ currentLanguage === 'sk' ? 'pri uzle otvoríte menu pravidiel.' : 'next to a node to open the rule menu.' }}</li>
           </ul>
         </section>
 
         <section class="help-section">
-          <h4>Sekcie aplikácie</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Sekcie aplikácie' : 'Application sections' }}</h4>
           <ul class="help-flow">
-            <li><strong>Curry-Howard</strong> — demonštrácia Curry-Howardovho izomorfizmu medzi logickými dôkazmi a lambda výrazmi. Dva smery: <em>Výraz → Lambda</em> a <em>Lambda → Výraz</em>.</li>
-            <li><strong>Dôkazy</strong> — dokazovanie výrokov v <em>sekventovom kalkule</em> alebo <em>prirodzenej dedukcii</em>.</li>
+            <li><strong>Curry-Howard</strong> — {{ currentLanguage === 'sk' ? 'demonštrácia Curry-Howardovho izomorfizmu medzi logickými dôkazmi a lambda výrazmi. Dva smery:' : 'demonstration of the Curry-Howard isomorphism between logical proofs and lambda terms. Two directions:' }} <em>{{ currentLanguage === 'sk' ? 'Výraz → Lambda' : 'Expression → Lambda' }}</em> {{ currentLanguage === 'sk' ? 'a' : 'and' }} <em>{{ currentLanguage === 'sk' ? 'Lambda → Výraz' : 'Lambda → Expression' }}</em>.</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Dôkazy' : 'Proofs' }}</strong> — {{ currentLanguage === 'sk' ? 'dokazovanie výrokov v' : 'proving propositions in' }} <em>{{ currentLanguage === 'sk' ? 'sekventovom kalkule' : 'sequent calculus' }}</em> {{ currentLanguage === 'sk' ? 'alebo' : 'or' }} <em>{{ currentLanguage === 'sk' ? 'prirodzenej dedukcii' : 'natural deduction' }}</em>.</li>
           </ul>
         </section>
 
         <section class="help-section">
-          <h4>Režimy práce</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Režimy práce' : 'Work modes' }}</h4>
           <ul class="help-flow">
-            <li><strong>Auto:</strong> strom sa vygeneruje automaticky po stlačení tlačidla.</li>
-            <li><strong>Interaktívny:</strong> strom budujete manuálne krok po kroku výberom pravidiel.</li>
+            <li><strong>Auto:</strong> {{ currentLanguage === 'sk' ? 'strom sa vygeneruje automaticky po stlačení tlačidla.' : 'the tree is generated automatically after pressing the button.' }}</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Interaktívny:' : 'Interactive:' }}</strong> {{ currentLanguage === 'sk' ? 'strom budujete manuálne krok po kroku výberom pravidiel.' : 'you build the tree manually step by step by selecting rules.' }}</li>
           </ul>
-          <p>V interaktívnom režime sú dostupné tri podrežimy:</p>
+          <p>{{ currentLanguage === 'sk' ? 'V interaktívnom režime sú dostupné tri podrežimy:' : 'In interactive mode three sub-modes are available:' }}</p>
           <ul class="help-flow">
-            <li><strong>Len použiteľné:</strong> v menu sa zobrazia iba pravidlá aplikovateľné na vybraný uzol.</li>
-            <li><strong>Všetky pravidlá:</strong> v menu sa zobrazia všetky pravidlá bez filtrovania.</li>
-            <li><strong>Predikcia:</strong> najprv vyberiete pravidlo, potom doplníte očakávané výsledky. Pravidlo sa aplikuje až po správnej predikcii.</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Len použiteľné:' : 'Applicable only:' }}</strong> {{ currentLanguage === 'sk' ? 'v menu sa zobrazia iba pravidlá aplikovateľné na vybraný uzol.' : 'only rules applicable to the selected node are shown in the menu.' }}</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Všetky pravidlá:' : 'All rules:' }}</strong> {{ currentLanguage === 'sk' ? 'v menu sa zobrazia všetky pravidlá bez filtrovania.' : 'all rules are shown in the menu without filtering.' }}</li>
+            <li><strong>{{ currentLanguage === 'sk' ? 'Predikcia:' : 'Prediction:' }}</strong> {{ currentLanguage === 'sk' ? 'najprv vyberiete pravidlo, potom doplníte očakávané výsledky. Pravidlo sa aplikuje až po správnej predikcii.' : 'first you select a rule, then fill in the expected results. The rule is applied only after a correct prediction.' }}</li>
           </ul>
-          <p><strong>Krok späť</strong> — vráti poslednú zmenu v strome.</p>
+          <p><strong>{{ currentLanguage === 'sk' ? 'Krok späť' : 'Undo step' }}</strong> — {{ currentLanguage === 'sk' ? 'vráti poslednú zmenu v strome.' : 'reverts the last change in the tree.' }}</p>
         </section>
 
         <section class="help-section">
-          <h4>Postup práce</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Postup práce' : 'Workflow' }}</h4>
           <ol class="help-flow">
-            <li>Vyberte sekciu a konkrétny režim v hlavičke.</li>
-            <li>Zadajte vstup do editora (alebo zvoľte pripravený príklad).</li>
-            <li>Spustite výpočet tlačidlom <em>Generovať dôkaz</em> alebo <em>Konvertovať</em>.</li>
-            <li>Výsledok sa zobrazí v pravej časti ako dôkazový strom, typ alebo lambda výraz.</li>
+            <li>{{ currentLanguage === 'sk' ? 'Vyberte sekciu a konkrétny režim v hlavičke.' : 'Select a section and a specific mode in the header.' }}</li>
+            <li>{{ currentLanguage === 'sk' ? 'Zadajte vstup do editora (alebo zvoľte pripravený príklad).' : 'Enter input into the editor (or choose a prepared example).' }}</li>
+            <li>{{ currentLanguage === 'sk' ? 'Spustite výpočet tlačidlom' : 'Start the computation with the' }} <em>{{ currentLanguage === 'sk' ? 'Generovať dôkaz' : 'Generate proof' }}</em> {{ currentLanguage === 'sk' ? 'alebo' : 'or' }} <em>{{ currentLanguage === 'sk' ? 'Konvertovať' : 'Convert' }}</em>{{ currentLanguage === 'sk' ? '.' : ' button.' }}</li>
+            <li>{{ currentLanguage === 'sk' ? 'Výsledok sa zobrazí v pravej časti ako dôkazový strom, typ alebo lambda výraz.' : 'The result is displayed on the right side as a proof tree, type, or lambda expression.' }}</li>
           </ol>
         </section>
       </div>
@@ -128,54 +128,59 @@
       <!-- ==================== TAB: Curry-Howard ==================== -->
       <div *ngIf="activeTab === 'curry-howard'" class="help-tab-content">
         <section class="help-section">
-          <h4>Curry-Howardov izomorfizmus</h4>
-          <p>
+          <h4>{{ currentLanguage === 'sk' ? 'Curry-Howardov izomorfizmus' : 'Curry-Howard isomorphism' }}</h4>
+          <p *ngIf="currentLanguage === 'sk'">
             Curry-Howardov izomorfizmus je korešpondencia medzi formálnymi dôkazmi a programami.
             Logické výroky zodpovedajú typom a dôkazy zodpovedajú lambda termom daného typu.
             Ak existuje dôkaz výroku, existuje aj program (lambda term) žijúci v zodpovedajúcom type — a naopak.
           </p>
+          <p *ngIf="currentLanguage === 'en'">
+            The Curry-Howard isomorphism is a correspondence between formal proofs and programs.
+            Logical propositions correspond to types, and proofs correspond to lambda terms of a given type.
+            If a proof of a proposition exists, then a program (lambda term) inhabiting the corresponding type also exists — and vice versa.
+          </p>
         </section>
 
         <section class="help-section">
-          <h4>Korešpondencia: Logika ↔ Typy</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Korešpondencia: Logika ↔ Typy' : 'Correspondence: Logic ↔ Types' }}</h4>
           <table class="help-table help-table--wide">
             <thead>
-              <tr><th>Logika</th><th>Typy (λ-kalkul)</th><th>Vysvetlenie</th></tr>
+              <tr><th>{{ currentLanguage === 'sk' ? 'Logika' : 'Logic' }}</th><th>{{ currentLanguage === 'sk' ? 'Typy (λ-kalkul)' : 'Types (λ-calculus)' }}</th><th>{{ currentLanguage === 'sk' ? 'Vysvetlenie' : 'Explanation' }}</th></tr>
             </thead>
             <tbody>
-              <tr><td>A ⇒ B</td><td>A → B (funkcia)</td><td>Dôkaz implikácie = funkcia z A do B</td></tr>
-              <tr><td>A ∧ B</td><td>A × B (pár)</td><td>Dôkaz konjunkcie = pár dôkazov</td></tr>
-              <tr><td>A ∨ B</td><td>A + B (súčet)</td><td>Dôkaz disjunkcie = injekcia do ľavej alebo pravej zložky</td></tr>
-              <tr><td>¬A</td><td>A → ⊥</td><td>Negácia = funkcia vedúca k sporu</td></tr>
-              <tr><td>⊤ (True)</td><td>Unit typ</td><td>Triviálne pravdivý výrok = typ s jedným prvkom</td></tr>
-              <tr><td>⊥ (False)</td><td>Prázdny typ (⊥)</td><td>Nepravda = typ bez obyvateľov</td></tr>
-              <tr><td>∀x. P(x)</td><td>Π(x:T). P(x)</td><td>Univerzálna kvantifikácia = závislá funkcia</td></tr>
-              <tr><td>∃x. P(x)</td><td>Σ(x:T). P(x)</td><td>Existenčná kvantifikácia = závislý pár</td></tr>
+              <tr><td>A ⇒ B</td><td>A → B ({{ currentLanguage === 'sk' ? 'funkcia' : 'function' }})</td><td>{{ currentLanguage === 'sk' ? 'Dôkaz implikácie = funkcia z A do B' : 'Proof of implication = function from A to B' }}</td></tr>
+              <tr><td>A ∧ B</td><td>A × B ({{ currentLanguage === 'sk' ? 'pár' : 'pair' }})</td><td>{{ currentLanguage === 'sk' ? 'Dôkaz konjunkcie = pár dôkazov' : 'Proof of conjunction = pair of proofs' }}</td></tr>
+              <tr><td>A ∨ B</td><td>A + B ({{ currentLanguage === 'sk' ? 'súčet' : 'sum' }})</td><td>{{ currentLanguage === 'sk' ? 'Dôkaz disjunkcie = injekcia do ľavej alebo pravej zložky' : 'Proof of disjunction = injection into left or right component' }}</td></tr>
+              <tr><td>¬A</td><td>A → ⊥</td><td>{{ currentLanguage === 'sk' ? 'Negácia = funkcia vedúca k sporu' : 'Negation = function leading to a contradiction' }}</td></tr>
+              <tr><td>⊤ (True)</td><td>Unit {{ currentLanguage === 'sk' ? 'typ' : 'type' }}</td><td>{{ currentLanguage === 'sk' ? 'Triviálne pravdivý výrok = typ s jedným prvkom' : 'Trivially true proposition = type with one element' }}</td></tr>
+              <tr><td>⊥ (False)</td><td>{{ currentLanguage === 'sk' ? 'Prázdny typ (⊥)' : 'Empty type (⊥)' }}</td><td>{{ currentLanguage === 'sk' ? 'Nepravda = typ bez obyvateľov' : 'Falsity = type with no inhabitants' }}</td></tr>
+              <tr><td>∀x. P(x)</td><td>Π(x:T). P(x)</td><td>{{ currentLanguage === 'sk' ? 'Univerzálna kvantifikácia = závislá funkcia' : 'Universal quantification = dependent function' }}</td></tr>
+              <tr><td>∃x. P(x)</td><td>Σ(x:T). P(x)</td><td>{{ currentLanguage === 'sk' ? 'Existenčná kvantifikácia = závislý pár' : 'Existential quantification = dependent pair' }}</td></tr>
             </tbody>
           </table>
         </section>
 
         <section class="help-section">
-          <h4>Korešpondencia: Pravidlá prirodzenej dedukcie ↔ Typovacie pravidlá</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Korešpondencia: Pravidlá prirodzenej dedukcie ↔ Typovacie pravidlá' : 'Correspondence: Natural deduction rules ↔ Typing rules' }}</h4>
           <table class="help-table help-table--wide">
             <thead>
-              <tr><th>Pravidlo (prirodzená dedukcia)</th><th>Typovacie pravidlo (λ)</th><th>Konštrukcia</th></tr>
+              <tr><th>{{ currentLanguage === 'sk' ? 'Pravidlo (prirodzená dedukcia)' : 'Rule (natural deduction)' }}</th><th>{{ currentLanguage === 'sk' ? 'Typovacie pravidlo (λ)' : 'Typing rule (λ)' }}</th><th>{{ currentLanguage === 'sk' ? 'Konštrukcia' : 'Construction' }}</th></tr>
             </thead>
             <tbody>
-              <tr><td>→I (zavedenie implikácie)</td><td>Abs (abstrakcia)</td><td>λx:A. t</td></tr>
-              <tr><td>→E (modus ponens)</td><td>App (aplikácia)</td><td>f x</td></tr>
-              <tr><td>∧I (zavedenie konjunkcie)</td><td>Pair (pár)</td><td>⟨a, b⟩</td></tr>
-              <tr><td>∧E1, ∧E2 (eliminácia konjunkcie)</td><td>Fst, Snd (projekcie)</td><td>fst p, snd p</td></tr>
-              <tr><td>∨I1, ∨I2 (zavedenie disjunkcie)</td><td>Inl, Inr (injekcie)</td><td>inl t, inr t</td></tr>
-              <tr><td>∨E (eliminácia disjunkcie)</td><td>Case</td><td>case s of inl/inr</td></tr>
-              <tr><td>¬I (zavedenie negácie)</td><td>Abs (A → ⊥)</td><td>λx:A. t</td></tr>
-              <tr><td>¬E (eliminácia negácie)</td><td>App (aplikácia na ⊥)</td><td>f x</td></tr>
-              <tr><td>⊤I (zavedenie pravdy)</td><td>Unit</td><td>⟨⟩</td></tr>
-              <tr><td>⊥E (eliminácia nepravdy)</td><td>absurd</td><td>absurd e</td></tr>
-              <tr><td>∀I (zavedenie univerzálu)</td><td>DependentAbs</td><td>λx:T. t</td></tr>
-              <tr><td>∀E (eliminácia univerzálu)</td><td>App</td><td>f t</td></tr>
-              <tr><td>∃I (zavedenie existenciálu)</td><td>DependentPair</td><td>⟨t, e⟩</td></tr>
-              <tr><td>∃E (eliminácia existenciálu)</td><td>LetDependentPair</td><td>let ⟨x,p⟩ = e in t</td></tr>
+              <tr><td>→I ({{ currentLanguage === 'sk' ? 'zavedenie implikácie' : 'implication introduction' }})</td><td>Abs ({{ currentLanguage === 'sk' ? 'abstrakcia' : 'abstraction' }})</td><td>λx:A. t</td></tr>
+              <tr><td>→E ({{ currentLanguage === 'sk' ? 'modus ponens' : 'modus ponens' }})</td><td>App ({{ currentLanguage === 'sk' ? 'aplikácia' : 'application' }})</td><td>f x</td></tr>
+              <tr><td>∧I ({{ currentLanguage === 'sk' ? 'zavedenie konjunkcie' : 'conjunction introduction' }})</td><td>Pair ({{ currentLanguage === 'sk' ? 'pár' : 'pair' }})</td><td>⟨a, b⟩</td></tr>
+              <tr><td>∧E1, ∧E2 ({{ currentLanguage === 'sk' ? 'eliminácia konjunkcie' : 'conjunction elimination' }})</td><td>Fst, Snd ({{ currentLanguage === 'sk' ? 'projekcie' : 'projections' }})</td><td>fst p, snd p</td></tr>
+              <tr><td>∨I1, ∨I2 ({{ currentLanguage === 'sk' ? 'zavedenie disjunkcie' : 'disjunction introduction' }})</td><td>Inl, Inr ({{ currentLanguage === 'sk' ? 'injekcie' : 'injections' }})</td><td>inl t, inr t</td></tr>
+              <tr><td>∨E ({{ currentLanguage === 'sk' ? 'eliminácia disjunkcie' : 'disjunction elimination' }})</td><td>Case</td><td>case s of inl/inr</td></tr>
+              <tr><td>¬I ({{ currentLanguage === 'sk' ? 'zavedenie negácie' : 'negation introduction' }})</td><td>Abs (A → ⊥)</td><td>λx:A. t</td></tr>
+              <tr><td>¬E ({{ currentLanguage === 'sk' ? 'eliminácia negácie' : 'negation elimination' }})</td><td>App ({{ currentLanguage === 'sk' ? 'aplikácia na ⊥' : 'application to ⊥' }})</td><td>f x</td></tr>
+              <tr><td>⊤I ({{ currentLanguage === 'sk' ? 'zavedenie pravdy' : 'truth introduction' }})</td><td>Unit</td><td>⟨⟩</td></tr>
+              <tr><td>⊥E ({{ currentLanguage === 'sk' ? 'eliminácia nepravdy' : 'falsity elimination' }})</td><td>absurd</td><td>absurd e</td></tr>
+              <tr><td>∀I ({{ currentLanguage === 'sk' ? 'zavedenie univerzálu' : 'universal introduction' }})</td><td>DependentAbs</td><td>λx:T. t</td></tr>
+              <tr><td>∀E ({{ currentLanguage === 'sk' ? 'eliminácia univerzálu' : 'universal elimination' }})</td><td>App</td><td>f t</td></tr>
+              <tr><td>∃I ({{ currentLanguage === 'sk' ? 'zavedenie existenciálu' : 'existential introduction' }})</td><td>DependentPair</td><td>⟨t, e⟩</td></tr>
+              <tr><td>∃E ({{ currentLanguage === 'sk' ? 'eliminácia existenciálu' : 'existential elimination' }})</td><td>LetDependentPair</td><td>let ⟨x,p⟩ = e in t</td></tr>
             </tbody>
           </table>
         </section>
@@ -184,7 +189,7 @@
       <!-- ==================== TAB: Sekventový kalkul ==================== -->
       <div *ngIf="activeTab === 'sequent'" class="help-tab-content">
         <section class="help-section">
-          <h4>Špeciálne pravidlá</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Špeciálne pravidlá' : 'Special rules' }}</h4>
           <div class="help-rules-grid">
             <div class="help-rule-card" *ngFor="let rule of sequentSpecialRules">
               <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
@@ -193,7 +198,7 @@
         </section>
 
         <section class="help-section">
-          <h4>Pravidlá pre záver (pravá strana)</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Pravidlá pre záver (pravá strana)' : 'Conclusion rules (right side)' }}</h4>
           <div class="help-rules-grid">
             <div class="help-rule-card" *ngFor="let rule of sequentConclusionRules">
               <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
@@ -202,7 +207,7 @@
         </section>
 
         <section class="help-section">
-          <h4>Pravidlá pre predpoklady (ľavá strana)</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Pravidlá pre predpoklady (ľavá strana)' : 'Assumption rules (left side)' }}</h4>
           <div class="help-rules-grid">
             <div class="help-rule-card" *ngFor="let rule of sequentAssumptionRules">
               <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
@@ -214,7 +219,7 @@
       <!-- ==================== TAB: Prirodzená dedukcia ==================== -->
       <div *ngIf="activeTab === 'natural-deduction'" class="help-tab-content">
         <section class="help-section">
-          <h4>Zavádzacie pravidlá (Introduction)</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Zavádzacie pravidlá (Introduction)' : 'Introduction rules' }}</h4>
           <div class="help-rules-grid">
             <div class="help-rule-card" *ngFor="let rule of ndIntroRules">
               <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
@@ -223,7 +228,7 @@
         </section>
 
         <section class="help-section">
-          <h4>Eliminačné pravidlá (Elimination)</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Eliminačné pravidlá (Elimination)' : 'Elimination rules' }}</h4>
           <div class="help-rules-grid">
             <div class="help-rule-card" *ngFor="let rule of ndElimRules">
               <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
@@ -232,7 +237,7 @@
         </section>
 
         <section class="help-section">
-          <h4>Kvantifikátorové pravidlá</h4>
+          <h4>{{ currentLanguage === 'sk' ? 'Kvantifikátorové pravidlá' : 'Quantifier rules' }}</h4>
           <div class="help-rules-grid">
             <div class="help-rule-card" *ngFor="let rule of ndQuantifierRules">
               <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>

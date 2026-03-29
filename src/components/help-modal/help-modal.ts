@@ -19,13 +19,16 @@ export class HelpModalComponent {
 
   activeTab: HelpTab = 'syntax';
 
-  readonly tabs: { key: HelpTab; label: string }[] = [
-    { key: 'syntax', label: 'Syntax vstupu' },
-    { key: 'controls', label: 'Ovládanie' },
-    { key: 'curry-howard', label: 'Curry-Howard' },
-    { key: 'sequent', label: 'Sekventový kalkul' },
-    { key: 'natural-deduction', label: 'Prirodzená dedukcia' },
-  ];
+  get tabs(): { key: HelpTab; label: string }[] {
+    const sk = this.currentLanguage === 'sk';
+    return [
+      { key: 'syntax', label: sk ? 'Syntax vstupu' : 'Input syntax' },
+      { key: 'controls', label: sk ? 'Ovládanie' : 'Controls' },
+      { key: 'curry-howard', label: 'Curry-Howard' },
+      { key: 'sequent', label: sk ? 'Sekventový kalkul' : 'Sequent calculus' },
+      { key: 'natural-deduction', label: sk ? 'Prirodzená dedukcia' : 'Natural deduction' },
+    ];
+  }
 
   readonly sequentConclusionRules = ['→R', '∧R', '∨R', '¬R', '∀R', '∃R'];
   readonly sequentAssumptionRules = ['→L', '∧L', '∨L', '¬L', '∀L', '∃L'];
