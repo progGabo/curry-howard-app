@@ -22,8 +22,14 @@ export class FormulaRenderService {
       case 'Implies':
         return `${this.parenthesize(formula.left, formula)} \\to ${this.parenthesize(formula.right, formula)}`;
       case 'Forall':
+        if (formula.domain) {
+          return `\\forall ${this.escapeIdentifier(formula.variable)}:${this.formulaToLatex(formula.domain)}.\\, ${this.formulaToLatex(formula.body)}`;
+        }
         return `\\forall ${this.escapeIdentifier(formula.variable)}.\\, ${this.formulaToLatex(formula.body)}`;
       case 'Exists':
+        if (formula.domain) {
+          return `\\exists ${this.escapeIdentifier(formula.variable)}:${this.formulaToLatex(formula.domain)}.\\, ${this.formulaToLatex(formula.body)}`;
+        }
         return `\\exists ${this.escapeIdentifier(formula.variable)}.\\, ${this.formulaToLatex(formula.body)}`;
       case 'Predicate': {
         const args = formula.args.map((term) => this.termToLatex(term)).join(',\\, ');

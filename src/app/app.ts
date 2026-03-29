@@ -1,7 +1,7 @@
 import { Component, ChangeDetectorRef, Inject, Injector } from '@angular/core';
 import { LogicParserService } from '../services/logic-parser-service';
 import { ProofTreeBuilderService } from '../services/proof-tree-builder';
-import { DerivationNode, SequentNode, FormulaNode, TermNode } from '../models/formula-node';
+import { DerivationNode, SequentNode, FormulaNode } from '../models/formula-node';
 import { LambdaParserService } from '../services/lambda-parser-service';
 import { LambdaToExpressionService } from '../services/lambda-to-expression-service';
 import { TypeInferenceService, TypeInferenceNode } from '../services/type-inference-service';
@@ -14,17 +14,18 @@ import { RuleFilterService } from '../services/rule-filter.service';
 import { RuleFormulaService } from '../services/rule-formula.service';
 import { FormulaRenderService } from '../services/formula-render.service';
 import { FormulaTypeService } from '../services/formula-type-service';
-import { KatexDirective } from '../directives/katex.directive';
 import { ExprNode, TypeNode } from '../models/lambda-node';
 import { NdNode } from '../models/nd-node';
 import { NdRule, NdRuleApplicationOptions } from '../models/nd-rule';
 import { Equality } from '../utils/equality';
 import { parseTerm, freeVarsFormula } from '../utils/quantifier-utils';
+import { formulaToText } from '../utils/formula-text';
 import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
 import { DialogService } from 'primeng/dynamicdialog';
 import { SplitterResizeEndEvent } from 'primeng/splitter';
 import { firstValueFrom } from 'rxjs';
 import { AppParseFacadeService } from '../services/app-parse-facade.service';
+import { AppPopupFacadeService } from '../services/app-popup-facade.service';
 import {
   CONCLUSION_RULES,
   ASSUMPTION_RULES,
@@ -114,11 +115,6 @@ export class App {
   private predictionTypeRuleRequestId = 0;
 
   // Popup state
-  popupVisible: boolean = false;
-  popupPosition: { top: string; left: string } = { top: '0px', left: '0px' };
-  popupX: number = 0;
-  popupY: number = 0;
-  popupNode: DerivationNode | NdNode | TypeInferenceNode | null = null;
   predictionRuleRequest: { node: DerivationNode, rule: string, requestId: number } | null = null;
   predictionTypeRuleRequest: { node: TypeInferenceNode, rule: string, requestId: number } | null = null;
   ndPredictionRequest: {
@@ -173,6 +169,7 @@ export class App {
     private naturalDeductionBuilder: NaturalDeductionBuilderService,
     private ndLambdaBuilder: NdLambdaBuilderService,
     private parseFacade: AppParseFacadeService,
+    public popup: AppPopupFacadeService,
     @Inject(I18nService) private i18n: I18nService,
     private notification: NotificationService,
     private treeHistory: TreeHistoryService,
@@ -321,7 +318,7 @@ export class App {
   onNodeClicked(node: DerivationNode) {
     if (this.selectedNode === node) {
       this.selectedNode = null; // zatvorí popup
-      this.closePopup();
+      this.popup.close();
     } else {
       this.selectedNode = node; // otvorí popup
     }
@@ -329,20 +326,13 @@ export class App {
 
   onProofPlusButtonClicked(event: { node: DerivationNode, x: number, y: number }) {
     this.selectedNode = event.node;
-    this.popupNode = event.node;
-    this.popupX = event.x;
-    this.popupY = event.y;
-    this.popupPosition = {
-      top: `${this.popupY}px`,
-      left: `${this.popupX}px`
-    };
-    this.popupVisible = true;
+    this.popup.open(event.node, event.x, event.y);
   }
 
   onNdNodeClicked(node: NdNode) {
     if (this.selectedNdNode === node) {
       this.selectedNdNode = null;
-      this.closePopup();
+      this.popup.close();
     } else {
       this.selectedNdNode = node;
     }
@@ -350,37 +340,12 @@ export class App {
 
   onNdPlusButtonClicked(event: { node: NdNode, x: number, y: number }) {
     this.selectedNdNode = event.node;
-    this.popupNode = event.node;
-    this.popupX = event.x;
-    this.popupY = event.y;
-    this.popupPosition = {
-      top: `${this.popupY}px`,
-      left: `${this.popupX}px`
-    };
-    this.popupVisible = true;
+    this.popup.open(event.node, event.x, event.y);
   }
 
   onTypePlusButtonClicked(event: { node: TypeInferenceNode, x: number, y: number }) {
     this.selectedTypeNode = event.node;
-    this.popupNode = event.node;
-    this.popupX = event.x;
-    this.popupY = event.y;
-    this.popupPosition = {
-      top: `${this.popupY}px`,
-      left: `${this.popupX}px`
-    };
-    this.popupVisible = true;
-  }
-
-  closePopup() {
-    this.popupVisible = false;
-    this.popupNode = null;
-  }
-
-  onPopupPositionChange(pos: { x: number; y: number }) {
-    this.popupX = pos.x;
-    this.popupY = pos.y;
-    this.popupPosition = { top: `${pos.y}px`, left: `${pos.x}px` };
+    this.popup.open(event.node, event.x, event.y);
   }
 
   onHeaderModeChange(mode: 'auto' | 'interactive') {
@@ -388,70 +353,19 @@ export class App {
     this.parseAndBuild();
   }
 
-  get filteredConclusionRules(): string[] {
-    return this.ruleFilter.filterProofRules(this.conclusionRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredAssumptionRules(): string[] {
-    return this.ruleFilter.filterProofRules(this.assumptionRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredSpecialRules(): string[] {
-    return this.ruleFilter.filterProofRules(this.specialRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredNdIntroRules(): string[] {
-    return this.ruleFilter.filterNdRules(this.ndIntroRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredNdElimRules(): string[] {
-    return this.ruleFilter.filterNdRules(this.ndElimRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredNdQuantifierRules(): string[] {
-    return this.ruleFilter.filterNdRules(this.ndQuantifierRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredBasicRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.basicRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredAbsRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.absRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredAppRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.appRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredPairRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.pairRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredDependentRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.dependentRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredSumRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.sumRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredConditionalRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.conditionalRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredNatRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.natRules, this.popupNode, this.interactiveSubmode);
-  }
-
-  get filteredLetRules(): string[] {
-    return this.ruleFilter.filterTypeRules(this.letRules, this.popupNode, this.interactiveSubmode);
+  filterRules(rules: readonly string[], type: 'proof' | 'nd' | 'type'): string[] {
+    const filters = {
+      proof: () => this.ruleFilter.filterProofRules(rules, this.popup.node, this.interactiveSubmode),
+      nd: () => this.ruleFilter.filterNdRules(rules, this.popup.node, this.interactiveSubmode),
+      type: () => this.ruleFilter.filterTypeRules(rules, this.popup.node, this.interactiveSubmode),
+    };
+    return filters[type]();
   }
 
   async onProofRuleClick(rule: string) {
-    if (!this.popupNode) return;
-    const popupNode = this.popupNode;
-    this.closePopup();
+    if (!this.popup.node) return;
+    const popupNode = this.popup.node;
+    this.popup.close();
 
     if (this.conversionMode === 'natural-deduction') {
       if (!('judgement' in popupNode)) return;
@@ -478,9 +392,9 @@ export class App {
   }
 
   onTypeRuleClick(rule: string) {
-    if (!this.popupNode || !('expression' in this.popupNode)) return;
-    const node = this.popupNode as TypeInferenceNode;
-    this.closePopup();
+    if (!this.popup.node || !('expression' in this.popup.node)) return;
+    const node = this.popup.node as TypeInferenceNode;
+    this.popup.close();
     
     if (this.interactiveSubmode === 'predict') {
       this.predictionTypeRuleRequest = {
@@ -496,7 +410,7 @@ export class App {
   onTypeNodeClicked(node: TypeInferenceNode) {
     if (this.selectedTypeNode === node) {
       this.selectedTypeNode = null;
-      this.closePopup();
+      this.popup.close();
     } else {
       this.selectedTypeNode = node;
     }
@@ -774,7 +688,7 @@ export class App {
       }
 
       if (!Equality.formulasEqual(parsedFormula, expectedGoals[index])) {
-        const expectedText = this.formulaToPredictionText(expectedGoals[index]);
+        const expectedText = formulaToText(expectedGoals[index]);
         const message = this.currentLanguage === 'sk'
           ? `Nesprávna predikcia na pozícii ${index + 1}. Očakávané: ${expectedText}`
           : `Incorrect prediction at position ${index + 1}. Expected: ${expectedText}`;
@@ -803,79 +717,6 @@ export class App {
       return structuredClone(node);
     }
     return JSON.parse(JSON.stringify(node)) as NdNode;
-  }
-
-  private formulaToPredictionText(formula: FormulaNode): string {
-    switch (formula.kind) {
-      case 'Var':
-        return formula.name;
-      case 'Predicate':
-        return `${formula.name}(${formula.args.map((arg) => this.termToPredictionText(arg)).join(', ')})`;
-      case 'Not':
-        return `¬${this.wrapIfNeeded(formula.inner, formula)}`;
-      case 'And':
-        return `${this.wrapIfNeeded(formula.left, formula)} ∧ ${this.wrapIfNeeded(formula.right, formula)}`;
-      case 'Or':
-        return `${this.wrapIfNeeded(formula.left, formula)} ∨ ${this.wrapIfNeeded(formula.right, formula)}`;
-      case 'Implies':
-        return `${this.wrapIfNeeded(formula.left, formula)} ⇒ ${this.wrapIfNeeded(formula.right, formula)}`;
-      case 'Forall':
-        return `∀${formula.variable}. ${this.formulaToPredictionText(formula.body)}`;
-      case 'Exists':
-        return `∃${formula.variable}. ${this.formulaToPredictionText(formula.body)}`;
-      case 'Paren':
-        return `(${this.formulaToPredictionText(formula.inner)})`;
-      case 'True':
-        return '⊤';
-      case 'False':
-        return '⊥';
-      default:
-        return '';
-    }
-  }
-
-  private termToPredictionText(term: TermNode): string {
-    switch (term.kind) {
-      case 'TermVar':
-      case 'TermConst':
-        return term.name;
-      case 'TermFunc':
-        return `${term.name}(${term.args.map((arg) => this.termToPredictionText(arg)).join(', ')})`;
-      default:
-        return '';
-    }
-  }
-
-  private wrapIfNeeded(child: FormulaNode, parent: FormulaNode): string {
-    const childRank = this.formulaPrecedence(child);
-    const parentRank = this.formulaPrecedence(parent);
-    const rendered = this.formulaToPredictionText(child);
-    return childRank < parentRank ? `(${rendered})` : rendered;
-  }
-
-  private formulaPrecedence(formula: FormulaNode): number {
-    switch (formula.kind) {
-      case 'Var':
-      case 'Predicate':
-      case 'True':
-      case 'False':
-        return 5;
-      case 'Forall':
-      case 'Exists':
-        return 4;
-      case 'Not':
-        return 3;
-      case 'And':
-        return 2;
-      case 'Or':
-        return 1;
-      case 'Implies':
-        return 0;
-      case 'Paren':
-        return 6;
-      default:
-        return -1;
-    }
   }
 
   private async resolveNdRuleOptions(node: NdNode, rule: NdRule): Promise<NdRuleApplicationOptions | null | undefined> {

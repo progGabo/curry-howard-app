@@ -180,10 +180,10 @@ export const FormulaFactories = {
   or: (left: FormulaNode, right: FormulaNode): FormulaNode => 
     ({ kind: 'Or', left, right }),
   not: (inner: FormulaNode): FormulaNode => ({ kind: 'Not', inner }),
-  forall: (variable: string, body: FormulaNode): FormulaNode => 
-    ({ kind: 'Forall', variable: assertIdentifier(variable, 'Forall binder'), body }),
-  exists: (variable: string, body: FormulaNode): FormulaNode => 
-    ({ kind: 'Exists', variable: assertIdentifier(variable, 'Exists binder'), body }),
+  forall: (variable: string, body: FormulaNode, domain?: FormulaNode): FormulaNode => 
+    ({ kind: 'Forall', variable: assertIdentifier(variable, 'Forall binder'), domain, body }),
+  exists: (variable: string, body: FormulaNode, domain?: FormulaNode): FormulaNode => 
+    ({ kind: 'Exists', variable: assertIdentifier(variable, 'Exists binder'), domain, body }),
   predicate: (name: string, args: TermNode[]): FormulaNode => 
     ({ kind: 'Predicate', name: assertIdentifier(name, 'Predicate name'), args }),
   true: (): FormulaNode => ({ kind: 'True' }),

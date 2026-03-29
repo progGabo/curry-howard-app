@@ -6,6 +6,8 @@ import { FormulaRenderService } from '../../services/formula-render.service';
 import type { AppTranslations } from '../../services/i18n.service';
 import { getElementCenter } from '../../utils/dom-position';
 import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
+import { scheduleLineMeasure as sharedScheduleLineMeasure } from '../../utils/line-measurement';
+import { formulaToText, termToText, sequentToText } from '../../utils/formula-text';
 import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 
 @Component({
@@ -34,7 +36,7 @@ export class ProofTree implements AfterViewChecked {
   predictError: string | null = null;
   lineWidthPx: number | null = null;
   lineOffsetPx = 0;
-  private measureScheduled = false;
+  measureScheduled = false;
 
   rendererSequentLatex = (sequent: SequentNode): string => this.sequentToLatex(sequent);
   rendererRuleLabel = (node: TreeRenderNode): string => this.displayRuleLabel((node as DerivationNode).rule);
@@ -203,7 +205,7 @@ export class ProofTree implements AfterViewChecked {
     // Compare each sequent
     for (let i = 0; i < expectedSequents.length; i++) {
       if (!this.compareSequents([expectedSequents[i]], [userSequents[i]])) {
-        const expectedStr = this.formatSequent(expectedSequents[i]);
+        const expectedStr = sequentToText(expectedSequents[i]);
         this.showError('errorIncorrectAtPosition', { position: i + 1, expected: expectedStr });
         return;
       }
@@ -238,100 +240,7 @@ export class ProofTree implements AfterViewChecked {
   }
 
   private scheduleLineMeasure(): void {
-    if (this.measureScheduled) return;
-    this.measureScheduled = true;
-
-    requestAnimationFrame(() => {
-      this.measureScheduled = false;
-      this.updateLineWidth();
-    });
-  }
-
-  private getOwnFormulaBounds(host: HTMLElement, relativeTo: HTMLElement): { left: number; right: number; width: number } {
-    const main = host.firstElementChild as HTMLElement | null;
-    const treeNode = main?.firstElementChild as HTMLElement | null;
-    if (!treeNode) {
-      return {
-        left: host.offsetLeft,
-        right: host.offsetLeft + host.offsetWidth,
-        width: host.offsetWidth
-      };
-    }
-
-    const ownConclusion = Array.from(treeNode.children).find((child) =>
-      (child as HTMLElement).classList.contains('conclusion')
-    ) as HTMLElement | undefined;
-
-    if (!ownConclusion) {
-      return {
-        left: host.offsetLeft,
-        right: host.offsetLeft + host.offsetWidth,
-        width: host.offsetWidth
-      };
-    }
-
-    const formulaEl = ownConclusion.querySelector('.sequent-content') as HTMLElement | null;
-    const targetEl = formulaEl ?? ownConclusion;
-    const containerRect = relativeTo.getBoundingClientRect();
-    const targetRect = targetEl.getBoundingClientRect();
-    const scaleX = targetEl.offsetWidth > 0 ? (targetRect.width / targetEl.offsetWidth) : 1;
-    const safeScaleX = scaleX > 0 ? scaleX : 1;
-    const left = (targetRect.left - containerRect.left) / safeScaleX;
-    const width = targetRect.width / safeScaleX;
-    const right = left + width;
-
-    return {
-      left,
-      right,
-      width: Math.max(0, width)
-    };
-  }
-
-  private updateLineWidth(): void {
-    const conclusionEl = this.conclusionEl?.nativeElement;
-    const formulaEl = conclusionEl?.querySelector('.sequent-content') as HTMLElement | null;
-    const conclusionWidth = conclusionEl?.offsetWidth ?? 0;
-    const ownFormulaWidth = formulaEl?.offsetWidth ?? conclusionWidth;
-    const childrenContainer = this.childrenEl?.nativeElement;
-    this.lineOffsetPx = 0;
-
-    if (!childrenContainer) {
-      this.lineWidthPx = ownFormulaWidth;
-      return;
-    }
-
-    const childHosts = Array.from(childrenContainer.children) as HTMLElement[];
-    if (childHosts.length === 0) {
-      this.lineWidthPx = ownFormulaWidth;
-      return;
-    }
-
-    if (childHosts.length === 1) {
-      const child = this.getOwnFormulaBounds(childHosts[0], childrenContainer);
-      this.lineWidthPx = Math.max(ownFormulaWidth, child.width);
-      return;
-    }
-
-    if (!conclusionEl) {
-      this.lineWidthPx = childrenContainer.offsetWidth;
-      return;
-    }
-
-    const childBounds = childHosts.map((host) => this.getOwnFormulaBounds(host, childrenContainer));
-    const minLeft = Math.min(...childBounds.map((bounds) => bounds.left));
-    const maxRight = Math.max(...childBounds.map((bounds) => bounds.right));
-    const spanWidth = Math.max(0, maxRight - minLeft);
-    const twoPremiseExtra = childHosts.length === 2 ? 16 : 0;
-    this.lineWidthPx = spanWidth + twoPremiseExtra;
-
-    const spanCenterWithinChildren = minLeft + spanWidth / 2;
-    const childrenRect = childrenContainer.getBoundingClientRect();
-    const conclusionRect = conclusionEl.getBoundingClientRect();
-    const scaleX = conclusionEl.offsetWidth > 0 ? (conclusionRect.width / conclusionEl.offsetWidth) : 1;
-    const safeScaleX = scaleX > 0 ? scaleX : 1;
-    const spanCenterViewport = childrenRect.left + (spanCenterWithinChildren * safeScaleX);
-    const conclusionCenterViewport = conclusionRect.left + (conclusionRect.width / 2);
-    this.lineOffsetPx = (spanCenterViewport - conclusionCenterViewport) / safeScaleX;
+    sharedScheduleLineMeasure(this, '.sequent-content');
   }
 
   
@@ -348,83 +257,6 @@ export class ProofTree implements AfterViewChecked {
 
   sequentToLatex(sequent: SequentNode): string {
     return this.formulaRender.sequentToLatex(sequent);
-  }
-
-  formatSequent(sequent: { assumptions: FormulaNode[]; conclusions: FormulaNode[] }): string {
-    const safeFormat = (f: FormulaNode | undefined) => f ? this.formatFormula(f) : '‹undefined›';
-    const assumptions = sequent.assumptions.map(safeFormat).join(', ');
-    const conclusions = sequent.conclusions.map(safeFormat).join(', ');
-    return `${assumptions} ⊢ ${conclusions}`;
-  }
-
-  formatFormula(f: FormulaNode): string {
-    switch (f.kind) {
-      case 'Var':
-        return f.name;
-      case 'Not':
-        return f.inner ? `¬${this.parenthesize(f.inner, f)}` : '¬‹missing›';
-      case 'And':
-        return f.left && f.right
-          ? `${this.parenthesize(f.left, f)} ∧ ${this.parenthesize(f.right, f)}`
-          : '‹∧ error›';
-      case 'Or':
-        return f.left && f.right
-          ? `${this.parenthesize(f.left, f)} ∨ ${this.parenthesize(f.right, f)}`
-          : '‹∨ error›';
-      case 'Implies':
-        return f.left && f.right
-          ? `${this.parenthesize(f.left, f)} → ${this.parenthesize(f.right, f)}`
-          : '‹→ error›';
-      case 'Forall':
-        return `∀${f.variable}. ${this.formatFormula(f.body)}`;
-      case 'Exists':
-        return `∃${f.variable}. ${this.formatFormula(f.body)}`;
-      case 'Predicate':
-        const args = f.args.map(arg => this.formatTerm(arg)).join(', ');
-        return `${f.name}(${args})`;
-      case 'Paren':
-        return f.inner ? `(${this.formatFormula(f.inner)})` : '()';
-      case 'True':
-        return '⊤';
-      case 'False':
-        return '⊥';
-      default:
-        return '‹unknown›';
-    }
-  }
-
-  formatTerm(term: TermNode): string {
-    switch (term.kind) {
-      case 'TermVar':
-        return term.name;
-      case 'TermConst':
-        return term.name;
-      case 'TermFunc':
-        const args = term.args.map(arg => this.formatTerm(arg)).join(', ');
-        return `${term.name}(${args})`;
-      default:
-        return '‹unknown term›';
-    }
-  }
-
-  private getPrecedence(f: FormulaNode): number {
-    switch (f.kind) {
-      case 'Var': return 5;
-      case 'Predicate': return 5;
-      case 'Forall': return 4;
-      case 'Exists': return 4;
-      case 'Not': return 3;
-      case 'And': return 2;
-      case 'Or':  return 1;
-      case 'Implies': return 0;
-      default: return -1;
-    }
-  }
-
-  private parenthesize(child: FormulaNode | undefined, parent: FormulaNode): string {
-    if (!child) return '‹undefined›';
-    const childStr = this.formatFormula(child);
-    return this.getPrecedence(child) < this.getPrecedence(parent) ? `(${childStr})` : childStr;
   }
 
 
@@ -704,22 +536,28 @@ export class ProofTree implements AfterViewChecked {
     const parseAtom = (s: string): FormulaNode | null => {
       s = s.trim();
       
-      // Parse quantifiers: ∀x. A or ∃x. A
+      // Parse quantifiers: ∀x. A / ∃x. A and typed forms ∀x:A. B / ∃x:A. B
       if (s.startsWith('∀')) {
-        const match = s.match(/^∀\s*([a-z_][a-zA-Z0-9_]*)\s*\.\s*(.+)$/);
+        const match = s.match(/^∀\s*([a-z_][a-zA-Z0-9_]*)(?:\s*:\s*(.+?))?\s*\.\s*(.+)$/);
         if (match) {
           const variable = match[1];
-          const body = parseImpl(match[2]);
-          return body ? { kind: 'Forall', variable, body } : null;
+          const domain = match[2] ? parseImpl(match[2]) : null;
+          const body = parseImpl(match[3]);
+          if (!body) return null;
+          if (match[2] && !domain) return null;
+          return { kind: 'Forall', variable, domain: domain ?? undefined, body };
         }
       }
       
       if (s.startsWith('∃')) {
-        const match = s.match(/^∃\s*([a-z_][a-zA-Z0-9_]*)\s*\.\s*(.+)$/);
+        const match = s.match(/^∃\s*([a-z_][a-zA-Z0-9_]*)(?:\s*:\s*(.+?))?\s*\.\s*(.+)$/);
         if (match) {
           const variable = match[1];
-          const body = parseImpl(match[2]);
-          return body ? { kind: 'Exists', variable, body } : null;
+          const domain = match[2] ? parseImpl(match[2]) : null;
+          const body = parseImpl(match[3]);
+          if (!body) return null;
+          if (match[2] && !domain) return null;
+          return { kind: 'Exists', variable, domain: domain ?? undefined, body };
         }
       }
       
@@ -831,6 +669,7 @@ export class ProofTree implements AfterViewChecked {
       case 'Forall':
       case 'Exists':
         return f1.variable === (f2 as any).variable && 
+               this.optionalFormulaEqual(f1.domain, (f2 as any).domain) &&
                this.formulasEqual(f1.body, (f2 as any).body);
       case 'Predicate':
         if (f1.name !== (f2 as any).name || f1.args.length !== (f2 as any).args.length) {
@@ -862,6 +701,12 @@ export class ProofTree implements AfterViewChecked {
       default:
         return false;
     }
+  }
+
+  private optionalFormulaEqual(a?: FormulaNode, b?: FormulaNode): boolean {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return this.formulasEqual(a, b);
   }
 
   private isAxiom(sequent: SequentNode): boolean {

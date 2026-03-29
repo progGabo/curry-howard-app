@@ -7,6 +7,7 @@ import { NotificationService } from '../../services/notification.service';
 import type { AppTranslations } from '../../services/i18n.service';
 import { getElementCenter } from '../../utils/dom-position';
 import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
+import { scheduleLineMeasure as sharedScheduleLineMeasure } from '../../utils/line-measurement';
 import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 
 @Component({
@@ -95,7 +96,7 @@ export class TypeInferenceTree implements AfterViewChecked {
   userPredictions: string[] = [];
   lineWidthPx: number | null = null;
   lineOffsetPx = 0;
-  private measureScheduled = false;
+  measureScheduled = false;
 
   @HostListener('window:resize')
   onWindowResize(): void {
@@ -235,100 +236,7 @@ export class TypeInferenceTree implements AfterViewChecked {
   }
 
   private scheduleLineMeasure(): void {
-    if (this.measureScheduled) return;
-    this.measureScheduled = true;
-
-    requestAnimationFrame(() => {
-      this.measureScheduled = false;
-      this.updateLineWidth();
-    });
-  }
-
-  private getOwnFormulaBounds(host: HTMLElement, relativeTo: HTMLElement): { left: number; right: number; width: number } {
-    const main = host.firstElementChild as HTMLElement | null;
-    const treeNode = main?.firstElementChild as HTMLElement | null;
-    if (!treeNode) {
-      return {
-        left: host.offsetLeft,
-        right: host.offsetLeft + host.offsetWidth,
-        width: host.offsetWidth
-      };
-    }
-
-    const ownConclusion = Array.from(treeNode.children).find((child) =>
-      (child as HTMLElement).classList.contains('conclusion')
-    ) as HTMLElement | undefined;
-
-    if (!ownConclusion) {
-      return {
-        left: host.offsetLeft,
-        right: host.offsetLeft + host.offsetWidth,
-        width: host.offsetWidth
-      };
-    }
-
-    const formulaEl = ownConclusion.querySelector('.inference-content') as HTMLElement | null;
-    const targetEl = formulaEl ?? ownConclusion;
-    const containerRect = relativeTo.getBoundingClientRect();
-    const targetRect = targetEl.getBoundingClientRect();
-    const scaleX = targetEl.offsetWidth > 0 ? (targetRect.width / targetEl.offsetWidth) : 1;
-    const safeScaleX = scaleX > 0 ? scaleX : 1;
-    const left = (targetRect.left - containerRect.left) / safeScaleX;
-    const width = targetRect.width / safeScaleX;
-    const right = left + width;
-
-    return {
-      left,
-      right,
-      width: Math.max(0, width)
-    };
-  }
-
-  private updateLineWidth(): void {
-    const conclusionEl = this.conclusionEl?.nativeElement;
-    const formulaEl = conclusionEl?.querySelector('.inference-content') as HTMLElement | null;
-    const conclusionWidth = conclusionEl?.offsetWidth ?? 0;
-    const ownFormulaWidth = formulaEl?.offsetWidth ?? conclusionWidth;
-    const childrenContainer = this.childrenEl?.nativeElement;
-    this.lineOffsetPx = 0;
-
-    if (!childrenContainer) {
-      this.lineWidthPx = ownFormulaWidth;
-      return;
-    }
-
-    const childHosts = Array.from(childrenContainer.children) as HTMLElement[];
-    if (childHosts.length === 0) {
-      this.lineWidthPx = ownFormulaWidth;
-      return;
-    }
-
-    if (childHosts.length === 1) {
-      const child = this.getOwnFormulaBounds(childHosts[0], childrenContainer);
-      this.lineWidthPx = Math.max(ownFormulaWidth, child.width);
-      return;
-    }
-
-    if (!conclusionEl) {
-      this.lineWidthPx = childrenContainer.offsetWidth;
-      return;
-    }
-
-    const childBounds = childHosts.map((host) => this.getOwnFormulaBounds(host, childrenContainer));
-    const minLeft = Math.min(...childBounds.map((bounds) => bounds.left));
-    const maxRight = Math.max(...childBounds.map((bounds) => bounds.right));
-    const spanWidth = Math.max(0, maxRight - minLeft);
-    const twoPremiseExtra = childHosts.length === 2 ? 16 : 0;
-    this.lineWidthPx = spanWidth + twoPremiseExtra;
-
-    const spanCenterWithinChildren = minLeft + spanWidth / 2;
-    const childrenRect = childrenContainer.getBoundingClientRect();
-    const conclusionRect = conclusionEl.getBoundingClientRect();
-    const scaleX = conclusionEl.offsetWidth > 0 ? (conclusionRect.width / conclusionEl.offsetWidth) : 1;
-    const safeScaleX = scaleX > 0 ? scaleX : 1;
-    const spanCenterViewport = childrenRect.left + (spanCenterWithinChildren * safeScaleX);
-    const conclusionCenterViewport = conclusionRect.left + (conclusionRect.width / 2);
-    this.lineOffsetPx = (spanCenterViewport - conclusionCenterViewport) / safeScaleX;
+    sharedScheduleLineMeasure(this, '.inference-content');
   }
 
   computeExpectedExpressions(expr: ExprNode, rule: string): ExprNode[] {

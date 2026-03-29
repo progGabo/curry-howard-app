@@ -213,11 +213,12 @@
               (formulaEntered)="onInputChanged($event)">
             </app-editor>
           </div>
-          <app-proof-lambda
-            *ngIf="shouldGenerateLambdaFromProof && lambdaExpr"
-            [lambdaExpr]="lambdaExpr"
-            [label]="t.lambdaExpression"
-          ></app-proof-lambda>
+          <div class="proof-with-lambda" *ngIf="shouldGenerateLambdaFromProof && lambdaExpr">
+            <div class="lambda-panel">
+              <h3>{{ t.lambdaExpression }}</h3>
+              <pre>{{ lambdaExpr }}</pre>
+            </div>
+          </div>
           <div class="result-type" *ngIf="isLambdaToExpressionWorkflow && resultExpression">
             <h4>{{ t.exprType }}</h4>
             <pre>{{ resultExpression }}</pre>
@@ -353,30 +354,30 @@
 <p-toast></p-toast>
 
 <app-rule-menu-popup
-  [visible]="popupVisible"
-  [popupX]="popupX"
-  [popupY]="popupY"
+  [visible]="popup.visible"
+  [popupX]="popup.x"
+  [popupY]="popup.y"
   [conversionMode]="conversionMode"
   [t]="t"
-  [filteredConclusionRules]="filteredConclusionRules"
-  [filteredAssumptionRules]="filteredAssumptionRules"
-  [filteredSpecialRules]="filteredSpecialRules"
-  [filteredBasicRules]="filteredBasicRules"
-  [filteredAbsRules]="filteredAbsRules"
-  [filteredAppRules]="filteredAppRules"
-  [filteredPairRules]="filteredPairRules"
-  [filteredDependentRules]="filteredDependentRules"
-  [filteredSumRules]="filteredSumRules"
-  [filteredConditionalRules]="filteredConditionalRules"
-  [filteredNatRules]="filteredNatRules"
-  [filteredLetRules]="filteredLetRules"
-  [filteredNdIntroRules]="filteredNdIntroRules"
-  [filteredNdElimRules]="filteredNdElimRules"
-  [filteredNdQuantifierRules]="filteredNdQuantifierRules"
+  [filteredConclusionRules]="filterRules(conclusionRules, 'proof')"
+  [filteredAssumptionRules]="filterRules(assumptionRules, 'proof')"
+  [filteredSpecialRules]="filterRules(specialRules, 'proof')"
+  [filteredBasicRules]="filterRules(basicRules, 'type')"
+  [filteredAbsRules]="filterRules(absRules, 'type')"
+  [filteredAppRules]="filterRules(appRules, 'type')"
+  [filteredPairRules]="filterRules(pairRules, 'type')"
+  [filteredDependentRules]="filterRules(dependentRules, 'type')"
+  [filteredSumRules]="filterRules(sumRules, 'type')"
+  [filteredConditionalRules]="filterRules(conditionalRules, 'type')"
+  [filteredNatRules]="filterRules(natRules, 'type')"
+  [filteredLetRules]="filterRules(letRules, 'type')"
+  [filteredNdIntroRules]="filterRules(ndIntroRules, 'nd')"
+  [filteredNdElimRules]="filterRules(ndElimRules, 'nd')"
+  [filteredNdQuantifierRules]="filterRules(ndQuantifierRules, 'nd')"
   (proofRuleClick)="onProofRuleClick($event)"
   (typeRuleClick)="onTypeRuleClick($event)"
-  (close)="closePopup()"
-  (positionChange)="onPopupPositionChange($event)"
+  (close)="popup.close()"
+  (positionChange)="popup.move($event.x, $event.y)"
 ></app-rule-menu-popup>
 
 <app-help-modal

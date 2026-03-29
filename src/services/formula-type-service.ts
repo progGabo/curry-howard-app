@@ -91,7 +91,11 @@ export class FormulaTypeService {
    * Infer the parameter type for a quantifier from its body.
    * Attempts to infer from predicate arguments, otherwise uses a generic type.
    */
-  inferQuantifierParamType(quantifier: { variable: string; body: FormulaNode }): TypeNode {
+  inferQuantifierParamType(quantifier: { variable: string; body: FormulaNode; domain?: FormulaNode }): TypeNode {
+    if (quantifier.domain) {
+      return this.formulaToType(quantifier.domain);
+    }
+
     // If body is a predicate, try to infer from the first argument
     if (isPredicate(quantifier.body)) {
       const args = quantifier.body.args;

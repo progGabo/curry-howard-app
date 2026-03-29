@@ -14,8 +14,8 @@ export type FormulaNode =
   | { kind: 'Paren'; inner: FormulaNode }
   | { kind: 'True' }
   | { kind: 'False' }
-  | { kind: 'Forall'; variable: string; body: FormulaNode }
-  | { kind: 'Exists'; variable: string; body: FormulaNode }
+  | { kind: 'Forall'; variable: string; domain?: FormulaNode; body: FormulaNode }
+  | { kind: 'Exists'; variable: string; domain?: FormulaNode; body: FormulaNode }
   | { kind: 'Predicate'; name: string; args: TermNode[] };
 
 // Sequent (Γ ⊢ A)

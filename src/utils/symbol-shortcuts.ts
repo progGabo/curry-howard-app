@@ -4,7 +4,7 @@ export interface ShortcutApplyResult {
   changed: boolean;
 }
 
-const SYMBOL_SHORTCUTS: Record<string, string> = {
+export const SYMBOL_SHORTCUTS: Record<string, string> = {
   '\\impl': '⇒',
   '\\to': '⇒',
   '\\and': '∧',

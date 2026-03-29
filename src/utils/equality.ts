@@ -20,8 +20,9 @@ export class Equality {
         return this.formulasEqual(a.inner, (b as typeof a).inner);
       case 'Forall':
       case 'Exists':
-        return a.variable === (b as typeof a).variable &&
-               this.formulasEqual(a.body, (b as typeof a).body);
+         return a.variable === (b as typeof a).variable &&
+           this.optionalFormulaEqual(a.domain, (b as typeof a).domain) &&
+           this.formulasEqual(a.body, (b as typeof a).body);
       case 'Predicate':
         const bPred = b as typeof a;
         return a.name === bPred.name &&
@@ -41,6 +42,12 @@ export class Equality {
       current = current.inner;
     }
     return current;
+  }
+
+  private static optionalFormulaEqual(a?: FormulaNode, b?: FormulaNode): boolean {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return this.formulasEqual(a, b);
   }
 
   static termsEqual(a: TermNode, b: TermNode): boolean {

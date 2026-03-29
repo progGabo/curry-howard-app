@@ -291,9 +291,13 @@ export class NdAutoProverService {
       case 'Paren':
         return this.formulaKey(formula.inner);
       case 'Forall':
-        return `∀${formula.variable}.${this.formulaKey(formula.body)}`;
+        return formula.domain
+          ? `∀${formula.variable}:${this.formulaKey(formula.domain)}.${this.formulaKey(formula.body)}`
+          : `∀${formula.variable}.${this.formulaKey(formula.body)}`;
       case 'Exists':
-        return `∃${formula.variable}.${this.formulaKey(formula.body)}`;
+        return formula.domain
+          ? `∃${formula.variable}:${this.formulaKey(formula.domain)}.${this.formulaKey(formula.body)}`
+          : `∃${formula.variable}.${this.formulaKey(formula.body)}`;
       case 'Predicate':
         return `${formula.name}(${formula.args.map((arg) => JSON.stringify(arg)).join(',')})`;
       default:

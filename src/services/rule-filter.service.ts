@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { DerivationNode, FormulaNode, TermNode } from '../models/formula-node';
+import { DerivationNode, FormulaNode } from '../models/formula-node';
 import { NdNode } from '../models/nd-node';
 import { TypeInferenceNode } from './type-inference-service';
 import { Equality } from '../utils/equality';
-import { substituteFormula } from '../utils/quantifier-utils';
+import { collectTerms, substituteFormula } from '../utils/quantifier-utils';
 import { TermFactories } from '../utils/ast-factories';
 
 type InteractiveSubmode = 'applicable' | 'all' | 'predict';
@@ -131,7 +131,7 @@ export class RuleFilterService {
       }
     }
 
-    const goalTerms = this.collectTerms(goal);
+    const goalTerms = collectTerms(goal);
 
     for (const formula of context) {
       const unwrapped = this.unwrapParen(formula);
@@ -155,7 +155,7 @@ export class RuleFilterService {
   }
 
   private canApplyNdForallElimination(goal: FormulaNode, context: FormulaNode[]): boolean {
-    const goalTerms = this.collectTerms(goal);
+    const goalTerms = collectTerms(goal);
 
     for (const formula of context) {
       const unwrapped = this.unwrapParen(formula);
@@ -173,46 +173,6 @@ export class RuleFilterService {
     }
 
     return false;
-  }
-
-  private collectTerms(formula: FormulaNode): TermNode[] {
-    const terms: TermNode[] = [];
-
-    const visitTerm = (term: TermNode): void => {
-      terms.push(term);
-      if (term.kind === 'TermFunc') {
-        for (const arg of term.args) {
-          visitTerm(arg);
-        }
-      }
-    };
-
-    const visitFormula = (current: FormulaNode): void => {
-      switch (current.kind) {
-        case 'Predicate':
-          current.args.forEach(visitTerm);
-          break;
-        case 'Implies':
-        case 'And':
-        case 'Or':
-          visitFormula(current.left);
-          visitFormula(current.right);
-          break;
-        case 'Forall':
-        case 'Exists':
-          visitFormula(current.body);
-          break;
-        case 'Not':
-        case 'Paren':
-          visitFormula(current.inner);
-          break;
-        default:
-          break;
-      }
-    };
-
-    visitFormula(formula);
-    return terms;
   }
 
   /**
@@ -238,6 +198,10 @@ export class RuleFilterService {
           return expr.kind === 'App';
         case 'Pair':
           return expr.kind === 'Pair';
+        case 'Fst':
+          return expr.kind === 'Fst';
+        case 'Snd':
+          return expr.kind === 'Snd';
         case 'LetPair':
           return expr.kind === 'LetPair';
         case 'Inl':

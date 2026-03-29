@@ -1,5 +1,6 @@
 import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import type * as monaco from 'monaco-editor';
+import { SYMBOL_SHORTCUTS } from '../../utils/symbol-shortcuts';
 
 @Component({
   selector: 'app-editor',
@@ -15,17 +16,6 @@ export class Editor implements OnChanges {
   code: string = '';
   private editorInstance: monaco.editor.IStandaloneCodeEditor | null = null;
   private applyingShortcut = false;
-  private readonly symbolShortcuts: Record<string, string> = {
-    '\\impl': '⇒',
-    '\\and': '∧',
-    '\\or': '∨',
-    '\\not': '¬',
-    '\\forall': '∀',
-    '\\exists': '∃',
-    '\\turnstile': '⊢',
-    '\\vdash': '⊢',
-    '\\lambda': 'λ'
-  };
   fontSize: number = 16;
   fontSizeStep = 2;
   minFontSize = 8;
@@ -122,7 +112,7 @@ export class Editor implements OnChanges {
     }
 
     const typedShortcut = match[0].toLowerCase();
-    const symbol = this.symbolShortcuts[typedShortcut];
+    const symbol = SYMBOL_SHORTCUTS[typedShortcut];
     if (!symbol) {
       return;
     }

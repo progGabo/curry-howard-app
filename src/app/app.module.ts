@@ -8,7 +8,6 @@ import { Editor } from '../components/editor/editor';
 import { FormsModule } from '@angular/forms';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { provideMonacoEditor } from 'ngx-monaco-editor-v2';
-import { ProofLambda } from '../components/proof-lambda/proof-lambda';
 import { TypeInferenceTree } from '../components/type-inference-tree/type-inference-tree';
 import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
 import { TreeCanvasComponent } from '../components/tree-canvas/tree-canvas';
@@ -35,7 +34,6 @@ import { I18nService } from '../services/i18n.service';
     App,
     ProofTree,
     Editor,
-    ProofLambda,
     TypeInferenceTree,
     QuantifierInputModalComponent,
     TreeCanvasComponent,

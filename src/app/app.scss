@@ -466,9 +466,36 @@
   border: none;
 }
 
-.editor-panel > app-proof-lambda {
-  margin-top: 0;
-  flex-shrink: 0;
+.proof-with-lambda {
+  display: flex;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.lambda-panel {
+  flex: 1;
+  padding: 0.5rem 0;
+}
+
+.lambda-panel h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.lambda-panel pre {
+  background: #ECFEFF;
+  padding: 1.5rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  overflow-y: visible;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  border: 1px solid #E2E8F0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .examples {
@@ -525,7 +552,7 @@
   overflow: hidden;
 }
 
-.editor-wrapper > app-proof-lambda {
+.editor-wrapper > .proof-with-lambda {
   flex-shrink: 0;
   margin-top: 0;
   min-height: 0;

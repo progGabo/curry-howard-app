@@ -6,7 +6,7 @@ import { NdNode, NdQuantifierMeta } from '../models/nd-node';
 import { NdRule, NdRuleApplicationOptions } from '../models/nd-rule';
 import { Equality } from '../utils/equality';
 import { FormulaFactories, TermFactories } from '../utils/ast-factories';
-import { freeVarsFormula, substituteFormula } from '../utils/quantifier-utils';
+import { collectTerms, freeVarsFormula, substituteFormula } from '../utils/quantifier-utils';
 
 @Injectable({ providedIn: 'root' })
 export class NdRuleEngineService {
@@ -284,7 +284,7 @@ export class NdRuleEngineService {
   }
 
   private inferInstantiationTerm(body: FormulaNode, variable: string, target: FormulaNode): TermNode | null {
-    const candidates = this.collectTerms(target);
+    const candidates = collectTerms(target);
     candidates.push(TermFactories.var(variable));
 
     for (const candidate of candidates) {
@@ -316,7 +316,7 @@ export class NdRuleEngineService {
 
       const termCandidates = selectedTerm
         ? [selectedTerm]
-        : [...this.collectTerms(goal), TermFactories.var(universal.variable)];
+        : [...collectTerms(goal), TermFactories.var(universal.variable)];
 
       for (const term of termCandidates) {
         const instantiated = substituteFormula(universal.body, universal.variable, term);
@@ -333,43 +333,7 @@ export class NdRuleEngineService {
     return null;
   }
 
-  private collectTerms(formula: FormulaNode): TermNode[] {
-    const collected: TermNode[] = [];
 
-    const visitTerm = (term: TermNode): void => {
-      collected.push(term);
-      if (term.kind === 'TermFunc') {
-        term.args.forEach(visitTerm);
-      }
-    };
-
-    const visitFormula = (current: FormulaNode): void => {
-      switch (current.kind) {
-        case 'Predicate':
-          current.args.forEach(visitTerm);
-          break;
-        case 'Implies':
-        case 'And':
-        case 'Or':
-          visitFormula(current.left);
-          visitFormula(current.right);
-          break;
-        case 'Forall':
-        case 'Exists':
-          visitFormula(current.body);
-          break;
-        case 'Not':
-        case 'Paren':
-          visitFormula(current.inner);
-          break;
-        default:
-          break;
-      }
-    };
-
-    visitFormula(formula);
-    return collected;
-  }
 
   private createHypothesis(formula: FormulaNode, parentNodeId: string): NdHypothesis {
     const idx = ++this.hypSeq;

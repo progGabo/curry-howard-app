@@ -64,6 +64,46 @@ export function parseTerm(input: string): TermNode | null {
   return null;
 }
 
+export function collectTerms(formula: FormulaNode): TermNode[] {
+  const terms: TermNode[] = [];
+
+  const visitTerm = (term: TermNode): void => {
+    terms.push(term);
+    if (term.kind === 'TermFunc') {
+      for (const arg of term.args) {
+        visitTerm(arg);
+      }
+    }
+  };
+
+  const visitFormula = (current: FormulaNode): void => {
+    switch (current.kind) {
+      case 'Predicate':
+        current.args.forEach(visitTerm);
+        break;
+      case 'Implies':
+      case 'And':
+      case 'Or':
+        visitFormula(current.left);
+        visitFormula(current.right);
+        break;
+      case 'Forall':
+      case 'Exists':
+        visitFormula(current.body);
+        break;
+      case 'Not':
+      case 'Paren':
+        visitFormula(current.inner);
+        break;
+      default:
+        break;
+    }
+  };
+
+  visitFormula(formula);
+  return terms;
+}
+
 export function termToText(term: TermNode): string {
   switch (term.kind) {
     case 'TermVar':
@@ -91,6 +131,9 @@ export function freeVarsFormula(f: FormulaNode): Set<string> {
         break;
       case 'Forall':
       case 'Exists': {
+        if (f.domain) {
+          collect(f.domain, bound);
+        }
         const newBound = new Set(bound);
         newBound.add(f.variable);
         collect(f.body, newBound);
@@ -190,6 +233,9 @@ export function freeTermSymbolsFormula(formula: FormulaNode): Set<string> {
         break;
       case 'Forall':
       case 'Exists':
+        if (f.domain) {
+          visit(f.domain);
+        }
         visit(f.body);
         break;
       case 'Not':
@@ -265,6 +311,7 @@ export function substituteFormula(
         if (!tFreeVars.has(binder)) {
           return {
             ...formula,
+            domain: formula.domain ? subst(formula.domain) : formula.domain,
             body: subst(formula.body)
           };
         }
@@ -281,6 +328,7 @@ export function substituteFormula(
         return {
           ...formula,
           variable: fresh,
+          domain: formula.domain ? subst(formula.domain) : formula.domain,
           body: substituteFormula(alphaRenamedBody, x, t)
         };
       }
@@ -330,6 +378,7 @@ function renameVariableInFormula(f: FormulaNode, oldVar: string, newVar: string)
         : renameVariableInFormula(f.body, oldVar, newVar);
       return {
         ...f,
+        domain: f.domain ? renameVariableInFormula(f.domain, oldVar, newVar) : f.domain,
         variable: f.variable === oldVar ? newVar : f.variable,
         body: renamedBody
       };
@@ -400,11 +449,13 @@ function renameBoundVariableInFormula(f: FormulaNode, oldVar: string, newVar: st
         return {
           ...f,
           variable: newVar,
+          domain: f.domain ? renameBoundVariableInFormula(f.domain, oldVar, newVar) : f.domain,
           body: renameBoundVariableInFormula(f.body, oldVar, newVar)
         };
       }
       return {
         ...f,
+        domain: f.domain ? renameBoundVariableInFormula(f.domain, oldVar, newVar) : f.domain,
         body: renameBoundVariableInFormula(f.body, oldVar, newVar)
       };
     default:

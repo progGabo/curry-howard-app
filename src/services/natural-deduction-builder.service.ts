@@ -5,7 +5,6 @@ import { NdRule, NdRuleApplicationOptions } from '../models/nd-rule';
 import { FormulaRenderService } from './formula-render.service';
 import { NdRuleEngineService } from './nd-rule-engine.service';
 import { NdAutoProverService } from './nd-auto-prover.service';
-import { NdInteractiveCheckerService } from './nd-interactive-checker.service';
 import { Equality } from '../utils/equality';
 
 @Injectable({ providedIn: 'root' })
@@ -13,8 +12,7 @@ export class NaturalDeductionBuilderService {
 	constructor(
 		private formulaRender: FormulaRenderService,
 		private engine: NdRuleEngineService,
-		private autoProver: NdAutoProverService,
-		private interactiveChecker: NdInteractiveCheckerService
+		private autoProver: NdAutoProverService
 	) {}
 
 	async buildProof(judgement: NdJudgement): Promise<NdNode | null> {
@@ -28,12 +26,12 @@ export class NaturalDeductionBuilderService {
 	}
 
 	async applyRuleManually(node: NdNode, rule: NdRule, options?: NdRuleApplicationOptions): Promise<NdNode | null> {
-		const applied = this.interactiveChecker.apply(node, rule, options);
+		const applied = this.engine.applyRule(node, rule, options);
 		return applied ? this.annotateLatex(applied) : null;
 	}
 
 	canApply(node: NdNode, rule: NdRule, options?: NdRuleApplicationOptions): boolean {
-		return this.interactiveChecker.canApply(node, rule, options);
+		return this.engine.applyRule(node, rule, options) !== null;
 	}
 
 	private annotateLatex(node: NdNode): NdNode {
