@@ -1,177 +1,246 @@
 <div class="help-modal" *ngIf="visible" (click)="onBackdropClick()">
   <div class="help-modal__dialog" (click)="onDialogClick($event)">
     <div class="help-modal__header">
-      <h3>{{ t.helpTitle }}</h3>
+      <!-- Tabs -->
+      <div class="help-modal__tabs">
+        <button
+          *ngFor="let tab of tabs"
+          type="button"
+          class="help-tab"
+          [class.help-tab--active]="activeTab === tab.key"
+          (click)="selectTab(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
       <button class="modal-close" type="button" (click)="onClose()" [attr.aria-label]="t.close">✕</button>
     </div>
+
     <div class="help-modal__body">
-      <div class="help-gallery">
-        <section class="help-gallery__item">
-          <h4>{{ currentLanguage === 'sk' ? 'Vstup' : 'Input' }}</h4>
-          <p>
-            {{
-              currentLanguage === 'sk'
-                ? 'Sem zadávate logický alebo lambda výraz podľa zvoleného režimu.'
-                : 'Enter a logical or lambda expression here based on the selected mode.'
-            }}
-          </p>
-          <img
-            class="help-gallery__image"
-            src="assets/image/editor.png"
-            [alt]="currentLanguage === 'sk' ? 'Editor vstupu' : 'Input editor'"
-          />
-          <p class="help-gallery__subtext">
-            {{
-              currentLanguage === 'sk'
-                ? 'V editore môžete používať textové skratky pre špeciálne symboly (po dopísaní sa automaticky nahradia):'
-                : 'In the editor, you can use text shortcuts for special symbols (they are replaced automatically after typing):'
-            }}
-          </p>
+
+      <!-- ==================== TAB: Syntax vstupu ==================== -->
+      <div *ngIf="activeTab === 'syntax'" class="help-tab-content">
+        <section class="help-section">
+          <h4>Textové skratky v editore</h4>
+          <p>Po dopísaní skratky sa automaticky nahradí špeciálnym symbolom:</p>
           <ul class="help-shortcuts">
-            <li><code>\impl</code>, <code>\to</code> → <code>⇒</code></li>
-            <li><code>\and</code> → <code>∧</code></li>
-            <li><code>\or</code> → <code>∨</code></li>
-            <li><code>\not</code> → <code>¬</code></li>
-            <li><code>\forall</code> → <code>∀</code></li>
-            <li><code>\exists</code> → <code>∃</code></li>
-            <li><code>\turnstile</code>, <code>\vdash</code> → <code>⊢</code></li>
+            <li><code>\impl</code>, <code>\to</code> → <code>⇒</code> (implikácia)</li>
+            <li><code>\and</code> → <code>∧</code> (konjunkcia)</li>
+            <li><code>\or</code> → <code>∨</code> (disjunkcia)</li>
+            <li><code>\not</code> → <code>¬</code> (negácia)</li>
+            <li><code>\forall</code> → <code>∀</code> (univerzálny kvantifikátor)</li>
+            <li><code>\exists</code> → <code>∃</code> (existenčný kvantifikátor)</li>
+            <li><code>\turnstile</code>, <code>\vdash</code> → <code>⊢</code> (turnstile)</li>
             <li><code>\lambda</code> → <code>λ</code></li>
+            <li><code>\bot</code>, <code>\bottom</code> → <code>⊥</code> (falzum)</li>
+            <li><code>\top</code> → <code>⊤</code> (verum)</li>
           </ul>
         </section>
 
-        <section class="help-gallery__item">
-          <h4>{{ currentLanguage === 'sk' ? 'Smer izomorfizmu' : 'Isomorphism direction' }}</h4>
-          <p>
-            {{
-              currentLanguage === 'sk'
-                ? 'V hlavičke zvoľte smer Curry-Howardovho izomorfizmu: Výraz → Lambda alebo Lambda → Výraz.'
-                : 'In the header, choose the Curry-Howard isomorphism direction: Expression → Lambda or Lambda → Expression.'
-            }}
-          </p>
-          <img
-            class="help-gallery__image"
-            src="assets/image/isomorphism.png"
-            [alt]="currentLanguage === 'sk' ? 'Smer izomorfizmu' : 'Isomorphism direction'"
-          />
+        <section class="help-section">
+          <h4>Logické výrazy / sekventy</h4>
+          <p>Vstup pre smer <strong>Výraz → Lambda</strong> a sekciu <strong>Dôkazy</strong>:</p>
+          <table class="help-table">
+            <thead><tr><th>Zápis</th><th>Význam</th></tr></thead>
+            <tbody>
+              <tr><td><code>A ⇒ B</code> / <code>A =&gt; B</code></td><td>implikácia</td></tr>
+              <tr><td><code>A ∧ B</code> / <code>A &amp;&amp; B</code></td><td>konjunkcia</td></tr>
+              <tr><td><code>A ∨ B</code> / <code>A || B</code></td><td>disjunkcia</td></tr>
+              <tr><td><code>¬A</code> / <code>!A</code></td><td>negácia</td></tr>
+              <tr><td><code>⊤</code> / <code>True</code></td><td>pravda (verum)</td></tr>
+              <tr><td><code>⊥</code> / <code>False</code></td><td>nepravda (falzum)</td></tr>
+              <tr><td><code>∀x. P(x)</code> / <code>forall x. P(x)</code></td><td>univerzálny kvantifikátor</td></tr>
+              <tr><td><code>∃x. P(x)</code> / <code>exists x. P(x)</code></td><td>existenčný kvantifikátor</td></tr>
+            </tbody>
+          </table>
+          <p class="help-hint">Sekvent sa zapisuje v tvare <code>A, B ⊢ C</code> kde ľavá strana sú predpoklady a pravá záver.</p>
         </section>
 
-        <section class="help-gallery__item">
-          <h4>{{ currentLanguage === 'sk' ? 'Syntax vstupu (výrazy a lambda)' : 'Input syntax (expressions and lambda)' }}</h4>
+        <section class="help-section">
+          <h4>Lambda výrazy</h4>
+          <p>Vstup pre smer <strong>Lambda → Výraz</strong>:</p>
+          <table class="help-table">
+            <thead><tr><th>Zápis</th><th>Význam</th></tr></thead>
+            <tbody>
+              <tr><td><code>λx:T. t</code> / <code>\x:T. t</code></td><td>abstrakcia</td></tr>
+              <tr><td><code>f x</code></td><td>aplikácia</td></tr>
+              <tr><td><code>⟨a, b⟩</code> / <code>&lt;a, b&gt;</code></td><td>pár</td></tr>
+              <tr><td><code>fst p</code> / <code>snd p</code></td><td>projekcia z páru</td></tr>
+              <tr><td><code>let (x, y) = p in t</code></td><td>dekompozícia páru</td></tr>
+              <tr><td><code>inl t</code> / <code>inr t</code></td><td>injekcia do súčtového typu</td></tr>
+              <tr><td><code>case s of inl x =&gt; t1 | inr y =&gt; t2</code></td><td>vzorové rozvetvenie</td></tr>
+              <tr><td><code>if c then t else e</code></td><td>podmienka</td></tr>
+              <tr><td><code>let x = e in t</code></td><td>let väzba</td></tr>
+              <tr><td><code>0</code>, <code>succ n</code>, <code>pred n</code>, <code>iszero n</code></td><td>prirodzené čísla</td></tr>
+              <tr><td><code>(x:T) → B(x)</code> / <code>(x:T) -&gt; B(x)</code></td><td>závislý typ (Π)</td></tr>
+              <tr><td><code>∃x:T. P(x)</code></td><td>závislý pár (Σ)</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
 
-          <div class="help-syntax-grid">
-            <div>
-              <h5>{{ currentLanguage === 'sk' ? 'Logické výrazy / sekventy' : 'Logical expressions / sequents' }}</h5>
-              <ul class="help-syntax-list">
-                <li><code>A => B</code> / <code>A ⇒ B</code></li>
-                <li><code>A && B</code> / <code>A ∧ B</code></li>
-                <li><code>A || B</code> / <code>A ∨ B</code></li>
-                <li><code>!A</code> / <code>¬A</code></li>
-                <li><code>forall x. P(x)</code> / <code>∀x. P(x)</code></li>
-                <li><code>exists x. P(x)</code> / <code>∃x. P(x)</code></li>
-              </ul>
-            </div>
+      <!-- ==================== TAB: Ovládanie ==================== -->
+      <div *ngIf="activeTab === 'controls'" class="help-tab-content">
+        <section class="help-section">
+          <h4>Ovládanie stromu</h4>
+          <p>Dôkazový strom (aj strom odvodenia typov) sa zobrazuje v interaktívnom plátne:</p>
+          <ul class="help-flow">
+            <li><strong>Posúvanie:</strong> stlačte a držte stredné tlačidlo myši (scroll koliesko) a pohybujte myšou na posúvanie plátna.</li>
+            <li><strong>Zoomovanie:</strong> otáčajte scroll kolieskom pre priblíženie/oddialenie stromu.</li>
+            <li><strong>Kliknutie na uzol:</strong> v interaktívnom režime kliknutím na <code>+</code> pri uzle otvoríte menu pravidiel.</li>
+          </ul>
+        </section>
 
-            <div>
-              <h5>{{ currentLanguage === 'sk' ? 'Lambda výrazy' : 'Lambda expressions' }}</h5>
-              <ul class="help-syntax-list">
-                <li><code>\x:T. t</code> / <code>λx:T. t</code></li>
-                <li><code>f x</code> </li>
-                <li><code>&lt;a, b&gt;</code> / <code>⟨a, b⟩</code></li>
-                <li><code>let (x, y) = p in t</code></li>
-                <li><code>(x:T) -&gt; B(x)</code> / <code>(x:T) → B(x)</code></li>
-                <li><code>∃x:T. P(x)</code> </li>
-              </ul>
+        <section class="help-section">
+          <h4>Sekcie aplikácie</h4>
+          <ul class="help-flow">
+            <li><strong>Curry-Howard</strong> — demonštrácia Curry-Howardovho izomorfizmu medzi logickými dôkazmi a lambda výrazmi. Dva smery: <em>Výraz → Lambda</em> a <em>Lambda → Výraz</em>.</li>
+            <li><strong>Dôkazy</strong> — dokazovanie výrokov v <em>sekventovom kalkule</em> alebo <em>prirodzenej dedukcii</em>.</li>
+          </ul>
+        </section>
+
+        <section class="help-section">
+          <h4>Režimy práce</h4>
+          <ul class="help-flow">
+            <li><strong>Auto:</strong> strom sa vygeneruje automaticky po stlačení tlačidla.</li>
+            <li><strong>Interaktívny:</strong> strom budujete manuálne krok po kroku výberom pravidiel.</li>
+          </ul>
+          <p>V interaktívnom režime sú dostupné tri podrežimy:</p>
+          <ul class="help-flow">
+            <li><strong>Len použiteľné:</strong> v menu sa zobrazia iba pravidlá aplikovateľné na vybraný uzol.</li>
+            <li><strong>Všetky pravidlá:</strong> v menu sa zobrazia všetky pravidlá bez filtrovania.</li>
+            <li><strong>Predikcia:</strong> najprv vyberiete pravidlo, potom doplníte očakávané výsledky. Pravidlo sa aplikuje až po správnej predikcii.</li>
+          </ul>
+          <p><strong>Krok späť</strong> — vráti poslednú zmenu v strome.</p>
+        </section>
+
+        <section class="help-section">
+          <h4>Postup práce</h4>
+          <ol class="help-flow">
+            <li>Vyberte sekciu a konkrétny režim v hlavičke.</li>
+            <li>Zadajte vstup do editora (alebo zvoľte pripravený príklad).</li>
+            <li>Spustite výpočet tlačidlom <em>Generovať dôkaz</em> alebo <em>Konvertovať</em>.</li>
+            <li>Výsledok sa zobrazí v pravej časti ako dôkazový strom, typ alebo lambda výraz.</li>
+          </ol>
+        </section>
+      </div>
+
+      <!-- ==================== TAB: Curry-Howard ==================== -->
+      <div *ngIf="activeTab === 'curry-howard'" class="help-tab-content">
+        <section class="help-section">
+          <h4>Curry-Howardov izomorfizmus</h4>
+          <p>
+            Curry-Howardov izomorfizmus je korešpondencia medzi formálnymi dôkazmi a programami.
+            Logické výroky zodpovedajú typom a dôkazy zodpovedajú lambda termom daného typu.
+            Ak existuje dôkaz výroku, existuje aj program (lambda term) žijúci v zodpovedajúcom type — a naopak.
+          </p>
+        </section>
+
+        <section class="help-section">
+          <h4>Korešpondencia: Logika ↔ Typy</h4>
+          <table class="help-table help-table--wide">
+            <thead>
+              <tr><th>Logika</th><th>Typy (λ-kalkul)</th><th>Vysvetlenie</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A ⇒ B</td><td>A → B (funkcia)</td><td>Dôkaz implikácie = funkcia z A do B</td></tr>
+              <tr><td>A ∧ B</td><td>A × B (pár)</td><td>Dôkaz konjunkcie = pár dôkazov</td></tr>
+              <tr><td>A ∨ B</td><td>A + B (súčet)</td><td>Dôkaz disjunkcie = injekcia do ľavej alebo pravej zložky</td></tr>
+              <tr><td>¬A</td><td>A → ⊥</td><td>Negácia = funkcia vedúca k sporu</td></tr>
+              <tr><td>⊤ (True)</td><td>Unit typ</td><td>Triviálne pravdivý výrok = typ s jedným prvkom</td></tr>
+              <tr><td>⊥ (False)</td><td>Prázdny typ (⊥)</td><td>Nepravda = typ bez obyvateľov</td></tr>
+              <tr><td>∀x. P(x)</td><td>Π(x:T). P(x)</td><td>Univerzálna kvantifikácia = závislá funkcia</td></tr>
+              <tr><td>∃x. P(x)</td><td>Σ(x:T). P(x)</td><td>Existenčná kvantifikácia = závislý pár</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="help-section">
+          <h4>Korešpondencia: Pravidlá prirodzenej dedukcie ↔ Typovacie pravidlá</h4>
+          <table class="help-table help-table--wide">
+            <thead>
+              <tr><th>Pravidlo (prirodzená dedukcia)</th><th>Typovacie pravidlo (λ)</th><th>Konštrukcia</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>→I (zavedenie implikácie)</td><td>Abs (abstrakcia)</td><td>λx:A. t</td></tr>
+              <tr><td>→E (modus ponens)</td><td>App (aplikácia)</td><td>f x</td></tr>
+              <tr><td>∧I (zavedenie konjunkcie)</td><td>Pair (pár)</td><td>⟨a, b⟩</td></tr>
+              <tr><td>∧E1, ∧E2 (eliminácia konjunkcie)</td><td>Fst, Snd (projekcie)</td><td>fst p, snd p</td></tr>
+              <tr><td>∨I1, ∨I2 (zavedenie disjunkcie)</td><td>Inl, Inr (injekcie)</td><td>inl t, inr t</td></tr>
+              <tr><td>∨E (eliminácia disjunkcie)</td><td>Case</td><td>case s of inl/inr</td></tr>
+              <tr><td>¬I (zavedenie negácie)</td><td>Abs (A → ⊥)</td><td>λx:A. t</td></tr>
+              <tr><td>¬E (eliminácia negácie)</td><td>App (aplikácia na ⊥)</td><td>f x</td></tr>
+              <tr><td>⊤I (zavedenie pravdy)</td><td>Unit</td><td>⟨⟩</td></tr>
+              <tr><td>⊥E (eliminácia nepravdy)</td><td>absurd</td><td>absurd e</td></tr>
+              <tr><td>∀I (zavedenie univerzálu)</td><td>DependentAbs</td><td>λx:T. t</td></tr>
+              <tr><td>∀E (eliminácia univerzálu)</td><td>App</td><td>f t</td></tr>
+              <tr><td>∃I (zavedenie existenciálu)</td><td>DependentPair</td><td>⟨t, e⟩</td></tr>
+              <tr><td>∃E (eliminácia existenciálu)</td><td>LetDependentPair</td><td>let ⟨x,p⟩ = e in t</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <!-- ==================== TAB: Sekventový kalkul ==================== -->
+      <div *ngIf="activeTab === 'sequent'" class="help-tab-content">
+        <section class="help-section">
+          <h4>Špeciálne pravidlá</h4>
+          <div class="help-rules-grid">
+            <div class="help-rule-card" *ngFor="let rule of sequentSpecialRules">
+              <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
             </div>
           </div>
         </section>
 
-        <section class="help-gallery__item">
-          <h4>{{ currentLanguage === 'sk' ? 'Dokazovanie výroku' : 'Proposition proving' }}</h4>
-          <p>
-            {{
-              currentLanguage === 'sk'
-                ? 'V sekcii Dôkazy si vyberáte medzi sekvenčným kalkulom a prirodzenou dedukciou.'
-                : 'In the Proofs section, you can choose between Sequent calculus and Natural deduction.'
-            }}
-          </p>
-          <img
-            class="help-gallery__image"
-            src="assets/image/proofs.png"
-            [alt]="currentLanguage === 'sk' ? 'Dokazovanie výroku' : 'Proposition proving'"
-          />
+        <section class="help-section">
+          <h4>Pravidlá pre záver (pravá strana)</h4>
+          <div class="help-rules-grid">
+            <div class="help-rule-card" *ngFor="let rule of sequentConclusionRules">
+              <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
+            </div>
+          </div>
         </section>
 
-        <section class="help-gallery__item">
-          <h4>{{ currentLanguage === 'sk' ? 'Režimy práce' : 'Working modes' }}</h4>
-          <p>
-            {{
-              currentLanguage === 'sk'
-                ? 'Auto režim generuje riešenie automaticky. Interaktívny režim umožňuje vyberať pravidlá manuálne.'
-                : 'Auto mode generates the solution automatically. Interactive mode lets you choose rules manually.'
-            }}
-          </p>
-          <p>
-            {{
-              currentLanguage === 'sk'
-                ? 'V interaktívnom režime sú dostupné podrežimy Len použiteľné, Všetky pravidlá a Predikcia, spolu s tlačidlom Krok späť.'
-                : 'In interactive mode, submodes Applicable only, All rules, and Predict are available, together with Step back.'
-            }}
-          </p>
-          <ul class="help-flow">
-            <li>
-              {{
-                currentLanguage === 'sk'
-                  ? 'Len použiteľné: aplikácia zobrazí iba pravidlá, ktoré sa dajú použiť na vybraný uzol.'
-                  : 'Applicable only: the app shows only rules that can be applied to the selected node.'
-              }}
-            </li>
-            <li>
-              {{
-                currentLanguage === 'sk'
-                  ? 'Všetky pravidlá: aplikácia zobrazí všetky pravidlá bez filtrovania podľa vybraného uzla.'
-                  : 'All rules: the app shows all rules without filtering by the selected node.'
-              }}
-            </li>
-            <li>
-              {{
-                currentLanguage === 'sk'
-                  ? 'Predikcia: najprv vyberiete pravidlo a potom doplníte očakávané výsledky ďalších krokov; pravidlo sa aplikuje až po správnej predikcii.'
-                  : 'Predict: first choose a rule, then fill in expected results of the next steps; the rule is applied only after a correct prediction.'
-              }}
-            </li>
-            <li>
-              {{
-                currentLanguage === 'sk'
-                  ? 'Krok späť: v interaktívnom režime vracia poslednú vykonanú zmenu v strome.'
-                  : 'Step back: in interactive mode, it restores the last change made in the tree.'
-              }}
-            </li>
-          </ul>
-          <img
-            class="help-gallery__image"
-            src="assets/image/auto-interactive.png"
-            [alt]="currentLanguage === 'sk' ? 'Režimy práce Auto a Interaktívny' : 'Auto and Interactive working modes'"
-          />
-        </section>
-
-        <section class="help-gallery__item">
-          <h4>{{ currentLanguage === 'sk' ? 'Postup práce' : 'Typical workflow' }}</h4>
-          <ol class="help-flow">
-            <li>
-              {{ currentLanguage === 'sk' ? 'Vyberte sekciu (Curry-Howard alebo Dôkazy) a konkrétny režim v hlavičke.' : 'Select the section (Curry-Howard or Proofs) and specific mode in the header.' }}
-            </li>
-            <li>
-              {{ currentLanguage === 'sk' ? 'Zadajte vstup do editora (alebo použite pripravený príklad).' : 'Enter input in the editor (or use a prepared example).' }}
-            </li>
-            <li>
-              {{ currentLanguage === 'sk' ? 'Spustite výpočet tlačidlom Generovať dôkaz alebo Konvertovať.' : 'Run processing with Generate proof or Convert.' }}
-            </li>
-            <li>
-              {{ currentLanguage === 'sk' ? 'Výsledok sa zobrazí v pravej časti ako dôkazový strom, typ alebo lambda výraz.' : 'The result appears on the right as a proof tree, type, or lambda expression.' }}
-            </li>
-          </ol>
+        <section class="help-section">
+          <h4>Pravidlá pre predpoklady (ľavá strana)</h4>
+          <div class="help-rules-grid">
+            <div class="help-rule-card" *ngFor="let rule of sequentAssumptionRules">
+              <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
+            </div>
+          </div>
         </section>
       </div>
+
+      <!-- ==================== TAB: Prirodzená dedukcia ==================== -->
+      <div *ngIf="activeTab === 'natural-deduction'" class="help-tab-content">
+        <section class="help-section">
+          <h4>Zavádzacie pravidlá (Introduction)</h4>
+          <div class="help-rules-grid">
+            <div class="help-rule-card" *ngFor="let rule of ndIntroRules">
+              <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="help-section">
+          <h4>Eliminačné pravidlá (Elimination)</h4>
+          <div class="help-rules-grid">
+            <div class="help-rule-card" *ngFor="let rule of ndElimRules">
+              <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="help-section">
+          <h4>Kvantifikátorové pravidlá</h4>
+          <div class="help-rules-grid">
+            <div class="help-rule-card" *ngFor="let rule of ndQuantifierRules">
+              <div class="help-rule-formula" [appKatex]="getFormula(rule)"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
     </div>
   </div>
   <div class="help-modal__backdrop"></div>
