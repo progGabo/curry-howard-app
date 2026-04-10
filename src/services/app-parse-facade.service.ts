@@ -15,6 +15,7 @@ export interface SequentParseResult {
   proofTree: DerivationNode;
   isPredicateLogic: boolean;
   nextMode: 'auto' | 'interactive';
+  notProvable: boolean;
 }
 
 export interface NaturalDeductionParseResult {
@@ -49,11 +50,13 @@ export class AppParseFacadeService {
       ? await this.proofBuilder.buildProof(sequent)
       : this.proofBuilder.buildInteractiveRoot(sequent);
 
+    const notProvable = nextMode === 'auto' && !isPredicateLogic && this.hasErrorNode(proofTree);
     return {
       sequent,
       proofTree,
       isPredicateLogic,
-      nextMode
+      nextMode,
+      notProvable
     };
   }
 
@@ -101,6 +104,11 @@ export class AppParseFacadeService {
       resultExpression,
       lambdaExpr: this.lambdaParser.formatLambdaExpression(lambdaExpr)
     };
+  }
+
+  private hasErrorNode(node: DerivationNode): boolean {
+    if (node.rule === 'error') return true;
+    return node.children.some(child => this.hasErrorNode(child));
   }
 
   private containsPredicateLogic(sequent: SequentNode | null): boolean {

@@ -306,7 +306,7 @@ export class ProofTreeBuilderService {
     };
   }
 
-  private async applyForallRight(sequent: SequentNode, forallF: FormulaNode, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode> {
+  private async applyForallRight(sequent: SequentNode, forallF: FormulaNode, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk', quantifierInput?: string): Promise<DerivationNode> {
     if (forallF.kind !== 'Forall') throw new Error('Expected universal quantifier');
     
     const variable = forallF.variable;
@@ -316,7 +316,12 @@ export class ProofTreeBuilderService {
     
     if (isInteractive) {
       const freeVarsInGamma = this.collectFreeVarsFromFormulas(sequent.assumptions);
-      eigenVar = await this.promptQuantifierInput('forall-right', language, freeVarsInGamma);
+
+      if (quantifierInput) {
+        eigenVar = quantifierInput;
+      } else {
+        eigenVar = await this.promptQuantifierInput('forall-right', language, freeVarsInGamma);
+      }
       
       const varMatch = eigenVar.match(/^[a-z][a-zA-Z0-9_]*$/);
       if (!varMatch) {
@@ -357,14 +362,14 @@ export class ProofTreeBuilderService {
     };
   }
 
-  private async applyForallLeft(sequent: SequentNode, idx: number, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode> {
+  private async applyForallLeft(sequent: SequentNode, idx: number, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk', quantifierInput?: string): Promise<DerivationNode> {
     const forall = sequent.assumptions[idx];
     if (forall.kind !== 'Forall') throw new Error('Expected universal quantifier on the left');
     
     const variable = forall.variable;
     const body = forall.body;
     
-    const term = await this.resolveQuantifierTerm(variable, isInteractive, language, 'forall-left');
+    const term = await this.resolveQuantifierTerm(variable, isInteractive, language, 'forall-left', quantifierInput);
     
     const substituted = substituteFormula(body, variable, term);
     
@@ -386,13 +391,13 @@ export class ProofTreeBuilderService {
     };
   }
 
-  private async applyExistsRight(sequent: SequentNode, existsF: FormulaNode, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode> {
+  private async applyExistsRight(sequent: SequentNode, existsF: FormulaNode, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk', quantifierInput?: string): Promise<DerivationNode> {
     if (existsF.kind !== 'Exists') throw new Error('Expected existential quantifier');
     
     const variable = existsF.variable;
     const body = existsF.body;
     
-    const term = await this.resolveQuantifierTerm(variable, isInteractive, language, 'exists-right');
+    const term = await this.resolveQuantifierTerm(variable, isInteractive, language, 'exists-right', quantifierInput);
     
     const substituted = substituteFormula(body, variable, term);
     
@@ -417,7 +422,7 @@ export class ProofTreeBuilderService {
     };
   }
 
-  private async applyExistsLeft(sequent: SequentNode, idx: number, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode> {
+  private async applyExistsLeft(sequent: SequentNode, idx: number, isInteractive: boolean = false, language: 'sk' | 'en' = 'sk', quantifierInput?: string): Promise<DerivationNode> {
     const exists = sequent.assumptions[idx];
     if (exists.kind !== 'Exists') throw new Error('Expected existential quantifier on the left');
     
@@ -430,7 +435,12 @@ export class ProofTreeBuilderService {
     
     if (isInteractive) {
       const freeVarsInGammaDelta = this.collectFreeVarsFromFormulas([...otherAssumptions, ...sequent.conclusions]);
-      eigenVar = await this.promptQuantifierInput('exists-left', language, freeVarsInGammaDelta);
+
+      if (quantifierInput) {
+        eigenVar = quantifierInput;
+      } else {
+        eigenVar = await this.promptQuantifierInput('exists-left', language, freeVarsInGammaDelta);
+      }
       
       const varMatch = eigenVar.match(/^[a-z][a-zA-Z0-9_]*$/);
       if (!varMatch) {
@@ -494,13 +504,14 @@ export class ProofTreeBuilderService {
     variable: string,
     isInteractive: boolean,
     language: 'sk' | 'en',
-    ruleType: 'forall-left' | 'exists-right'
+    ruleType: 'forall-left' | 'exists-right',
+    quantifierInput?: string
   ): Promise<TermNode> {
     if (!isInteractive) {
       return TermFactories.var(variable);
     }
 
-    const termStr = await this.promptQuantifierInput(ruleType, language);
+    const termStr = quantifierInput ?? await this.promptQuantifierInput(ruleType, language);
     return this.parseTermOrThrow(termStr, language);
   }
 
@@ -583,7 +594,7 @@ export class ProofTreeBuilderService {
     return sequent.assumptions.findIndex((formula) => formula.kind === kind);
   }
 
-  async applyRuleManually(sequent: SequentNode, rule: string, isInteractive = true, language: 'sk' | 'en' = 'sk'): Promise<DerivationNode | null> {
+  async applyRuleManually(sequent: SequentNode, rule: string, isInteractive = true, language: 'sk' | 'en' = 'sk', quantifierInput?: string): Promise<DerivationNode | null> {
     if (rule === 'Ax' || rule === 'id' || rule === 'ID') {
       const axiom = this.isAxiom(sequent) ? { rule: 'Ax', sequent, children: [] } : null;
       return axiom ? this.annotateLatex(axiom) : null;
@@ -626,25 +637,51 @@ export class ProofTreeBuilderService {
       'WR': async () => this.applyWeakeningRight(sequent, isInteractive),
       '∀R': async () => {
         const forall = this.findConclusionByKind(sequent, 'Forall');
-        return forall ? this.applyForallRight(sequent, forall, isInteractive, language) : null;
+        return forall ? this.applyForallRight(sequent, forall, isInteractive, language, quantifierInput) : null;
       },
       '∀L': async () => {
         const index = this.findAssumptionIndexByKind(sequent, 'Forall');
-        return index !== -1 ? this.applyForallLeft(sequent, index, isInteractive, language) : null;
+        return index !== -1 ? this.applyForallLeft(sequent, index, isInteractive, language, quantifierInput) : null;
       },
       '∃R': async () => {
         const exists = this.findConclusionByKind(sequent, 'Exists');
-        return exists ? this.applyExistsRight(sequent, exists, isInteractive, language) : null;
+        return exists ? this.applyExistsRight(sequent, exists, isInteractive, language, quantifierInput) : null;
       },
       '∃L': async () => {
         const index = this.findAssumptionIndexByKind(sequent, 'Exists');
-        return index !== -1 ? this.applyExistsLeft(sequent, index, isInteractive, language) : null;
+        return index !== -1 ? this.applyExistsLeft(sequent, index, isInteractive, language, quantifierInput) : null;
       }
     };
 
     const handler = handlers[rule];
     const result = handler ? await handler() : null;
     return result ? this.annotateLatex(result) : null;
+  }
+
+  getQuantifierInfo(sequent: SequentNode, rule: string, language: 'sk' | 'en'): { ruleType: string; isVariable: boolean; freeVars: string[]; placeholder: string; label: string } | null {
+    const QUANTIFIER_RULES = ['∀R', '∀L', '∃R', '∃L'];
+    if (!QUANTIFIER_RULES.includes(rule)) return null;
+
+    const ruleTypeMap: Record<string, string> = {
+      '∀R': 'forall-right', '∀L': 'forall-left', '∃R': 'exists-right', '∃L': 'exists-left'
+    };
+    const isVariableMap: Record<string, boolean> = {
+      '∀R': true, '∀L': false, '∃R': false, '∃L': true
+    };
+    const ruleType = ruleTypeMap[rule];
+    const isVariable = isVariableMap[rule];
+    const labels = this.i18n.quantifierRuleLabels(language, ruleType);
+
+    let freeVars: string[] = [];
+    if (rule === '∀R') {
+      freeVars = this.collectFreeVarsFromFormulas(sequent.assumptions);
+    } else if (rule === '∃L') {
+      const idx = sequent.assumptions.findIndex(f => f.kind === 'Exists');
+      const otherAssumptions = sequent.assumptions.filter((_, i) => i !== idx);
+      freeVars = this.collectFreeVarsFromFormulas([...otherAssumptions, ...sequent.conclusions]);
+    }
+
+    return { ruleType, isVariable, freeVars, placeholder: labels.placeholder, label: labels.title };
   }
 
     buildInteractiveRoot(sequent: SequentNode): DerivationNode {

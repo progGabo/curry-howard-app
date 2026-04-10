@@ -41,7 +41,7 @@
 .help-modal__tabs {
   display: flex;
   gap: 0;
-  overflow-x: auto;
+  flex-wrap: wrap;
   flex: 1;
 }
 
@@ -51,8 +51,8 @@
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
-  padding: 0.55rem 1rem;
-  font-size: 0.88rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: #64748b;
   cursor: pointer;
@@ -73,8 +73,7 @@
 .help-modal__body {
   padding: 1.5rem 1.5rem 1.75rem;
   overflow: auto;
-  min-height: 200px;
-  max-height: calc(90vh - 110px);
+  height: calc(90vh - 110px);
 }
 
 /* ── Tab content ── */

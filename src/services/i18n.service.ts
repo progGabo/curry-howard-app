@@ -54,6 +54,8 @@ export interface AppTranslations {
   errorInvalidQuantifierTerm: string;
   errorQuantifierTermMismatch: string;
   errorQuantifierVariableInvalid: string;
+  errorFormulaInvalid: string;
+  errorFormulaStructureMismatch: string;
   // Sidebar translations
   ruleReference: string;
   conclusionRules: string;
@@ -153,6 +155,8 @@ const SK: AppTranslations = {
   errorInvalidQuantifierTerm: 'Neplatný term pre kvantifikačné pravidlo.',
   errorQuantifierTermMismatch: 'Zadaný term/svedok nie je vhodný pre pravidlo {rule} v aktuálnom cieli.',
   errorQuantifierVariableInvalid: 'Zadaná premenná nespĺňa podmienky pravidla {rule} (musí byť čerstvá a platná).',
+  errorFormulaInvalid: 'Neplatný formát formuly.',
+  errorFormulaStructureMismatch: 'Formula nemá správnu štruktúru pre pravidlo {rule}. Cieľ musí byť na správnej strane.',
   ruleReference: 'Pravidlá',
   conclusionRules: 'Pravidlá pre záver',
   assumptionRules: 'Pravidlá pre predpoklad',
@@ -226,6 +230,8 @@ const EN: AppTranslations = {
   errorInvalidQuantifierTerm: 'Invalid term for quantifier rule.',
   errorQuantifierTermMismatch: 'The provided term/witness does not fit rule {rule} for the current goal.',
   errorQuantifierVariableInvalid: 'The provided variable does not satisfy rule {rule} side conditions (fresh and valid).',
+  errorFormulaInvalid: 'Invalid formula format.',
+  errorFormulaStructureMismatch: 'Formula does not have the correct structure for rule {rule}. The goal must be on the correct side.',
   ruleReference: 'Rules',
   conclusionRules: 'Conclusion Rules',
   assumptionRules: 'Assumption Rules',
@@ -256,25 +262,33 @@ const EN: AppTranslations = {
 };
 
 const QUANTIFIER_LABELS_SK: Record<string, QuantifierRuleLabels> = {
-  'forall-right': { title: '∀R – eigenvariable', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
-  'forall-left': { title: '∀L – inštancia', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'forall-right': { title: '∀R – voľná premenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'forall-left': { title: '∀L – term', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
   'exists-right': { title: '∃R – svedok', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
-  'exists-left': { title: '∃L – eigenvariable', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
-  'forall-intro': { title: '∀I – eigenpremenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
-  'forall-elim': { title: '∀E – inštancia', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'exists-left': { title: '∃L – voľná premenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'forall-intro': { title: '∀I – voľná premenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'forall-elim': { title: '∀E – term', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
   'exists-intro': { title: '∃I – svedok', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
-  'exists-elim': { title: '∃E – eigenpremenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'exists-elim': { title: '∃E – voľná premenná', labelVariable: 'Premenná', placeholder: 'napr. x', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'and-elim1': { title: '∧E1 – celá konjunkcia', labelTerm: 'Formula', placeholder: 'napr. A ∧ B (ľavá = cieľ)', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'and-elim2': { title: '∧E2 – celá konjunkcia', labelTerm: 'Formula', placeholder: 'napr. A ∧ B (pravá = cieľ)', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'impl-elim': { title: '→E – celá implikácia', labelTerm: 'Formula', placeholder: 'napr. A → B (pravá = cieľ)', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
+  'neg-elim': { title: '¬E – formula φ', labelTerm: 'Formula', placeholder: 'napr. A (premisy: A, ¬A)', btnCancel: 'Zrušiť', btnConfirm: 'OK' },
 };
 
 const QUANTIFIER_LABELS_EN: Record<string, QuantifierRuleLabels> = {
-  'forall-right': { title: '∀R – eigenvariable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
-  'forall-left': { title: '∀L – instantiation', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'forall-right': { title: '∀R – free variable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'forall-left': { title: '∀L – term', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
   'exists-right': { title: '∃R – witness', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
-  'exists-left': { title: '∃L – eigenvariable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
-  'forall-intro': { title: '∀I – eigenvariable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
-  'forall-elim': { title: '∀E – instantiation', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'exists-left': { title: '∃L – free variable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'forall-intro': { title: '∀I – free variable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'forall-elim': { title: '∀E – term', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
   'exists-intro': { title: '∃I – witness', labelTerm: 'Term', placeholder: 'term', btnCancel: 'Cancel', btnConfirm: 'OK' },
-  'exists-elim': { title: '∃E – eigenvariable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'exists-elim': { title: '∃E – free variable', labelVariable: 'Variable', placeholder: 'e.g. x', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'and-elim1': { title: '∧E1 – full conjunction', labelTerm: 'Formula', placeholder: 'e.g. A ∧ B (left = goal)', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'and-elim2': { title: '∧E2 – full conjunction', labelTerm: 'Formula', placeholder: 'e.g. A ∧ B (right = goal)', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'impl-elim': { title: '→E – full implication', labelTerm: 'Formula', placeholder: 'e.g. A → B (right = goal)', btnCancel: 'Cancel', btnConfirm: 'OK' },
+  'neg-elim': { title: '¬E – formula φ', labelTerm: 'Formula', placeholder: 'e.g. A (premises: A, ¬A)', btnCancel: 'Cancel', btnConfirm: 'OK' },
 };
 
 const QUANTIFIER_ERRORS_SK: QuantifierErrors = {

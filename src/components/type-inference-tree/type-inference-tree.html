@@ -9,7 +9,8 @@
           [interactiveSubmode]="interactiveSubmode"
           [selectedNode]="selectedNode"
           [predictionRuleRequest]="predictionRuleRequest"
-          (nodeClicked)="nodeClicked.emit($event)"
+          [predictionActive]="hasPendingPrediction || predictionActive"
+          (nodeClicked)="handleNodeClicked($event)"
           (plusButtonClicked)="plusButtonClicked.emit($event)"
           (ruleSelected)="ruleSelected.emit($event)">
         </app-type-inference-tree>
@@ -21,20 +22,26 @@
             *ngFor="let prediction of userPredictions; let i = index; trackBy: trackByIndex" 
             class="prediction-input-wrapper"
           >
-            <input 
-              type="text" 
-              class="prediction-input-field" 
-              [value]="userPredictions[i]"
-              (input)="onPredictionInput($event, i)"
-              [placeholder]="(t.predictExpression + ' ' + (i + 1) + ' (e.g., x, \\x:A. x)')"
-              (keyup.enter)="confirmPrediction()"
-              (keydown)="onKeyDown($event)"
-            />
+            <div class="quantifier-inline-input">
+              <input 
+                type="text" 
+                class="quantifier-input-field" 
+                [value]="userPredictions[i]"
+                [attr.size]="(userPredictions[i]?.length || 0) > 22 ? (userPredictions[i]?.length || 0) + 3 : 24"
+                (input)="onPredictionInput($event, i)"
+                [placeholder]="(t.predictExpression + ' ' + (i + 1) + ' (e.g., x, \\x:A. x)')"
+                (keyup.enter)="confirmPrediction()"
+                (keydown)="onKeyDown($event)"
+              />
+              <button class="quantifier-confirm-btn" (click)="confirmPrediction()" title="OK" *ngIf="i === userPredictions.length - 1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="conclusion" #conclusionEl [style.--line-width.px]="lineWidthPx" [style.--line-offset.px]="lineOffsetPx" [ngClass]="{ selected: isSelected }">
+      <div class="conclusion" #conclusionEl [style.--line-width.px]="lineWidthPx" [style.--line-offset.px]="lineOffsetPx" [ngClass]="{ selected: isSelected, 'clickable-for-fill': hasPendingPrediction || predictionActive }" (click)="handleNodeClicked(r)">
         <button 
           *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Var' && r.rule !== 'True' && r.rule !== 'False' && r.rule !== 'Zero'"
           class="rule-plus-btn"

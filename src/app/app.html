@@ -196,7 +196,7 @@
         <div class="examples">
           <label class="examples-label">{{ t.examples }}</label>
           <div class="examples-row">
-            <select class="select examples-select" (change)="applyExample($any($event.target).value)">
+            <select class="select examples-select" #examplesSelect (change)="applyExample($any($event.target).value)">
               <option value="" selected disabled>{{ examplesPlaceholder }}</option>
               <option *ngFor="let ex of currentExamples" [value]="ex.code">{{ ex.label }}</option>
             </select>
@@ -239,9 +239,12 @@
                 [currentLanguage]="currentLanguage"
                 [selectedNode]="selectedNode"
                 [predictionRuleRequest]="predictionRuleRequest"
+                [quantifierInputRequest]="sequentQuantifierRequest"
                 (nodeClicked)="onNodeClicked($event)"
                 (plusButtonClicked)="onProofPlusButtonClicked($event)"
                 (ruleSelected)="applyRuleToNode($event)"
+                (quantifierInputConfirm)="confirmSequentQuantifierInput($event)"
+                (quantifierInputCancel)="cancelSequentQuantifierInput()"
               ></app-proof-tree>
             </app-tree-canvas>
           </div>
@@ -281,11 +284,17 @@
                       [mode]="mode"
                       [selectedNode]="selectedNdNode"
                       [ndPredictionRequest]="ndPredictionRequest"
+                      [ndQuantifierRequest]="ndQuantifierRequest"
+                      [ndFreeFormulaRequest]="ndFreeFormulaRequest"
                       [currentLanguage]="currentLanguage"
                       (nodeClicked)="onNdNodeClicked($event)"
                       (plusButtonClicked)="onNdPlusButtonClicked($event)"
                       (ndPredictionConfirm)="confirmNdPrediction($event)"
                       (ndPredictionCancel)="cancelNdPrediction()"
+                      (ndQuantifierConfirm)="confirmNdQuantifierInput($event)"
+                      (ndQuantifierCancel)="cancelNdQuantifierInput()"
+                      (ndFreeFormulaConfirm)="confirmNdFreeFormulaInput($event)"
+                      (ndFreeFormulaCancel)="cancelNdFreeFormulaInput()"
                     ></app-natural-deduction-tree>
                   </app-tree-canvas>
                 </div>
@@ -317,11 +326,17 @@
                   [mode]="mode"
                   [selectedNode]="selectedNdNode"
                   [ndPredictionRequest]="ndPredictionRequest"
+                  [ndQuantifierRequest]="ndQuantifierRequest"
+                  [ndFreeFormulaRequest]="ndFreeFormulaRequest"
                   [currentLanguage]="currentLanguage"
                   (nodeClicked)="onNdNodeClicked($event)"
                   (plusButtonClicked)="onNdPlusButtonClicked($event)"
                   (ndPredictionConfirm)="confirmNdPrediction($event)"
                   (ndPredictionCancel)="cancelNdPrediction()"
+                  (ndQuantifierConfirm)="confirmNdQuantifierInput($event)"
+                  (ndQuantifierCancel)="cancelNdQuantifierInput()"
+                  (ndFreeFormulaConfirm)="confirmNdFreeFormulaInput($event)"
+                  (ndFreeFormulaCancel)="cancelNdFreeFormulaInput()"
                 ></app-natural-deduction-tree>
               </app-tree-canvas>
             </ng-template>

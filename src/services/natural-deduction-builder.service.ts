@@ -34,6 +34,10 @@ export class NaturalDeductionBuilderService {
 		return this.engine.applyRule(node, rule, options) !== null;
 	}
 
+	reannotateTree(root: NdNode): NdNode {
+		return this.annotateLatex(root);
+	}
+
 	private annotateLatex(node: NdNode): NdNode {
 		node = this.autoCloseHypothesisLeaf(node);
 

@@ -135,12 +135,6 @@ export class RuleFormulaService {
       description: 'Explosion with discharged assumption',
       type: 'assumption'
     },
-    '⊥E': {
-      name: '⊥E (Explosion)',
-      formula: '\\frac{\\bot}{A}',
-      description: 'Eliminate falsity',
-      type: 'assumption'
-    },
     '¬I': {
       name: '¬I (Negation Introduction)',
       formula: '\\frac{\\begin{array}{c}[\\varphi]\\\\ \\vdots \\\\ \\bot\\end{array}}{\\neg \\varphi}\\; (\\neg I)',
@@ -479,12 +473,6 @@ export class RuleFormulaService {
       name: '⊥E2 (Eliminácia sporu 2)',
       formula: '\\frac{\\begin{array}{c}[\\neg \\varphi]\\\\ \\vdots \\\\ \\bot\\end{array}}{\\varphi}\\; (⊥E2)',
       description: 'Odvodenie formuly so subdôkazom',
-      type: 'assumption'
-    },
-    '⊥E': {
-      name: '⊥E (Eliminácia sporu)',
-      formula: '\\frac{\\bot}{A}',
-      description: 'Eliminácia nepravdy',
       type: 'assumption'
     },
     '¬I': {

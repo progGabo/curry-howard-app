@@ -81,7 +81,8 @@ export class RuleFilterService {
       switch (rule) {
         case '⊤I':
           return goal.kind === 'True';
-        case '⊥E':
+        case '⊥E1':
+        case '⊥E2':
           return true;
         case '¬I':
           return goal.kind === 'Not';

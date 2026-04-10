@@ -9,10 +9,31 @@
           [interactiveSubmode]="interactiveSubmode"
           [selectedNode]="selectedNode"
           [predictionRuleRequest]="predictionRuleRequest"
-          (nodeClicked)="nodeClicked.emit($event)"
+          [predictionActive]="hasPendingPrediction || predictionActive"
+          [quantifierInputRequest]="quantifierInputRequest"
+          (nodeClicked)="handleNodeClicked($event)"
           (plusButtonClicked)="plusButtonClicked.emit($event)"
-          (ruleSelected)="ruleSelected.emit($event)">
+          (ruleSelected)="ruleSelected.emit($event)"
+          (quantifierInputConfirm)="quantifierInputConfirm.emit($event)"
+          (quantifierInputCancel)="quantifierInputCancel.emit()">
         </app-proof-tree>
+      </div>
+
+      <div class="quantifier-inline-input" *ngIf="hasQuantifierInput && quantifierInputRequest">
+        <input
+          type="text"
+          class="quantifier-input-field"
+          [value]="quantifierInputValue"
+          [attr.size]="quantifierInputValue.length > 22 ? quantifierInputValue.length + 3 : 24"
+          (input)="onQuantifierInput($event)"
+          [placeholder]="quantifierInputRequest.label"
+          (keyup.enter)="onQuantifierConfirm()"
+          (keydown)="onQuantifierKeyDown($event)"
+          autofocus
+        />
+        <button class="quantifier-confirm-btn" (click)="onQuantifierConfirm()" title="OK">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </button>
       </div>
 
       <div class="prediction-inputs" *ngIf="hasPendingPrediction">
@@ -21,20 +42,26 @@
             *ngFor="let prediction of userPredictions; let i = index; trackBy: trackByIndex" 
             class="prediction-input-wrapper"
           >
-            <input 
-              type="text" 
-              class="prediction-input-field" 
-              [value]="userPredictions[i]"
-              (input)="onPredictionInput($event, i)"
-              [placeholder]="t.predictSequent + ' ' + (i + 1) + ' (e.g., A ⊢ B)'"
-              (keyup.enter)="confirmPrediction()"
-              (keydown)="onKeyDown($event)"
-            />
+            <div class="quantifier-inline-input">
+              <input 
+                type="text" 
+                class="quantifier-input-field" 
+                [value]="userPredictions[i]"
+                [attr.size]="(userPredictions[i]?.length || 0) > 22 ? (userPredictions[i]?.length || 0) + 3 : 24"
+                (input)="onPredictionInput($event, i)"
+                [placeholder]="t.predictSequent + ' ' + (i + 1) + ' (e.g., A ⊢ B)'"
+                (keyup.enter)="confirmPrediction()"
+                (keydown)="onKeyDown($event)"
+              />
+              <button class="quantifier-confirm-btn" (click)="confirmPrediction()" title="OK" *ngIf="i === userPredictions.length - 1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="conclusion" #conclusionEl [style.--line-width.px]="lineWidthPx" [style.--line-offset.px]="lineOffsetPx" [ngClass]="{ selected: isSelected }">
+      <div class="conclusion" #conclusionEl [style.--line-width.px]="lineWidthPx" [style.--line-offset.px]="lineOffsetPx" [ngClass]="{ selected: isSelected, 'clickable-for-fill': hasPendingPrediction || predictionActive }" (click)="handleNodeClicked(r)">
         <button 
           *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Ax' && r.rule !== 'id'"
           class="rule-plus-btn"
@@ -54,17 +81,35 @@
 </ng-container>
 
 <ng-template #sharedRendererTree>
-  <app-tree-renderer
-    [treeType]="'sequent'"
-    [root]="root"
-    [mode]="mode"
-    [selectedNode]="selectedNode"
-    [currentLanguage]="currentLanguage"
-    [sequentLatexFn]="rendererSequentLatex"
-    [ruleLabelFn]="rendererRuleLabel"
-    [showPlusButtonFn]="canShowPlusButton"
-    [showRuleFn]="canShowRule"
-    (nodeClicked)="onRendererNodeClicked($event)"
-    (plusButtonClicked)="onRendererPlusButtonClicked($event)">
-  </app-tree-renderer>
+  <div class="renderer-with-quantifier">
+    <div class="quantifier-inline-input" *ngIf="quantifierInputRequest">
+      <input
+        type="text"
+        class="quantifier-input-field"
+        [value]="quantifierInputValue"
+        [attr.size]="quantifierInputValue.length > 22 ? quantifierInputValue.length + 3 : 24"
+        (input)="onQuantifierInput($event)"
+        [placeholder]="quantifierInputRequest.label"
+        (keyup.enter)="onQuantifierConfirm()"
+        (keydown)="onQuantifierKeyDown($event)"
+        autofocus
+      />
+      <button class="quantifier-confirm-btn" (click)="onQuantifierConfirm()" title="OK">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </button>
+    </div>
+    <app-tree-renderer
+      [treeType]="'sequent'"
+      [root]="root"
+      [mode]="mode"
+      [selectedNode]="selectedNode"
+      [currentLanguage]="currentLanguage"
+      [sequentLatexFn]="rendererSequentLatex"
+      [ruleLabelFn]="rendererRuleLabel"
+      [showPlusButtonFn]="canShowPlusButton"
+      [showRuleFn]="canShowRule"
+      (nodeClicked)="onRendererNodeClicked($event)"
+      (plusButtonClicked)="onRendererPlusButtonClicked($event)">
+    </app-tree-renderer>
+  </div>
 </ng-template>

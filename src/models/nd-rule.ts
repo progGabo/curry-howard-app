@@ -1,9 +1,10 @@
-import { TermNode } from './formula-node';
+import { FormulaNode, TermNode } from './formula-node';
 
 export type NdRule =
   | 'Ax'
   | '⊤I'
-  | '⊥E'
+  | '⊥E1'
+  | '⊥E2'
   | '¬I'
   | '¬E'
   | '∧I'
@@ -32,4 +33,5 @@ export interface NdRuleApplicationOptions {
   termInput?: string;
   eigenVariable?: string;
   instantiationTerm?: TermNode;
+  freeFormula?: FormulaNode;
 }

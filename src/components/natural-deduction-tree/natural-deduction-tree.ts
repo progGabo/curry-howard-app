@@ -4,6 +4,7 @@ import { termToText } from '../../utils/quantifier-utils';
 import { getElementCenter } from '../../utils/dom-position';
 import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
 import { scheduleLineMeasure as sharedScheduleLineMeasure } from '../../utils/line-measurement';
+import { formulaToText } from '../../utils/formula-text';
 
 @Component({
   selector: 'app-natural-deduction-tree',
@@ -17,11 +18,29 @@ export class NaturalDeductionTreeComponent {
   @Input() selectedNode: NdNode | null = null;
   @Input() currentLanguage: 'sk' | 'en' = 'sk';
   @Input() ndPredictionRequest: { node: NdNode; userPredictions: string[] } | null = null;
+  @Input() ndQuantifierRequest: {
+    node: NdNode;
+    rule: string;
+    isVariable: boolean;
+    freeVars: string[];
+    placeholder: string;
+    label: string;
+  } | null = null;
+  @Input() ndFreeFormulaRequest: {
+    node: NdNode;
+    rule: string;
+    placeholder: string;
+    label: string;
+  } | null = null;
 
   @Output() nodeClicked = new EventEmitter<NdNode>();
   @Output() plusButtonClicked = new EventEmitter<{ node: NdNode; x: number; y: number }>();
   @Output() ndPredictionConfirm = new EventEmitter<string[]>();
   @Output() ndPredictionCancel = new EventEmitter<void>();
+  @Output() ndQuantifierConfirm = new EventEmitter<string>();
+  @Output() ndQuantifierCancel = new EventEmitter<void>();
+  @Output() ndFreeFormulaConfirm = new EventEmitter<string>();
+  @Output() ndFreeFormulaCancel = new EventEmitter<void>();
 
   @ViewChild('conclusionEl') conclusionEl?: ElementRef<HTMLElement>;
   @ViewChild('childrenEl') childrenEl?: ElementRef<HTMLElement>;
@@ -30,6 +49,8 @@ export class NaturalDeductionTreeComponent {
   lineWidthPx: number | null = null;
   lineOffsetPx = 0;
   measureScheduled = false;
+  quantifierInputValue = '';
+  freeFormulaInputValue = '';
 
   get addRuleTitle(): string {
     return this.currentLanguage === 'sk' ? 'Pridať pravidlo' : 'Add rule';
@@ -57,6 +78,56 @@ export class NaturalDeductionTreeComponent {
         this.localPredictionInputs = [];
       }
     }
+    if (changes['ndQuantifierRequest']) {
+      this.quantifierInputValue = '';
+    }
+    if (changes['ndFreeFormulaRequest']) {
+      this.freeFormulaInputValue = '';
+    }
+  }
+
+  hasQuantifierInput(node: NdNode): boolean {
+    return !!this.ndQuantifierRequest && this.ndQuantifierRequest.node === node;
+  }
+
+  onQuantifierInput(event: Event): void {
+    this.quantifierInputValue = applyPredictionShortcut(event);
+  }
+
+  onQuantifierKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.ndQuantifierCancel.emit();
+    }
+  }
+
+  onQuantifierConfirm(): void {
+    this.ndQuantifierConfirm.emit(this.quantifierInputValue);
+  }
+
+  onQuantifierCancel(): void {
+    this.ndQuantifierCancel.emit();
+  }
+
+  hasFreeFormulaInput(node: NdNode): boolean {
+    return !!this.ndFreeFormulaRequest && this.ndFreeFormulaRequest.node === node;
+  }
+
+  onFreeFormulaInput(event: Event): void {
+    this.freeFormulaInputValue = applyPredictionShortcut(event);
+  }
+
+  onFreeFormulaKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.ndFreeFormulaCancel.emit();
+    }
+  }
+
+  onFreeFormulaConfirm(): void {
+    this.ndFreeFormulaConfirm.emit(this.freeFormulaInputValue);
+  }
+
+  onFreeFormulaCancel(): void {
+    this.ndFreeFormulaCancel.emit();
   }
 
   getDischargeLabel = (node: NdNode): string => {
@@ -109,6 +180,13 @@ export class NaturalDeductionTreeComponent {
 
   onNodeClick(node: NdNode): void {
     if (this.mode !== 'interactive') return;
+    if (this.hasPendingPrediction(this.root!) && node.judgement?.goal) {
+      const text = formulaToText(node.judgement.goal);
+      for (let i = 0; i < this.localPredictionInputs.length; i++) {
+        this.localPredictionInputs[i] = text;
+      }
+      return;
+    }
     this.nodeClicked.emit(node);
   }
 

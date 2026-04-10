@@ -8,25 +8,71 @@
         [selectedNode]="selectedNode"
         [currentLanguage]="currentLanguage"
         [ndPredictionRequest]="ndPredictionRequest"
-        (nodeClicked)="nodeClicked.emit($event)"
+        [ndQuantifierRequest]="ndQuantifierRequest"
+        [ndFreeFormulaRequest]="ndFreeFormulaRequest"
+        (nodeClicked)="onNodeClick($event)"
         (plusButtonClicked)="plusButtonClicked.emit($event)"
         (ndPredictionConfirm)="ndPredictionConfirm.emit($event)"
         (ndPredictionCancel)="ndPredictionCancel.emit()"
+        (ndQuantifierConfirm)="ndQuantifierConfirm.emit($event)"
+        (ndQuantifierCancel)="ndQuantifierCancel.emit()"
+        (ndFreeFormulaConfirm)="ndFreeFormulaConfirm.emit($event)"
+        (ndFreeFormulaCancel)="ndFreeFormulaCancel.emit()"
       ></app-natural-deduction-tree>
+    </div>
+
+    <div class="quantifier-inline-input" *ngIf="hasQuantifierInput(r) && ndQuantifierRequest">
+      <input
+        type="text"
+        class="quantifier-input-field"
+        [value]="quantifierInputValue"
+        [attr.size]="quantifierInputValue.length > 22 ? quantifierInputValue.length + 3 : 24"
+        (input)="onQuantifierInput($event)"
+        [placeholder]="ndQuantifierRequest.label"
+        (keyup.enter)="onQuantifierConfirm()"
+        (keydown)="onQuantifierKeyDown($event)"
+        autofocus
+      />
+      <button class="quantifier-confirm-btn" (click)="onQuantifierConfirm()" title="OK">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </button>
+    </div>
+
+    <div class="quantifier-inline-input" *ngIf="hasFreeFormulaInput(r) && ndFreeFormulaRequest">
+      <input
+        type="text"
+        class="quantifier-input-field"
+        [value]="freeFormulaInputValue"
+        [attr.size]="freeFormulaInputValue.length > 22 ? freeFormulaInputValue.length + 3 : 24"
+        (input)="onFreeFormulaInput($event)"
+        [placeholder]="ndFreeFormulaRequest.label"
+        (keyup.enter)="onFreeFormulaConfirm()"
+        (keydown)="onFreeFormulaKeyDown($event)"
+        autofocus
+      />
+      <button class="quantifier-confirm-btn" (click)="onFreeFormulaConfirm()" title="OK">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </button>
     </div>
 
     <div class="prediction-inputs" *ngIf="hasPendingPrediction(r) && ndPredictionRequest">
       <div class="prediction-inputs-wrapper-row">
         <div class="prediction-input-wrapper" *ngFor="let prediction of ndPredictionRequest.userPredictions; let i = index">
-          <input
-            type="text"
-            class="prediction-input-field"
-            [value]="localPredictionInputs[i] || ''"
-            (input)="onPredictionInput(i, $event)"
-            (keyup.enter)="onPredictionConfirm()"
-            (keydown)="onPredictionKeyDown($event)"
-            [placeholder]="predictionPlaceholder(i)"
-          />
+          <div class="quantifier-inline-input">
+            <input
+              type="text"
+              class="quantifier-input-field"
+              [value]="localPredictionInputs[i] || ''"
+              [attr.size]="(localPredictionInputs[i]?.length || 0) > 22 ? (localPredictionInputs[i]?.length || 0) + 3 : 24"
+              (input)="onPredictionInput(i, $event)"
+              (keyup.enter)="onPredictionConfirm()"
+              (keydown)="onPredictionKeyDown($event)"
+              [placeholder]="predictionPlaceholder(i)"
+            />
+            <button class="quantifier-confirm-btn" (click)="onPredictionConfirm()" title="OK" *ngIf="i === ndPredictionRequest.userPredictions.length - 1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -37,6 +83,7 @@
       [style.--nd-line-width.px]="lineWidthPx"
       [style.--nd-line-offset.px]="lineOffsetPx"
       [class.selected]="selectedNode === r"
+      [class.clickable-for-fill]="!!ndPredictionRequest"
       [class.leaf]="!r.premises.length"
       [attr.role]="mode === 'interactive' ? 'button' : null"
       [attr.tabindex]="mode === 'interactive' ? 0 : null"

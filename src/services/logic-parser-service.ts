@@ -50,6 +50,9 @@ export class LogicParserService {
       .replace(/∶/g, ':')           // ratio colon variant → :
       .replace(/[⊢├]/g, '|-')   // ⊢ / ├ → |-
       .replace(/[⇒→⟹⟶]/g, '=>') // implication variants → =>
+      .replace(/(?<!\|)->/g, '=>') // ASCII arrow -> → =>
+      .replace(/\/\\/g, '&&')     // /\ → &&
+      .replace(/\\\//g, '||')     // \/ → ||
       .replace(/[∧⋀]/g, '&&')    // conjunction variants → &&
       .replace(/[∨⋁]/g, '||')    // disjunction variants → ||
       .replace(/[¬∼~]/g, '!');   // negation variants → !

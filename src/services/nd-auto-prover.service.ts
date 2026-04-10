@@ -212,7 +212,7 @@ export class NdAutoProverService {
     const bottomProof = this.deriveByConjunction(context, openHypotheses)
       .find((entry) => Equality.formulasEqual(entry.formula, bottom))?.proof;
     if (bottomProof && fuel > 0) {
-      return this.createNode('⊥E', context, goal, [bottomProof], openHypotheses, []);
+      return this.createNode('⊥E1', context, goal, [bottomProof], openHypotheses, []);
     }
 
     return null;

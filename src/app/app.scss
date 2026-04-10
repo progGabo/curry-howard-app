@@ -709,6 +709,30 @@
   gap: 1rem;
 }
 
+.quantifier-inline-input {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.quantifier-input-field {
+  min-width: 300px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: #ffffff;
+  transition: border-color 0.2s;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: #4b5563;
+    box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.1);
+  }
+}
+
 .tabs-container {
   display: flex;
   flex-direction: column;
@@ -837,8 +861,8 @@
 }
 .help-modal__dialog {
   position: relative;
-  width: min(900px, 92vw);
-  max-height: 80vh;
+  width: min(1100px, 95vw);
+  max-height: 90vh;
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.25);
@@ -851,14 +875,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1rem 0.5rem 1rem;
-  border-bottom: 1px solid #eef2f7;
+  padding: 0.75rem 1.25rem 0;
+  border-bottom: 2px solid #e2e8f0;
+  flex-shrink: 0;
 }
 .help-modal__body {
-  padding: 1.5rem;
+  padding: 1.5rem 1.5rem 1.75rem;
   overflow: auto;
-  min-height: 200px;
-  max-height: calc(80vh - 150px);
+  height: calc(90vh - 110px);
 }
 
 .tutorial-content {

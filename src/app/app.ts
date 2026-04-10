@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, Inject, Injector } from '@angular/core';
+import { Component, ChangeDetectorRef, ElementRef, Inject, Injector, ViewChild } from '@angular/core';
 import { LogicParserService } from '../services/logic-parser-service';
 import { ProofTreeBuilderService } from '../services/proof-tree-builder';
 import { DerivationNode, SequentNode, FormulaNode } from '../models/formula-node';
@@ -20,10 +20,7 @@ import { NdRule, NdRuleApplicationOptions } from '../models/nd-rule';
 import { Equality } from '../utils/equality';
 import { parseTerm, freeVarsFormula } from '../utils/quantifier-utils';
 import { formulaToText } from '../utils/formula-text';
-import { QuantifierInputModalComponent } from '../components/quantifier-input-modal/quantifier-input-modal';
-import { DialogService } from 'primeng/dynamicdialog';
 import { SplitterResizeEndEvent } from 'primeng/splitter';
-import { firstValueFrom } from 'rxjs';
 import { AppParseFacadeService } from '../services/app-parse-facade.service';
 import { AppPopupFacadeService } from '../services/app-popup-facade.service';
 import {
@@ -54,7 +51,6 @@ type HeaderOption = 'ch-expression-to-lambda' | 'ch-lambda-to-expression' | 'pro
   standalone: false,
 })
 export class App {
-  private dialogService: DialogService | null = null;
   code: string = '';
   proofTree: DerivationNode | null = null;
   naturalDeductionTree: NdNode | null = null;
@@ -125,6 +121,33 @@ export class App {
     userPredictions: string[];
   } | null = null;
 
+  // Quantifier inline input state
+  sequentQuantifierRequest: {
+    node: DerivationNode;
+    rule: string;
+    isVariable: boolean;
+    freeVars: string[];
+    placeholder: string;
+    label: string;
+  } | null = null;
+  sequentQuantifierInputValue = '';
+  ndQuantifierRequest: {
+    node: NdNode;
+    rule: NdRule;
+    isVariable: boolean;
+    freeVars: string[];
+    placeholder: string;
+    label: string;
+  } | null = null;
+
+  // Free formula inline input state (for ∧E1, ∧E2, →E, ¬E)
+  ndFreeFormulaRequest: {
+    node: NdNode;
+    rule: NdRule;
+    placeholder: string;
+    label: string;
+  } | null = null;
+
   // Rule arrays (from constants)
   conclusionRules = [...CONCLUSION_RULES];
   assumptionRules = [...ASSUMPTION_RULES];
@@ -180,13 +203,6 @@ export class App {
     private cdr: ChangeDetectorRef,
     private injector: Injector
   ) {}
-
-  private getDialogService(): DialogService {
-    if (!this.dialogService) {
-      this.dialogService = this.injector.get(DialogService);
-    }
-    return this.dialogService;
-  }
 
   onSplitterResizeEnd(e?: SplitterResizeEndEvent): void {
     const rawSizes = e?.sizes ?? this.panelSizes;
@@ -288,8 +304,13 @@ export class App {
     return 'natural-deduction';
   }
 
+  @ViewChild('examplesSelect') examplesSelect?: ElementRef<HTMLSelectElement>;
+
   private resetWorkspaceState(): void {
     this.code = '';
+    if (this.examplesSelect) {
+      this.examplesSelect.nativeElement.selectedIndex = 0;
+    }
     this.proofTree = null;
     this.naturalDeductionTree = null;
     this.sequent = null;
@@ -303,6 +324,8 @@ export class App {
     this.selectedTypeNode = null;
     this.ruleError = null;
     this.ndPredictionRequest = null;
+    this.ndQuantifierRequest = null;
+    this.ndFreeFormulaRequest = null;
     this.activeExpressionLambdaTab = 'proof';
     this.treeHistory.clear();
   }
@@ -350,7 +373,9 @@ export class App {
 
   onHeaderModeChange(mode: 'auto' | 'interactive') {
     this.mode = mode;
-    this.parseAndBuild();
+    if (this.code && this.code.trim() !== '') {
+      this.parseAndBuild();
+    }
   }
 
   filterRules(rules: readonly string[], type: 'proof' | 'nd' | 'type'): string[] {
@@ -369,16 +394,54 @@ export class App {
 
     if (this.conversionMode === 'natural-deduction') {
       if (!('judgement' in popupNode)) return;
-      if (this.interactiveSubmode === 'predict') {
-        await this.beginNdPrediction(popupNode as NdNode, rule as NdRule);
+      const ndNode = popupNode as NdNode;
+      const ndRule = rule as NdRule;
+
+      // Clear any previous inline input requests
+      this.ndQuantifierRequest = null;
+      this.ndFreeFormulaRequest = null;
+      this.ndPredictionRequest = null;
+
+      // Quantifier rules need inline input
+      if (this.isNdQuantifierRule(ndRule)) {
+        this.beginNdQuantifierInput(ndNode, ndRule);
         return;
       }
-      this.applyNdRuleToNode({ node: popupNode as NdNode, rule: rule as NdRule });
+
+      // Elimination rules may need a free formula if context doesn't match
+      if (this.isNdFreeFormulaRule(ndRule)) {
+        if (!this.naturalDeductionBuilder.canApply(ndNode, ndRule)) {
+          this.beginNdFreeFormulaInput(ndNode, ndRule);
+          return;
+        }
+      }
+
+      if (this.interactiveSubmode === 'predict') {
+        await this.beginNdPrediction(ndNode, ndRule);
+        return;
+      }
+      this.applyNdRuleToNode({ node: ndNode, rule: ndRule });
       return;
     }
 
     if (!('sequent' in popupNode)) return;
     const node = popupNode as DerivationNode;
+
+    // Quantifier rules need inline input
+    const quantifierInfo = this.proofBuilder.getQuantifierInfo(node.sequent, rule, this.currentLanguage);
+    if (quantifierInfo) {
+      this.sequentQuantifierInputValue = '';
+      this.sequentQuantifierRequest = {
+        node,
+        rule,
+        isVariable: quantifierInfo.isVariable,
+        freeVars: quantifierInfo.freeVars,
+        placeholder: quantifierInfo.placeholder,
+        label: quantifierInfo.label
+      };
+      this.selectedNode = null;
+      return;
+    }
     
     if (this.interactiveSubmode === 'predict') {
       this.predictionRuleRequest = {
@@ -569,6 +632,261 @@ export class App {
     this.selectedNode = null;
   }
 
+  // --- Sequent quantifier inline input ---
+  cancelSequentQuantifierInput(): void {
+    this.sequentQuantifierRequest = null;
+    this.sequentQuantifierInputValue = '';
+  }
+
+  async confirmSequentQuantifierInput(value: string): Promise<void> {
+    if (!this.sequentQuantifierRequest) return;
+    const { node, rule, isVariable, freeVars } = this.sequentQuantifierRequest;
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      this.showError('errorFillAllFields');
+      return;
+    }
+
+    if (isVariable) {
+      if (!/^[a-z][a-zA-Z0-9_]*$/.test(trimmed)) {
+        this.showError('errorQuantifierVariableInvalid', { rule });
+        return;
+      }
+      if (freeVars.includes(trimmed)) {
+        this.showError('errorQuantifierVariableInvalid', { rule });
+        return;
+      }
+    }
+
+    this.sequentQuantifierRequest = null;
+
+    if (this.proofTree) {
+      this.treeHistory.pushProofState(this.proofTree);
+    }
+
+    try {
+      const applied = await this.proofBuilder.applyRuleManually(node.sequent, rule, true, this.currentLanguage, trimmed);
+      if (applied) {
+        node.rule = applied.rule;
+        node.children = applied.children;
+        node.usedFormula = applied.usedFormula;
+        node.metadata = applied.metadata;
+        this.lambdaExpr = '';
+        this.lambdaExprNode = null;
+      } else {
+        this.treeHistory.popProofState();
+        this.showError('errorRuleCannotBeApplied', { rule });
+      }
+    } catch (error: any) {
+      this.treeHistory.popProofState();
+      const errorMsg = error?.message || 'Rule application failed';
+      this.notification.showError(errorMsg, {
+        summary: this.i18n.errorSummary(this.currentLanguage),
+        life: 5000
+      });
+    }
+    this.selectedNode = null;
+  }
+
+  // --- ND quantifier inline input ---
+  private isNdQuantifierRule(rule: NdRule): boolean {
+    return rule === '∀I' || rule === '∀E' || rule === '∃I' || rule === '∃E';
+  }
+
+  private isNdFreeFormulaRule(rule: NdRule): boolean {
+    return rule === '∧E1' || rule === '∧E2' || rule === '→E' || rule === '¬E';
+  }
+
+  private beginNdQuantifierInput(node: NdNode, rule: NdRule): void {
+    const collectFreeVars = (formulas: FormulaNode[]): string[] => {
+      const vars = new Set<string>();
+      for (const formula of formulas) {
+        for (const variable of freeVarsFormula(formula)) {
+          vars.add(variable);
+        }
+      }
+      return [...vars].sort((left, right) => left.localeCompare(right));
+    };
+
+    let isVariable = true;
+    let freeVars: string[] = [];
+    let ruleType: string;
+
+    switch (rule) {
+      case '∀I':
+        isVariable = true;
+        freeVars = collectFreeVars(node.judgement.context);
+        ruleType = 'forall-intro';
+        break;
+      case '∃E':
+        isVariable = true;
+        freeVars = collectFreeVars([...node.judgement.context, node.judgement.goal]);
+        ruleType = 'exists-elim';
+        break;
+      case '∀E':
+        isVariable = false;
+        ruleType = 'forall-elim';
+        break;
+      case '∃I':
+        isVariable = false;
+        ruleType = 'exists-intro';
+        break;
+      default:
+        return;
+    }
+
+    const labels = this.i18n.quantifierRuleLabels(this.currentLanguage, ruleType);
+    this.ndQuantifierRequest = {
+      node,
+      rule,
+      isVariable,
+      freeVars,
+      placeholder: labels.placeholder,
+      label: labels.title
+    };
+    this.selectedNdNode = null;
+  }
+
+  cancelNdQuantifierInput(): void {
+    this.ndQuantifierRequest = null;
+  }
+
+  private beginNdFreeFormulaInput(node: NdNode, rule: NdRule): void {
+    const ruleTypeMap: Record<string, string> = {
+      '∧E1': 'and-elim1',
+      '∧E2': 'and-elim2',
+      '→E': 'impl-elim',
+      '¬E': 'neg-elim',
+    };
+    const ruleType = ruleTypeMap[rule];
+    if (!ruleType) return;
+
+    const labels = this.i18n.quantifierRuleLabels(this.currentLanguage, ruleType);
+    this.ndFreeFormulaRequest = {
+      node,
+      rule,
+      placeholder: labels.placeholder,
+      label: labels.title
+    };
+    this.selectedNdNode = null;
+  }
+
+  cancelNdFreeFormulaInput(): void {
+    this.ndFreeFormulaRequest = null;
+  }
+
+  async confirmNdFreeFormulaInput(value: string): Promise<void> {
+    if (!this.ndFreeFormulaRequest) return;
+    const { node, rule } = this.ndFreeFormulaRequest;
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      this.showError('errorFillAllFields');
+      return;
+    }
+
+    let parsedFormula: FormulaNode;
+    try {
+      const sequent = this.logicParser.parseFormula(trimmed);
+      if (sequent.conclusions.length !== 1 || sequent.assumptions.length > 0) {
+        this.showError('errorFormulaInvalid');
+        return;
+      }
+      parsedFormula = sequent.conclusions[0];
+    } catch {
+      this.showError('errorFormulaInvalid');
+      return;
+    }
+
+    const goal = node.judgement.goal;
+    let freeFormula: FormulaNode;
+
+    switch (rule) {
+      case '∧E1':
+        if (parsedFormula.kind !== 'And' || !Equality.formulasEqual(parsedFormula.left, goal)) {
+          this.showError('errorFormulaStructureMismatch', { rule });
+          return;
+        }
+        freeFormula = parsedFormula.right;
+        break;
+      case '∧E2':
+        if (parsedFormula.kind !== 'And' || !Equality.formulasEqual(parsedFormula.right, goal)) {
+          this.showError('errorFormulaStructureMismatch', { rule });
+          return;
+        }
+        freeFormula = parsedFormula.left;
+        break;
+      case '→E':
+        if (parsedFormula.kind !== 'Implies' || !Equality.formulasEqual(parsedFormula.right, goal)) {
+          this.showError('errorFormulaStructureMismatch', { rule });
+          return;
+        }
+        freeFormula = parsedFormula.left;
+        break;
+      case '¬E':
+        // For ¬E the user types φ, premises become φ and ¬φ
+        freeFormula = parsedFormula;
+        break;
+      default:
+        this.showError('errorFormulaInvalid');
+        return;
+    }
+
+    const ruleOptions: NdRuleApplicationOptions = { freeFormula };
+
+    if (!this.naturalDeductionBuilder.canApply(node, rule, ruleOptions)) {
+      this.showError('errorRuleCannotBeApplied', { rule });
+      return;
+    }
+
+    this.ndFreeFormulaRequest = null;
+    await this.applyNdRuleWithResolvedOptions(node, rule, ruleOptions);
+  }
+
+  async confirmNdQuantifierInput(value: string): Promise<void> {
+    if (!this.ndQuantifierRequest) return;
+    const { node, rule, isVariable, freeVars } = this.ndQuantifierRequest;
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      this.showError('errorFillAllFields');
+      return;
+    }
+
+    let ruleOptions: NdRuleApplicationOptions | undefined;
+
+    if (isVariable) {
+      if (!/^[a-z][a-zA-Z0-9_]*$/.test(trimmed)) {
+        this.showError('errorQuantifierVariableInvalid', { rule });
+        return;
+      }
+      if (freeVars.includes(trimmed)) {
+        this.showError('errorQuantifierVariableInvalid', { rule });
+        return;
+      }
+      ruleOptions = { eigenVariable: trimmed };
+      if (!this.naturalDeductionBuilder.canApply(node, rule, ruleOptions)) {
+        this.showError('errorQuantifierVariableInvalid', { rule });
+        return;
+      }
+    } else {
+      const parsedTerm = parseTerm(trimmed);
+      if (!parsedTerm) {
+        this.showError('errorInvalidQuantifierTerm');
+        return;
+      }
+      ruleOptions = { instantiationTerm: parsedTerm };
+      if (!this.naturalDeductionBuilder.canApply(node, rule, ruleOptions)) {
+        this.showError('errorQuantifierTermMismatch', { rule });
+        return;
+      }
+    }
+
+    this.ndQuantifierRequest = null;
+    await this.applyNdRuleWithResolvedOptions(node, rule, ruleOptions);
+  }
+
   async applyNdRuleToNode(event: { node: NdNode; rule: NdRule }) {
     const { node, rule } = event;
 
@@ -596,6 +914,9 @@ export class App {
 
       if (applied) {
         Object.assign(node, applied);
+        if (this.naturalDeductionTree) {
+          this.naturalDeductionBuilder.reannotateTree(this.naturalDeductionTree);
+        }
         this.ruleError = null;
         if (this.shouldGenerateLambdaFromProof) {
           this.buildNdLambda();
@@ -620,8 +941,8 @@ export class App {
     this.ndPredictionRequest = null;
   }
 
-  private async beginNdPrediction(node: NdNode, rule: NdRule): Promise<void> {
-    const ruleOptions = await this.resolveNdRuleOptions(node, rule);
+  private async beginNdPrediction(node: NdNode, rule: NdRule, providedOptions?: NdRuleApplicationOptions): Promise<void> {
+    const ruleOptions = providedOptions ?? await this.resolveNdRuleOptions(node, rule);
     if (ruleOptions === null) {
       this.selectedNdNode = null;
       return;
@@ -688,10 +1009,9 @@ export class App {
       }
 
       if (!Equality.formulasEqual(parsedFormula, expectedGoals[index])) {
-        const expectedText = formulaToText(expectedGoals[index]);
         const message = this.currentLanguage === 'sk'
-          ? `Nesprávna predikcia na pozícii ${index + 1}. Očakávané: ${expectedText}`
-          : `Incorrect prediction at position ${index + 1}. Expected: ${expectedText}`;
+          ? `Nesprávna predikcia na pozícii ${index + 1}.`
+          : `Incorrect prediction at position ${index + 1}.`;
         this.notification.showError(message, {
           summary: this.i18n.errorSummary(this.currentLanguage),
           life: 6000
@@ -720,74 +1040,8 @@ export class App {
   }
 
   private async resolveNdRuleOptions(node: NdNode, rule: NdRule): Promise<NdRuleApplicationOptions | null | undefined> {
-    if (rule !== '∀I' && rule !== '∀E' && rule !== '∃I' && rule !== '∃E') {
-      return undefined;
-    }
-
-    const collectFreeVars = (formulas: FormulaNode[]): string[] => {
-      const vars = new Set<string>();
-      for (const formula of formulas) {
-        for (const variable of freeVarsFormula(formula)) {
-          vars.add(variable);
-        }
-      }
-      return [...vars].sort((left, right) => left.localeCompare(right));
-    };
-
-    if (rule === '∀I' || rule === '∃E') {
-      const freeVars = rule === '∀I'
-        ? collectFreeVars(node.judgement.context)
-        : collectFreeVars([...node.judgement.context, node.judgement.goal]);
-
-      const ruleType = rule === '∀I' ? 'forall-intro' : 'exists-elim';
-      const result = await this.requestNdQuantifierInput(ruleType, freeVars);
-      if (!result) return null;
-
-      const value = String(result).trim();
-      const variableOptions: NdRuleApplicationOptions = { eigenVariable: value };
-      if (!this.naturalDeductionBuilder.canApply(node, rule, variableOptions)) {
-        this.showError('errorQuantifierVariableInvalid', { rule });
-        return null;
-      }
-      return variableOptions;
-    }
-
-    const ruleType = rule === '∀E' ? 'forall-elim' : 'exists-intro';
-    const result = await this.requestNdQuantifierInput(ruleType);
-    if (!result) return null;
-
-    const parsedTerm = parseTerm(String(result).trim());
-    if (!parsedTerm) {
-      this.showError('errorInvalidQuantifierTerm');
-      return null;
-    }
-
-    const termOptions: NdRuleApplicationOptions = { instantiationTerm: parsedTerm };
-    if (!this.naturalDeductionBuilder.canApply(node, rule, termOptions)) {
-      this.showError('errorQuantifierTermMismatch', { rule });
-      return null;
-    }
-
-    return termOptions;
-  }
-
-  private async requestNdQuantifierInput(
-    ruleType: 'forall-intro' | 'exists-elim' | 'forall-elim' | 'exists-intro',
-    freeVars?: string[]
-  ): Promise<string | null> {
-    const dialogRef = this.getDialogService().open(QuantifierInputModalComponent, {
-      data: {
-        ruleType,
-        freeVars,
-        language: this.currentLanguage
-      },
-      width: '440px',
-      modal: true
-    });
-    if (!dialogRef) return null;
-
-    const result = await firstValueFrom(dialogRef.onClose);
-    return result ? String(result).trim() : null;
+    // Quantifier rules are now handled via inline input before reaching this method
+    return undefined;
   }
 
   async parseAndBuild() {
@@ -841,6 +1095,16 @@ export class App {
     this.typeInferenceTree = null;
     this.lambdaExpr = '';
     this.lambdaExprNode = null;
+
+    if (parsed.notProvable) {
+      const message = this.currentLanguage === 'sk'
+        ? 'Vzorec nie je dokázateľný v sekventovom kalkule.'
+        : 'Formula is not provable in sequent calculus.';
+      this.notification.showError(message, {
+        summary: this.i18n.errorSummary(this.currentLanguage),
+        life: 7000
+      });
+    }
   }
 
   private async parseNaturalDeduction(generateLambdaFromProof: boolean = false) {

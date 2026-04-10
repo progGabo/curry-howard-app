@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { NdNode } from '../models/nd-node';
 import { ExprNode } from '../models/lambda-node';
-import { ExprFactories } from '../utils/ast-factories';
+import { ExprFactories, FormulaFactories } from '../utils/ast-factories';
 import { FormulaTypeService } from './formula-type-service';
 import { Equality } from '../utils/equality';
 import { NdHypothesis } from '../models/nd-hypothesis';
@@ -156,11 +156,30 @@ export class NdLambdaBuilderService {
         return ExprFactories.app(right, left);
       }
 
-      case '⊥E': {
+      case '⊥E1': {
         if (node.premises.length < 1) return null;
         const bottomProof = this.extract(node.premises[0], env);
         if (!bottomProof) return null;
         return ExprFactories.abort(bottomProof, this.formulaType.formulaToType(node.judgement.goal));
+      }
+
+      case '⊥E2': {
+        const goal = node.judgement.goal;
+        if (node.premises.length < 1) return null;
+
+        const dischargedId = node.discharges?.[0]?.hypothesisId;
+        if (!dischargedId) return null;
+
+        const param = this.freshName('k');
+        const childEnv = new Map(env);
+        childEnv.set(dischargedId, param);
+
+        const body = this.extract(node.premises[0], childEnv);
+        if (!body) return null;
+
+        const negType = this.formulaType.formulaToType(FormulaFactories.not(goal));
+        const inner = ExprFactories.abs(param, negType, body);
+        return ExprFactories.abort(inner, this.formulaType.formulaToType(goal));
       }
 
       case '⊤I':

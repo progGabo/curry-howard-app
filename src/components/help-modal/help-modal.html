@@ -8,7 +8,7 @@
           type="button"
           class="help-tab"
           [class.help-tab--active]="activeTab === tab.key"
-          (click)="selectTab(tab.key)"
+          (click)="selectTab(tab.key); $event.stopPropagation()"
         >
           {{ tab.label }}
         </button>
@@ -115,6 +115,41 @@
         </section>
 
         <section class="help-section">
+          <h4>{{ currentLanguage === 'sk' ? 'Vstupné polia v interaktívnom režime' : 'Input fields in interactive mode' }}</h4>
+          <p>{{ currentLanguage === 'sk'
+            ? 'V režime predikcie sa po výbere pravidla zobrazí vstupné pole nad uzlom stromu, do ktorého zadáte očakávaný výsledok. V ostatných interaktívnych režimoch sa vstupné pole zobrazí pri pravidlách vyžadujúcich ďalší parameter (kvantifikátory, voľné formuly).'
+            : 'In prediction mode, after selecting a rule an input field appears above the tree node where you enter the expected result. In other interactive modes, an input field appears for rules requiring an additional parameter (quantifiers, free formulas).' }}</p>
+          <p>{{ currentLanguage === 'sk'
+            ? 'Vo vstupných poliach fungujú rovnaké textové skratky ako v editore (napr. \\impl → ⇒, \\and → ∧). Okrem nich je možné použiť aj:'
+            : 'The same text shortcuts work in input fields as in the editor (e.g. \\impl → ⇒, \\and → ∧). Additionally you can use:' }}</p>
+          <ul class="help-shortcuts">
+            <li><code>-></code> → <code>⇒</code></li>
+            <li><code>/\</code> → <code>∧</code></li>
+            <li><code>\/</code> → <code>∨</code></li>
+          </ul>
+          <p>{{ currentLanguage === 'sk' ? 'Vstup potvrdíte klávesom Enter alebo tlačidlom ✓.' : 'Confirm the input with Enter or the ✓ button.' }}</p>
+
+          <p><strong>{{ currentLanguage === 'sk' ? 'Kvantifikátorové pravidlá:' : 'Quantifier rules:' }}</strong>
+            {{ currentLanguage === 'sk'
+              ? '∀I a ∃E vyžadujú zadanie voľnej premennej; ∀E a ∃I vyžadujú substitučný term.'
+              : '∀I and ∃E require a free variable; ∀E and ∃I require a substitution term.' }}</p>
+
+          <p><strong>{{ currentLanguage === 'sk' ? 'Eliminačné pravidlá (∧E1, ∧E2, →E, ¬E):' : 'Elimination rules (∧E1, ∧E2, →E, ¬E):' }}</strong>
+            {{ currentLanguage === 'sk'
+              ? 'ak sa v kontexte nenachádza zodpovedajúca formula, zobrazí sa vstupné pole na zadanie celej formuly:'
+              : 'if no matching formula is found in the context, an input field appears for the full formula:' }}</p>
+          <ul class="help-flow">
+            <li><strong>∧E1:</strong> {{ currentLanguage === 'sk' ? 'zadajte celú konjunkciu, napr.' : 'enter the full conjunction, e.g.' }} <code>(cieľ) ∧ (X)</code> — {{ currentLanguage === 'sk' ? 'ľavá strana musí byť váš cieľ.' : 'the left side must be your goal.' }}</li>
+            <li><strong>∧E2:</strong> {{ currentLanguage === 'sk' ? 'zadajte celú konjunkciu, napr.' : 'enter the full conjunction, e.g.' }} <code>(X) ∧ (cieľ)</code> — {{ currentLanguage === 'sk' ? 'pravá strana musí byť váš cieľ.' : 'the right side must be your goal.' }}</li>
+            <li><strong>→E:</strong> {{ currentLanguage === 'sk' ? 'zadajte celú implikáciu, napr.' : 'enter the full implication, e.g.' }} <code>(X) ⇒ (cieľ)</code> — {{ currentLanguage === 'sk' ? 'pravá strana musí byť váš cieľ.' : 'the right side must be your goal.' }}</li>
+            <li><strong>¬E:</strong> {{ currentLanguage === 'sk' ? 'zadajte iba formulu φ; pravidlo vytvorí premisy φ a ¬φ.' : 'enter just the formula φ; the rule creates premises φ and ¬φ.' }}</li>
+          </ul>
+          <p class="help-hint">{{ currentLanguage === 'sk'
+            ? '⚠ Obe časti formuly musia byť v zátvorkách, ak sú zložené — napr. (A ⇒ B) ∧ (C), nie A ⇒ B ∧ C.'
+            : '⚠ Both parts of the formula must be in parentheses if they are compound — e.g. (A ⇒ B) ∧ (C), not A ⇒ B ∧ C.' }}</p>
+        </section>
+
+        <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Postup práce' : 'Workflow' }}</h4>
           <ol class="help-flow">
             <li>{{ currentLanguage === 'sk' ? 'Vyberte sekciu a konkrétny režim v hlavičke.' : 'Select a section and a specific mode in the header.' }}</li>
@@ -176,7 +211,8 @@
               <tr><td>¬I ({{ currentLanguage === 'sk' ? 'zavedenie negácie' : 'negation introduction' }})</td><td>Abs (A → ⊥)</td><td>λx:A. t</td></tr>
               <tr><td>¬E ({{ currentLanguage === 'sk' ? 'eliminácia negácie' : 'negation elimination' }})</td><td>App ({{ currentLanguage === 'sk' ? 'aplikácia na ⊥' : 'application to ⊥' }})</td><td>f x</td></tr>
               <tr><td>⊤I ({{ currentLanguage === 'sk' ? 'zavedenie pravdy' : 'truth introduction' }})</td><td>Unit</td><td>⟨⟩</td></tr>
-              <tr><td>⊥E ({{ currentLanguage === 'sk' ? 'eliminácia nepravdy' : 'falsity elimination' }})</td><td>absurd</td><td>absurd e</td></tr>
+              <tr><td>⊥E1 ({{ currentLanguage === 'sk' ? 'eliminácia nepravdy 1' : 'falsity elimination 1' }})</td><td>absurd</td><td>absurd e</td></tr>
+              <tr><td>⊥E2 ({{ currentLanguage === 'sk' ? 'eliminácia nepravdy 2' : 'falsity elimination 2' }})</td><td>absurd ({{ currentLanguage === 'sk' ? 'dôkaz sporom' : 'proof by contradiction' }})</td><td>absurd (λk:¬A. t)</td></tr>
               <tr><td>∀I ({{ currentLanguage === 'sk' ? 'zavedenie univerzálu' : 'universal introduction' }})</td><td>DependentAbs</td><td>λx:T. t</td></tr>
               <tr><td>∀E ({{ currentLanguage === 'sk' ? 'eliminácia univerzálu' : 'universal elimination' }})</td><td>App</td><td>f t</td></tr>
               <tr><td>∃I ({{ currentLanguage === 'sk' ? 'zavedenie existenciálu' : 'existential introduction' }})</td><td>DependentPair</td><td>⟨t, e⟩</td></tr>

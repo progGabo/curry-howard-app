@@ -33,9 +33,18 @@ export class NdRuleEngineService {
         if (goal.kind !== 'True') return null;
         return this.createNode('⊤I', judgement, [], node.openHypotheses, []);
 
-      case '⊥E': {
+      case '⊥E1': {
         const premise = this.createNode('∅', { context, goal: FormulaFactories.false() }, [], node.openHypotheses, []);
-        return this.createNode('⊥E', judgement, [premise], node.openHypotheses, []);
+        return this.createNode('⊥E1', judgement, [premise], node.openHypotheses, []);
+      }
+
+      case '⊥E2': {
+        const negGoal = FormulaFactories.not(goal);
+        const hyp = this.createHypothesis(negGoal, node.id);
+        const discharge: NdDischarge[] = [{ hypothesisId: hyp.id, label: hyp.label }];
+        return this.createNode('⊥E2', judgement, [
+          this.createNode('∅', { context: [...context, negGoal], goal: FormulaFactories.false() }, [], [...node.openHypotheses, hyp], [])
+        ], node.openHypotheses, discharge);
       }
 
       case '∧I':
@@ -47,18 +56,34 @@ export class NdRuleEngineService {
 
       case '∧E1': {
         const candidate = context.find((formula) => formula.kind === 'And' && Equality.formulasEqual(formula.left, goal));
-        if (!candidate || candidate.kind !== 'And') return null;
-        return this.createNode('∧E1', judgement, [
-          this.createNode('∅', { context, goal: candidate }, [], node.openHypotheses, [])
-        ], node.openHypotheses, []);
+        if (candidate && candidate.kind === 'And') {
+          return this.createNode('∧E1', judgement, [
+            this.createNode('∅', { context, goal: candidate }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        if (options.freeFormula) {
+          const constructed = FormulaFactories.and(goal, options.freeFormula);
+          return this.createNode('∧E1', judgement, [
+            this.createNode('∅', { context, goal: constructed }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        return null;
       }
 
       case '∧E2': {
         const candidate = context.find((formula) => formula.kind === 'And' && Equality.formulasEqual(formula.right, goal));
-        if (!candidate || candidate.kind !== 'And') return null;
-        return this.createNode('∧E2', judgement, [
-          this.createNode('∅', { context, goal: candidate }, [], node.openHypotheses, [])
-        ], node.openHypotheses, []);
+        if (candidate && candidate.kind === 'And') {
+          return this.createNode('∧E2', judgement, [
+            this.createNode('∅', { context, goal: candidate }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        if (options.freeFormula) {
+          const constructed = FormulaFactories.and(options.freeFormula, goal);
+          return this.createNode('∧E2', judgement, [
+            this.createNode('∅', { context, goal: constructed }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        return null;
       }
 
       case '∨I1':
@@ -103,11 +128,20 @@ export class NdRuleEngineService {
 
       case '→E': {
         const eliminationTarget = this.findImplicationEliminationTarget(context, goal, options.instantiationTerm);
-        if (!eliminationTarget) return null;
-        return this.createNode('→E', judgement, [
-          this.createNode('∅', { context, goal: eliminationTarget.premiseGoal }, [], node.openHypotheses, []),
-          this.createNode('∅', { context, goal: eliminationTarget.antecedent }, [], node.openHypotheses, [])
-        ], node.openHypotheses, []);
+        if (eliminationTarget) {
+          return this.createNode('→E', judgement, [
+            this.createNode('∅', { context, goal: eliminationTarget.premiseGoal }, [], node.openHypotheses, []),
+            this.createNode('∅', { context, goal: eliminationTarget.antecedent }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        if (options.freeFormula) {
+          const implGoal = FormulaFactories.implies(options.freeFormula, goal);
+          return this.createNode('→E', judgement, [
+            this.createNode('∅', { context, goal: implGoal }, [], node.openHypotheses, []),
+            this.createNode('∅', { context, goal: options.freeFormula }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        return null;
       }
 
       case '¬I':
@@ -121,13 +155,21 @@ export class NdRuleEngineService {
         }
 
       case '¬E': {
-        const notCandidate = context.find((formula) => formula.kind === 'Not');
-        if (!notCandidate || notCandidate.kind !== 'Not') return null;
         if (goal.kind !== 'False') return null;
-        return this.createNode('¬E', judgement, [
-          this.createNode('∅', { context, goal: notCandidate.inner }, [], node.openHypotheses, []),
-          this.createNode('∅', { context, goal: notCandidate }, [], node.openHypotheses, [])
-        ], node.openHypotheses, []);
+        const notCandidate = context.find((formula) => formula.kind === 'Not');
+        if (notCandidate && notCandidate.kind === 'Not') {
+          return this.createNode('¬E', judgement, [
+            this.createNode('∅', { context, goal: notCandidate.inner }, [], node.openHypotheses, []),
+            this.createNode('∅', { context, goal: notCandidate }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        if (options.freeFormula) {
+          return this.createNode('¬E', judgement, [
+            this.createNode('∅', { context, goal: options.freeFormula }, [], node.openHypotheses, []),
+            this.createNode('∅', { context, goal: FormulaFactories.not(options.freeFormula) }, [], node.openHypotheses, [])
+          ], node.openHypotheses, []);
+        }
+        return null;
       }
 
       case '∀I':

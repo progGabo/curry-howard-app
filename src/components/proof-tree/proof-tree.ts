@@ -8,6 +8,7 @@ import { getElementCenter } from '../../utils/dom-position';
 import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
 import { scheduleLineMeasure as sharedScheduleLineMeasure } from '../../utils/line-measurement';
 import { formulaToText, termToText, sequentToText } from '../../utils/formula-text';
+import { DerivationNode as DerivationNodeType } from '../../models/formula-node';
 import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 
 @Component({
@@ -19,6 +20,7 @@ import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 export class ProofTree implements AfterViewChecked {
   @Input() mode: 'auto' | 'interactive' = 'auto';
   @Input() interactiveSubmode: 'applicable' | 'all' | 'predict' = 'all';
+  @Input() predictionActive = false;
   @Input() currentLanguage: 'sk' | 'en' = 'sk';
   @Output() nodeClicked = new EventEmitter<DerivationNode>();
   @Output() plusButtonClicked = new EventEmitter<{ node: DerivationNode, x: number, y: number }>();
@@ -27,6 +29,16 @@ export class ProofTree implements AfterViewChecked {
   @Output() ruleSelected = new EventEmitter<{ node: DerivationNode, rule: string }>();
   @Input() selectedNode: DerivationNode | null = null;
   @Input() predictionRuleRequest: { node: DerivationNode, rule: string, requestId: number } | null = null;
+  @Input() quantifierInputRequest: {
+    node: DerivationNode;
+    rule: string;
+    isVariable: boolean;
+    freeVars: string[];
+    placeholder: string;
+    label: string;
+  } | null = null;
+  @Output() quantifierInputConfirm = new EventEmitter<string>();
+  @Output() quantifierInputCancel = new EventEmitter<void>();
   @ViewChild('conclusionEl') conclusionEl?: ElementRef<HTMLElement>;
   @ViewChild('childrenEl') childrenEl?: ElementRef<HTMLElement>;
 
@@ -37,6 +49,7 @@ export class ProofTree implements AfterViewChecked {
   lineWidthPx: number | null = null;
   lineOffsetPx = 0;
   measureScheduled = false;
+  quantifierInputValue = '';
 
   rendererSequentLatex = (sequent: SequentNode): string => this.sequentToLatex(sequent);
   rendererRuleLabel = (node: TreeRenderNode): string => this.displayRuleLabel((node as DerivationNode).rule);
@@ -53,7 +66,18 @@ export class ProofTree implements AfterViewChecked {
   };
 
   onRendererNodeClicked(node: TreeRenderNode): void {
-    this.nodeClicked.emit(node as DerivationNode);
+    this.handleNodeClicked(node as DerivationNode);
+  }
+
+  handleNodeClicked(node: DerivationNode): void {
+    if (this.hasPendingPrediction && node.sequent) {
+      const text = sequentToText(node.sequent);
+      for (let i = 0; i < this.userPredictions.length; i++) {
+        this.userPredictions[i] = text;
+      }
+      return;
+    }
+    this.nodeClicked.emit(node);
   }
 
   onRendererPlusButtonClicked(event: { node: TreeRenderNode; x: number; y: number }): void {
@@ -171,6 +195,28 @@ export class ProofTree implements AfterViewChecked {
     this.predictError = null;
   }
 
+  get hasQuantifierInput(): boolean {
+    return !!this.quantifierInputRequest && this.quantifierInputRequest.node === this.root;
+  }
+
+  onQuantifierInput(event: Event): void {
+    this.quantifierInputValue = applyPredictionShortcut(event);
+  }
+
+  onQuantifierKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.quantifierInputCancel.emit();
+    }
+  }
+
+  onQuantifierConfirm(): void {
+    this.quantifierInputConfirm.emit(this.quantifierInputValue);
+  }
+
+  onQuantifierCancel(): void {
+    this.quantifierInputCancel.emit();
+  }
+
   confirmPrediction() {
     if (!this.pendingRule || !this.root || !this.pendingRuleNode) return;
     
@@ -205,8 +251,7 @@ export class ProofTree implements AfterViewChecked {
     // Compare each sequent
     for (let i = 0; i < expectedSequents.length; i++) {
       if (!this.compareSequents([expectedSequents[i]], [userSequents[i]])) {
-        const expectedStr = sequentToText(expectedSequents[i]);
-        this.showError('errorIncorrectAtPosition', { position: i + 1, expected: expectedStr });
+        this.showError('errorIncorrectAtPosition', { position: i + 1 });
         return;
       }
     }
@@ -223,6 +268,9 @@ export class ProofTree implements AfterViewChecked {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['predictionRuleRequest'] && this.predictionRuleRequest && this.root === this.predictionRuleRequest.node) {
       this.onRuleClick(this.predictionRuleRequest.rule);
+    }
+    if (changes['quantifierInputRequest']) {
+      this.quantifierInputValue = '';
     }
   }
 

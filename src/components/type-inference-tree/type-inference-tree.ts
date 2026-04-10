@@ -21,6 +21,7 @@ export class TypeInferenceTree implements AfterViewChecked {
   @Input() selectedNode: TypeInferenceNode | null = null;
   @Input() mode: 'auto' | 'interactive' = 'auto';
   @Input() interactiveSubmode: 'applicable' | 'all' | 'predict' = 'all';
+  @Input() predictionActive = false;
   @Input() predictionRuleRequest: { node: TypeInferenceNode, rule: string, requestId: number } | null = null;
   @Input() currentLanguage: 'sk' | 'en' = 'sk';
   @Output() nodeClicked = new EventEmitter<TypeInferenceNode>();
@@ -44,7 +45,18 @@ export class TypeInferenceTree implements AfterViewChecked {
   };
 
   onRendererNodeClicked(node: TreeRenderNode): void {
-    this.nodeClicked.emit(node as TypeInferenceNode);
+    this.handleNodeClicked(node as TypeInferenceNode);
+  }
+
+  handleNodeClicked(node: TypeInferenceNode): void {
+    if (this.hasPendingPrediction && node.expression) {
+      const text = this.formatExpression(node.expression);
+      for (let i = 0; i < this.userPredictions.length; i++) {
+        this.userPredictions[i] = text;
+      }
+      return;
+    }
+    this.nodeClicked.emit(node);
   }
 
   onRendererPlusButtonClicked(event: { node: TreeRenderNode; x: number; y: number }): void {
