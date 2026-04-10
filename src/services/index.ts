@@ -12,3 +12,7 @@ export { RuleFilterService } from './rule-filter.service';
 export { RuleFormulaService, type RuleFormula } from './rule-formula.service';
 export { TreeHistoryService } from './tree-history.service';
 export { TypeInferenceService, type TypeInferenceNode } from './type-inference-service';
+export { AppParseFacadeService } from './app-parse-facade.service';
+export { AppPopupFacadeService } from './app-popup-facade.service';
+export { NaturalDeductionBuilderService } from './natural-deduction-builder.service';
+export { FormulaRenderService } from './formula-render.service';

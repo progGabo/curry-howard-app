@@ -19,7 +19,6 @@ import { NdNode } from '../models/nd-node';
 import { NdRule, NdRuleApplicationOptions } from '../models/nd-rule';
 import { Equality } from '../utils/equality';
 import { parseTerm, freeVarsFormula } from '../utils/quantifier-utils';
-import { formulaToText } from '../utils/formula-text';
 import { SplitterResizeEndEvent } from 'primeng/splitter';
 import { AppParseFacadeService } from '../services/app-parse-facade.service';
 import { AppPopupFacadeService } from '../services/app-popup-facade.service';
@@ -92,8 +91,7 @@ export class App {
     { label: '(p ⇒ q) ⇒ (¬q ⇒ ¬p)', code: '(p ⇒ q) ⇒ (¬q ⇒ ¬p)' },
     { label: 'p ∧ q ⇒ p', code: '(p ∧ q) ⇒ p' },
     { label: 'p ⇒ p ∨ q', code: 'p ⇒ (p ∨ q)' },
-    { label: '∀x. P(x) ⇒ P(x)', code: '∀x. P(x) ⇒ P(x)' },
-    { label: '∃x. P(x), ∀x. (P(x) → Q(x)) ⊢ ∃x. Q(x)', code: '∃x. P(x), ∀x. (P(x) → Q(x)) ⊢ ∃x. Q(x)' }
+    { label: '∀x. P(x) ⇒ P(x)', code: '∀x. P(x) ⇒ P(x)' }
   ];
   lambdaExamples = [
     { label: 'λx:Bool. λy:Bool. x', code: 'λx:Bool. λy:Bool. x' },
@@ -889,14 +887,7 @@ export class App {
 
   async applyNdRuleToNode(event: { node: NdNode; rule: NdRule }) {
     const { node, rule } = event;
-
-    const ruleOptions = await this.resolveNdRuleOptions(node, rule);
-    if (ruleOptions === null) {
-      this.selectedNdNode = null;
-      return;
-    }
-
-    await this.applyNdRuleWithResolvedOptions(node, rule, ruleOptions);
+    await this.applyNdRuleWithResolvedOptions(node, rule);
   }
 
   private async applyNdRuleWithResolvedOptions(
@@ -942,11 +933,7 @@ export class App {
   }
 
   private async beginNdPrediction(node: NdNode, rule: NdRule, providedOptions?: NdRuleApplicationOptions): Promise<void> {
-    const ruleOptions = providedOptions ?? await this.resolveNdRuleOptions(node, rule);
-    if (ruleOptions === null) {
-      this.selectedNdNode = null;
-      return;
-    }
+    const ruleOptions = providedOptions;
 
     const previewNode = this.cloneNdNode(node);
     const previewApplied = await this.naturalDeductionBuilder.applyRuleManually(previewNode, rule, ruleOptions ?? undefined);
@@ -1037,11 +1024,6 @@ export class App {
       return structuredClone(node);
     }
     return JSON.parse(JSON.stringify(node)) as NdNode;
-  }
-
-  private async resolveNdRuleOptions(node: NdNode, rule: NdRule): Promise<NdRuleApplicationOptions | null | undefined> {
-    // Quantifier rules are now handled via inline input before reaching this method
-    return undefined;
   }
 
   async parseAndBuild() {

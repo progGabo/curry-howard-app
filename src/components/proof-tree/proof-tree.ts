@@ -8,7 +8,6 @@ import { getElementCenter } from '../../utils/dom-position';
 import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
 import { scheduleLineMeasure as sharedScheduleLineMeasure } from '../../utils/line-measurement';
 import { formulaToText, termToText, sequentToText } from '../../utils/formula-text';
-import { DerivationNode as DerivationNodeType } from '../../models/formula-node';
 import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 
 @Component({
