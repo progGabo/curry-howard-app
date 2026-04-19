@@ -7,7 +7,7 @@ import type { AppTranslations } from '../../services/i18n.service';
 import { getElementCenter } from '../../utils/dom-position';
 import { applyPredictionShortcut, isEscapeCancel } from '../../utils/prediction-input';
 import { scheduleLineMeasure as sharedScheduleLineMeasure } from '../../utils/line-measurement';
-import { formulaToText, termToText, sequentToText } from '../../utils/formula-text';
+import { sequentToText } from '../../utils/formula-text';
 import type { TreeRenderNode } from '../tree-renderer/tree-renderer';
 
 @Component({
@@ -118,17 +118,14 @@ export class ProofTree implements AfterViewChecked {
 
   onRuleClick(rule: string) {
     if (this.interactiveSubmode === 'predict') {
-      // Special handling for identity rule - it has 0 children, so apply directly if valid
       if (rule === 'Ax' || rule === 'id' || rule === 'ID') {
         if (this.root && this.isAxiom(this.root.sequent)) {
-          // identity is valid, apply directly (no prediction needed)
           this.apply(rule);
           if (this.root) {
             this.nodeClicked.emit(this.root);
           }
           return;
         } else {
-          // identity cannot be applied to this sequent
           this.showError('errorRuleCannotBeAppliedToSequent');
           this.pendingRule = null;
           this.pendingRuleNode = null;
@@ -139,7 +136,6 @@ export class ProofTree implements AfterViewChecked {
       
       const expectedCount = this.getExpectedSequentsCount(rule);
       
-      // If rule can't be applied, show error and don't open inputs
       if (expectedCount === 0) {
         this.showError('errorRuleCannotBeAppliedToSequent');
         this.pendingRule = null;
@@ -148,13 +144,11 @@ export class ProofTree implements AfterViewChecked {
         return;
       }
       
-      // Rule can be applied, set up prediction inputs and close popup
       this.pendingRule = rule;
       this.pendingRuleNode = this.root;
       this.userPredictions = new Array(expectedCount).fill('');
       this.predictError = null;
       
-      // Close the popup by deselecting the node
       if (this.root) {
         this.nodeClicked.emit(this.root);
       }
@@ -225,13 +219,11 @@ export class ProofTree implements AfterViewChecked {
       return;
     }
     
-    // Check all inputs are filled
     if (this.userPredictions.some(p => !p.trim())) {
       this.showError('errorFillAllFields');
       return;
     }
     
-    // Parse all user predictions
     const userSequents: SequentNode[] = [];
     for (const prediction of this.userPredictions) {
       const parsed = this.parseUserPrediction(prediction);
@@ -247,7 +239,6 @@ export class ProofTree implements AfterViewChecked {
       return;
     }
     
-    // Compare each sequent
     for (let i = 0; i < expectedSequents.length; i++) {
       if (!this.compareSequents([expectedSequents[i]], [userSequents[i]])) {
         this.showError('errorIncorrectAtPosition', { position: i + 1 });
@@ -443,7 +434,6 @@ export class ProofTree implements AfterViewChecked {
         if (idx === -1) return null;
         const forallF = assumptions[idx];
         if (forallF.kind !== 'Forall') return null;
-        // For ∀L, we substitute the bound variable with itself (simplified)
         return [{
           assumptions: [
             ...assumptions.slice(0, idx),
@@ -492,11 +482,9 @@ export class ProofTree implements AfterViewChecked {
 
   private parseUserPrediction(input: string): SequentNode[] | null {
     try {
-      // Normalize input: convert ASCII symbols to Unicode
       const normalized = this.normalizeSymbols(input);
       const sequents = normalized.split('|').map(s => s.trim());
       const parsed: (SequentNode | null)[] = sequents.map(seqStr => {
-        // Handle both ⊢ and |- (though normalizeSymbols should have converted it)
         const parts = seqStr.split('⊢');
         if (parts.length !== 2) return null;
         
@@ -519,7 +507,6 @@ export class ProofTree implements AfterViewChecked {
   }
 
   private normalizeSymbols(input: string): string {
-    // Convert ASCII symbols to Unicode to match Monaco editor format
     let result = input
       .replace(/\|\|/g, '∨')      // || → ∨
       .replace(/&&/g, '∧')        // && → ∧
@@ -527,8 +514,6 @@ export class ProofTree implements AfterViewChecked {
       .replace(/->/g, '→')        // -> → →
       .replace(/\|\-/g, '⊢');     // |- → ⊢
     
-    // Handle ! separately to avoid replacing !=
-    // Replace ! that's not followed by = (negative lookahead)
     result = result.replace(/!(?!=)/g, '¬');
     
     return result;
@@ -538,7 +523,6 @@ export class ProofTree implements AfterViewChecked {
     str = str.trim();
     if (!str) return null;
     
-    // Normalize symbols in case they weren't normalized earlier
     str = this.normalizeSymbols(str);
     
     const parseImpl = (s: string): FormulaNode | null => {
@@ -583,7 +567,6 @@ export class ProofTree implements AfterViewChecked {
     const parseAtom = (s: string): FormulaNode | null => {
       s = s.trim();
       
-      // Parse quantifiers: ∀x. A / ∃x. A and typed forms ∀x:A. B / ∃x:A. B
       if (s.startsWith('∀')) {
         const match = s.match(/^∀\s*([a-z_][a-zA-Z0-9_]*)(?:\s*:\s*(.+?))?\s*\.\s*(.+)$/);
         if (match) {
@@ -608,7 +591,6 @@ export class ProofTree implements AfterViewChecked {
         }
       }
       
-      // Parse predicates: P(x, y) or P()
       const predMatch = s.match(/^([A-Z][a-zA-Z0-9_]*)\s*\(([^)]*)\)$/);
       if (predMatch) {
         const name = predMatch[1];
@@ -629,7 +611,6 @@ export class ProofTree implements AfterViewChecked {
     str = str.trim();
     if (!str) return null;
     
-    // Parse function applications: f(x, y)
     const funcMatch = str.match(/^([a-z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)$/);
     if (funcMatch) {
       const name = funcMatch[1];
@@ -637,10 +618,7 @@ export class ProofTree implements AfterViewChecked {
       const args: TermNode[] = argsStr ? argsStr.split(',').map(a => this.parseTerm(a.trim())).filter((t): t is TermNode => t !== null) : [];
       return { kind: 'TermFunc', name, args };
     }
-    
-    // Parse variables and constants (lowercase identifiers)
-    // For simplicity, we'll treat all lowercase identifiers as variables
-    // In a full implementation, we'd distinguish based on context
+
     if (/^[a-z_][a-zA-Z0-9_]*$/.test(str)) {
       return { kind: 'TermVar', name: str };
     }

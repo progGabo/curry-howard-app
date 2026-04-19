@@ -129,12 +129,9 @@ export class TypeInferenceTree implements AfterViewChecked {
 
   onRuleClick(rule: string) {
     if (this.interactiveSubmode === 'predict') {
-      // For type inference, predict mode means predicting the resulting type
-      // Most rules have 1 child, some have 0 (Var, True, False, Zero)
       const expectedCount = this.getExpectedChildrenCount(rule);
       
       if (expectedCount === 0) {
-        // Rule with no children (Var, True, False, Zero) - apply directly
         this.apply(rule);
         if (this.root) {
           this.nodeClicked.emit(this.root);
@@ -142,12 +139,10 @@ export class TypeInferenceTree implements AfterViewChecked {
         return;
       }
       
-      // Rule can be applied, set up prediction input
       this.pendingRule = rule;
       this.pendingRuleNode = this.root;
       this.userPredictions = new Array(expectedCount).fill('');
       
-      // Close the popup by deselecting the node
       if (this.root) {
         this.nodeClicked.emit(this.root);
       }
@@ -157,23 +152,19 @@ export class TypeInferenceTree implements AfterViewChecked {
   }
 
   getExpectedChildrenCount(rule: string): number {
-    // Rules with no children
     if (['Var', 'True', 'False', 'Zero'].includes(rule)) {
       return 0;
     }
-    // Rules with 1 child
     if (['Abs', 'DependentAbs', 'Succ', 'Pred', 'IsZero', 'Inl', 'Inr', 'Fst', 'Snd'].includes(rule)) {
       return 1;
     }
-    // Rules with 2 children
     if (['App', 'Pair', 'Let', 'LetPair', 'If', 'DependentPair', 'LetDependentPair'].includes(rule)) {
       return 2;
     }
-    // Rules with 3 children
     if (['Case'].includes(rule)) {
       return 3;
     }
-    return 1; // Default
+    return 1;
   }
 
   get hasPendingPrediction(): boolean {
@@ -199,13 +190,11 @@ export class TypeInferenceTree implements AfterViewChecked {
   confirmPrediction() {
     if (!this.pendingRule || !this.root) return;
     
-    // Check all predictions are filled
     if (this.userPredictions.some(p => !p.trim())) {
       this.showError('errorFillAllFields');
       return;
     }
     
-    // Compute expected child expressions
     const expectedExpressions = this.computeExpectedExpressions(this.root.expression, this.pendingRule);
     if (!expectedExpressions || expectedExpressions.length === 0) {
       this.showError('errorCannotApplyRule');
@@ -217,7 +206,6 @@ export class TypeInferenceTree implements AfterViewChecked {
       return;
     }
     
-    // Parse all user predictions
     const userExpressions: ExprNode[] = [];
     for (let i = 0; i < this.userPredictions.length; i++) {
       const prediction = this.userPredictions[i];
@@ -230,7 +218,6 @@ export class TypeInferenceTree implements AfterViewChecked {
       }
     }
     
-    // Compare expressions (only the expression part, not types)
     for (let i = 0; i < expectedExpressions.length; i++) {
       if (!this.compareExpressions(expectedExpressions[i], userExpressions[i])) {
         this.showError('errorIncorrectAtPosition', { position: i + 1 });
@@ -238,10 +225,8 @@ export class TypeInferenceTree implements AfterViewChecked {
       }
     }
     
-    // Validation passed, apply the rule
     this.apply(this.pendingRule);
     
-    // Clear prediction state
     this.pendingRule = null;
     this.pendingRuleNode = null;
     this.userPredictions = [];
@@ -257,7 +242,7 @@ export class TypeInferenceTree implements AfterViewChecked {
       case 'True':
       case 'False':
       case 'Zero':
-        return []; // No children
+        return []; 
       
       case 'Abs':
         if (expr.kind === 'Abs') {
@@ -356,7 +341,6 @@ export class TypeInferenceTree implements AfterViewChecked {
   }
 
   compareExpressions(expected: ExprNode, actual: ExprNode): boolean {
-    // Compare only the structure, not types
     if (expected.kind !== actual.kind) {
       return false;
     }
@@ -553,12 +537,6 @@ export class TypeInferenceTree implements AfterViewChecked {
   }
 
   formatType(type: any): string {
-    if (type?.kind === 'Func' && this.isNegationType(type)) {
-      const inner = this.formatType(type.from);
-      const wrappedInner = this.needsParensForNegation(type.from) ? `(${inner})` : inner;
-      return `¬${wrappedInner}`;
-    }
-
     switch (type.kind) {
       case 'TypeVar':
         return this.formatTypeVariableName(type.name);
@@ -631,7 +609,6 @@ export class TypeInferenceTree implements AfterViewChecked {
   }
 
   private needsParensForArrowSide(type: any, side: 'left' | 'right'): boolean {
-    if (this.isNegationType(type)) return false;
     if (type?.kind === 'Prod' || type?.kind === 'Sum') return true;
     if (type?.kind === 'DependentFunc' || type?.kind === 'DependentProd') return true;
     if (type?.kind === 'Func') return side === 'left' || side === 'right';

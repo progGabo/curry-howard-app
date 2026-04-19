@@ -22,26 +22,20 @@ export type FormulaNode =
 export interface SequentNode {
   assumptions: FormulaNode[];
   conclusions: FormulaNode[];
-  // Optional: Direct mapping of assumptions to their lambda variable names
-  // This makes lambda generation simpler by avoiding searches
   assumptionVars?: WeakMap<FormulaNode, string>;
 }
 
-// Derivation tree node (dôkaz)
 export interface DerivationNode {
   rule: string;
   sequent: SequentNode;
   sequentLatex?: string;
   children: DerivationNode[];
   usedFormula?: FormulaNode;
-  // Metadata for lambda generation
   metadata?: {
-    substitution?: { variable: string; term: TermNode }; // For ∀L, ∃R
-    witness?: TermNode; // For ∃R
-    branchChoice?: 'left' | 'right'; // For ∨R
-    renamedVariable?: { old: string; new: string }; // For freshness
-    // Lambda context: maps formulas to their variable names for this node
-    // This simplifies lambda generation by providing direct lookups
+    substitution?: { variable: string; term: TermNode }; 
+    witness?: TermNode;
+    branchChoice?: 'left' | 'right'; 
+    renamedVariable?: { old: string; new: string }; 
     formulaToVar?: WeakMap<FormulaNode, string>;
   };
   id?: string;

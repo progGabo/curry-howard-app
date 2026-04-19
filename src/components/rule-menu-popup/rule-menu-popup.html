@@ -11,9 +11,7 @@
     (mouseleave)="onDragEnd()"
   >
   <div class="popup-content">
-    <!-- Expression to Lambda Mode -->
     <div *ngIf="conversionMode === 'expression-to-lambda'" class="rules-container">
-      <!-- Conclusion Rules -->
       <div class="rule-section" *ngIf="filteredConclusionRules.length">
         <div class="section-title">{{ t.conclusionRules }}</div>
         <div class="rule-buttons">
@@ -28,7 +26,6 @@
         </div>
       </div>
 
-      <!-- Assumption Rules -->
       <div class="rule-section" *ngIf="filteredAssumptionRules.length">
         <div class="section-title">{{ t.assumptionRules }}</div>
         <div class="rule-buttons">
@@ -43,7 +40,6 @@
         </div>
       </div>
 
-      <!-- Special Rules -->
       <div class="rule-section" *ngIf="filteredSpecialRules.length">
         <div class="section-title">{{ t.specialRules }}</div>
         <div class="rule-buttons">
@@ -59,7 +55,6 @@
       </div>
     </div>
 
-    <!-- Lambda to Expression Mode -->
     <div *ngIf="conversionMode === 'lambda-to-expression'" class="rules-container">
       <div class="rule-section" *ngIf="filteredBasicRules.length">
         <div class="section-title">{{ t.basicRules }}</div>
@@ -170,7 +165,6 @@
       </div>
     </div>
 
-    <!-- Natural Deduction Mode -->
     <div *ngIf="conversionMode === 'natural-deduction'" class="rules-container">
       <div class="rule-section" *ngIf="filteredNdIntroRules.length">
         <div class="section-title">{{ t.introRules }}</div>

@@ -1,7 +1,5 @@
-// Voliteľné: source map pre lepšie chyby
 export interface Span { start: number; end: number; }
 
-// ---------- Types (podľa STLC.g4) ----------
 export type TypeNode =
   | { id?: number; span?: Span; kind: 'TypeVar'; name: string }     // TYPEID
   | { id?: number; span?: Span; kind: 'Bool' }                       // BOOL
@@ -15,14 +13,13 @@ export type TypeNode =
   | { id?: number; span?: Span; kind: 'DependentProd'; param: string; paramType: TypeNode; bodyType: TypeNode }  // (x: T) * A
 ;
 
-// ---------- Expressions (podľa STLC.g4) ----------
 export type ExprNode =
   | { id?: number; span?: Span; kind: 'Var'; name: string }
 
   // λx:T. t
   | { id?: number; span?: Span; kind: 'Abs'; param: string; paramType: TypeNode; body: ExprNode }
 
-  // aplikácia (ľavoasociatívna)
+  // aplikácia
   | { id?: number; span?: Span; kind: 'App'; fn: ExprNode; arg: ExprNode }
 
   // let x = t in u
@@ -61,12 +58,8 @@ export type ExprNode =
   | { id?: number; span?: Span; kind: 'DependentPair'; witness: ExprNode; witnessType: TypeNode; proof: ExprNode; proofType?: TypeNode } // (w, p) for ∃
   | { id?: number; span?: Span; kind: 'LetDependentPair'; x: string; xType: TypeNode; p: string; pType: TypeNode; pair: ExprNode; inExpr: ExprNode } // let ⟨x, p⟩ = ... in ...
   | { id?: number; span?: Span; kind: 'Abort'; expr: ExprNode; targetType: TypeNode }
-
-  // voliteľné: všeobecná askripcia (len ak pridáš do gramatiky)
-  // | { id?: number; span?: Span; kind: 'Annot'; expr: ExprNode; type: TypeNode }
 ;
 
-// Voliteľné: cache na typy/inferenčné metadáta (neplést so syntaktickým typom)
 export interface ExprMeta {
   inferredType?: TypeNode;
   ui?: { selected: boolean; expanded: boolean; userEdited?: boolean };

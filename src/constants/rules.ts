@@ -16,7 +16,7 @@ export const SPECIAL_RULES = ['WR', 'WL', 'id'] as const;
 export const ND_INTRO_RULES = ['⊤I', '¬I', '∧I', '∨I1', '∨I2', '→I'] as const;
 
 /** Natural deduction elimination rules */
-export const ND_ELIM_RULES = ['⊥E1', '⊥E2', '¬E', '∧E1', '∧E2', '∨E', '→E'] as const;
+export const ND_ELIM_RULES = ['⊥E1', '¬E', '∧E1', '∧E2', '∨E', '→E'] as const;
 
 /** Natural deduction quantifier rules */
 export const ND_QUANTIFIER_RULES = ['∀I', '∀E', '∃I', '∃E'] as const;

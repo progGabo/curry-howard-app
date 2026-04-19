@@ -1,9 +1,5 @@
-// AstBuilder.ts
-// Visitor, ktorý mapuje parse-tree z Lambda.g4 na AST uzly (ExprNode / TypeNode).
-
 import { AbstractParseTreeVisitor, ParseTreeVisitor } from "antlr4ng";
 
-// Interface that the generated parser expects
 export interface LambdaVisitor<T> {
   visitProgram(ctx: any): T;
   visitTerm(ctx: any): T;
@@ -39,13 +35,10 @@ import {
   ProdTypeContext,
   AtomicTypeContext,
 } from "./LambdaParser.js";
-// No need to import the interface - we'll implement the visitor methods directly
 
-// === AST typy z lambda-node.ts ===
 import { TypeNode, ExprNode } from "../../models/lambda-node.js";
 import { ExprFactories, TypeFactories } from "../../utils/ast-factories.js";
 
-// Voliteľná pomocná anotácia pozície
 export interface Span { start: number; end: number; }
 
 /** Returns true if the type contains a TypeVar with the given name (e.g. x in P(x)). */
@@ -126,14 +119,12 @@ function exprBodyTypeReferencesVar(expr: ExprNode, varName: string): boolean {
   }
 }
 
-// Pomocné: získať span z ľubovoľného ctx
 function spanOf(ctx: { start: any; stop: any }): Span {
   const start = (ctx.start?.startIndex ?? 0) as number;
   const end = (ctx.stop?.stopIndex ?? start) as number;
   return { start, end };
 }
 
-// Pomocné: ľavo-asoc. reťazenie aplikácií a typových operátorov
 function appChain(nodes: ExprNode[], span?: Span): ExprNode {
   if (nodes.length === 0) throw new Error("empty application chain");
   return nodes.slice(1).reduce<ExprNode>((fn, arg) => {
@@ -171,18 +162,15 @@ export class AstBuilder
     return null;
   }
 
-  // ---------- program ----------
   visitProgram(ctx: ProgramContext): ExprNode {
     // program : term EOF ;
     return this.visit(ctx.term()!) as ExprNode;
   }
 
-  // ---------- term (deleguje na konkrétne pravidlo) ----------
   visitTerm(ctx: TermContext): ExprNode {
     if (!ctx) {
       throw new Error("Term context is null");
     }
-    // term : lamExpr | letDependentPairExpr | letPairExpr | letExpr | ...
     if (ctx.lamExpr()) {
       const lamCtx = ctx.lamExpr();
       if (!lamCtx) throw new Error("LamExpr context is null");
@@ -220,8 +208,6 @@ export class AstBuilder
     return this.visitAppExpr(appCtx);
   }
 
-  // ---------- λ-abstraction ----------
-  // Use DependentAbs when the body's type depends on the parameter (e.g. \x:T. \p:P(x). p)
   visitLamExpr(ctx: LamExprContext): ExprNode {
     const param = ctx.VAR()!.getText();
     const paramType = this.visitType(ctx.type()!) as TypeNode;
@@ -233,9 +219,7 @@ export class AstBuilder
     return ExprFactories.abs(param, paramType, body, span);
   }
 
-  // ---------- let ----------
   visitLetExpr(ctx: LetExprContext): ExprNode {
-    // LET VAR ASSIGN term IN term
     return ExprFactories.let(
       ctx.VAR()!.getText(),
       this.visit(ctx.term(0)!) as ExprNode,
@@ -244,9 +228,7 @@ export class AstBuilder
     );
   }
 
-  // ---------- let-pair ----------
   visitLetPairExpr(ctx: LetPairExprContext): ExprNode {
-    // LET [ VAR , VAR ] ASSIGN term IN term
     return ExprFactories.letPair(
       ctx.VAR(0)!.getText(),
       ctx.VAR(1)!.getText(),
@@ -256,9 +238,7 @@ export class AstBuilder
     );
   }
 
-  // ---------- let dependent pair (∃ elimination) ----------
   visitLetDependentPairExpr(ctx: LetDependentPairExprContext): ExprNode {
-    // LET LANGLE VAR (COLON type)? COMMA VAR (COLON type)? RANGLE ASSIGN term IN term  (or LPAREN variant)
     const x = ctx.VAR(0)!.getText();
     const p = ctx.VAR(1)!.getText();
     const pair = this.visit(ctx.term(0)!) as ExprNode;
@@ -268,9 +248,7 @@ export class AstBuilder
     return ExprFactories.letDependentPair(x, xType, p, pType, pair, inExpr, spanOf(ctx));
   }
 
-  // ---------- if-then-else ----------
   visitIfExpr(ctx: IfExprContext): ExprNode {
-    // IF term THEN term ELSE term
     return ExprFactories.if(
       this.visit(ctx.term(0)!) as ExprNode,
       this.visit(ctx.term(1)!) as ExprNode,
@@ -279,9 +257,7 @@ export class AstBuilder
     );
   }
 
-  // ---------- case over sums ----------
   visitCaseExpr(ctx: CaseExprContext): ExprNode {
-    // CASE term OF INL VAR : type => term | INR VAR : type => term
     return ExprFactories.case(
       this.visit(ctx.term(0)!) as ExprNode,
       ctx.VAR(0)!.getText(),
@@ -294,12 +270,10 @@ export class AstBuilder
     );
   }
 
-  // ---------- application (ľavo-asoc) ----------
   visitAppExpr(ctx: AppExprContext): ExprNode {
     if (!ctx) {
       throw new Error("AppExpr context is null");
     }
-    // appExpr : atom (atom)* ;
     const atomContexts = ctx.atom();
     if (!atomContexts || atomContexts.length === 0) {
       throw new Error("AppExpr requires at least one atom");
@@ -314,23 +288,18 @@ export class AstBuilder
     return appChain(atoms, spanOf(ctx));
   }
 
-  // ---------- atoms ----------
   visitAtom(ctx: AtomContext): ExprNode {
     if (!ctx) {
       throw new Error("Atom context is null");
     }
-    // Alternatívy podľa gramatiky:
 
-    // VAR
     if (ctx.VAR()) {
       return ExprFactories.var(ctx.VAR()!.getText(), spanOf(ctx));
     }
 
-    // TRUE | FALSE
     if (ctx.TRUE()) return ExprFactories.true(spanOf(ctx));
     if (ctx.FALSE()) return ExprFactories.false(spanOf(ctx));
 
-    // ZERO | SUCC atom | PRED atom | ISZERO atom
     if (ctx.ZERO()) return ExprFactories.zero(spanOf(ctx));
     if (ctx.SUCC()) {
       const atomCtx = ctx.atom();
@@ -357,12 +326,10 @@ export class AstBuilder
       return ExprFactories.isZero(inner, spanOf(ctx));
     }
 
-    // ( term )  -- iba prenes term
     if (ctx.LPAREN() && ctx.RPAREN() && ctx.term().length === 1 && !ctx.COMMA()) {
       return this.visit(ctx.term(0)!) as ExprNode;
     }
 
-    // ( term , term )  -- pár
     if (ctx.LPAREN() && ctx.RPAREN() && ctx.term().length === 2 && ctx.COMMA()) {
       return ExprFactories.pair(
         this.visit(ctx.term(0)!) as ExprNode,
@@ -371,7 +338,6 @@ export class AstBuilder
       );
     }
 
-    // < term , term > or ⟨ term : type?, term : type? ⟩  -- dependent pair (∃ intro)
     if (((ctx as any).LANGLE && (ctx as any).LANGLE()) || ((ctx as any).RANGLE && (ctx as any).RANGLE())) {
       const terms = ctx.term();
       if (terms && terms.length === 2 && ctx.COMMA()) {
@@ -385,7 +351,6 @@ export class AstBuilder
       }
     }
 
-    // INL atom AS type
     if (ctx.INL()) {
       const atomCtx = ctx.atom();
       const typeCtx = (ctx as any).type_(0);
@@ -399,7 +364,6 @@ export class AstBuilder
       );
     }
 
-    // INR atom AS type
     if ((ctx as any).INR && (ctx as any).INR()) {
       const atomCtx = ctx.atom();
       const typeCtx = (ctx as any).type_(0);
@@ -412,7 +376,6 @@ export class AstBuilder
         spanOf(ctx)
       );
     }
-    // Ak máš token pomenovaný INTR v gramatike:
     if ((ctx as any).INTR && (ctx as any).INTR()) {
       const atomCtx = ctx.atom();
       const typeCtx = (ctx as any).type_(0);
@@ -429,9 +392,7 @@ export class AstBuilder
     throw new Error("Unrecognized atom form");
   }
 
-  // ---------- types ----------
   visitType(ctx: TypeContext): TypeNode {
-    // type : sumType (ARROW type)? ;
     const left = this.visitSumType(ctx.sumType()!) as TypeNode;
     if (ctx.ARROW()) {
       return TypeFactories.func(left, this.visitType(ctx.type()!) as TypeNode); // pravá asociácia
@@ -440,7 +401,6 @@ export class AstBuilder
   }
 
   visitSumType(ctx: SumTypeContext): TypeNode {
-    // sumType : prodType (PLUS prodType)* ;
     const parts = [this.visitProdType(ctx.prodType(0)!)] as TypeNode[];
     for (let i = 1; i < ctx.prodType().length; i++) {
       parts.push(this.visitProdType(ctx.prodType(i)!) as TypeNode);
@@ -450,7 +410,6 @@ export class AstBuilder
   }
 
   visitProdType(ctx: ProdTypeContext): TypeNode {
-    // prodType : atomicType (TIMES atomicType)* ;
     const parts = [this.visitAtomicType(ctx.atomicType(0)!)] as TypeNode[];
     for (let i = 1; i < ctx.atomicType().length; i++) {
       parts.push(this.visitAtomicType(ctx.atomicType(i)!) as TypeNode);
@@ -460,7 +419,6 @@ export class AstBuilder
   }
 
   visitAtomicType(ctx: AtomicTypeContext): TypeNode {
-    // TYPEID | VAR | BOOL | NAT | predicateType | ( type )
     if (ctx.TYPEID()) {
       const name = ctx.TYPEID()!.getText();
       if (name === 'Bottom') {
@@ -468,7 +426,6 @@ export class AstBuilder
       }
       return TypeFactories.typeVar(name);
     }
-    // VAR: variable as type (e.g. x in P(x) for dependent types)
     if (ctx.VAR()) {
       return TypeFactories.typeVar(ctx.VAR()!.getText());
     }
@@ -478,16 +435,13 @@ export class AstBuilder
     if (ctx.NAT()) {
       return TypeFactories.nat();
     }
-    // Check for predicateType (will exist after parser regeneration)
     if ((ctx as any).predicateType && (ctx as any).predicateType()) {
       return this.visitPredicateType((ctx as any).predicateType()!) as TypeNode;
     }
-    // ( type )
     return this.visitType(ctx.type()!) as TypeNode;
   }
 
   visitPredicateType(ctx: any): TypeNode {
-    // TYPEID LPAREN typeList? RPAREN  -- generated parser uses type_() not type()
     const name = ctx.TYPEID()!.getText();
     const argTypes: TypeNode[] = [];
     if (ctx.typeList()) {
@@ -502,7 +456,6 @@ export class AstBuilder
   }
 
   visitTypeList(ctx: any): TypeNode[] {
-    // typeList : type (COMMA type)* ;  -- generated method is type_() not type()
     const typeList = ctx.type_ ? ctx.type_() : [];
     const types: TypeNode[] = [];
     for (let i = 0; i < (Array.isArray(typeList) ? typeList.length : 0); i++) {
@@ -512,8 +465,6 @@ export class AstBuilder
     return types;
   }
 
-  // Preťaženie visit(), aby TypeScript vedel, že vraciame známe uzly
-  // (nepovinné – iba pre pohodlie)
   override visit(tree: any): unknown {
     if (!tree) {
       throw new Error("Cannot visit null tree");
@@ -521,7 +472,6 @@ export class AstBuilder
     return super.visit(tree);
   }
 
-  // Required by the LambdaVisitor interface
   override visitChildren(ctx: any): unknown {
     if (!ctx) {
       throw new Error("Cannot visit children of null context");
@@ -529,7 +479,6 @@ export class AstBuilder
     return super.visitChildren(ctx);
   }
 
-  // Required by ParseTreeVisitor interface
   override visitTerminal(ctx: any): unknown {
     return super.visitTerminal(ctx);
   }

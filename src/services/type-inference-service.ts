@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
 import { ExprNode, TypeNode } from '../models/lambda-node';
-import { FormulaNode } from '../models/formula-node';
 import { TypeFactories } from '../utils/ast-factories';
 import { TreeUtils } from '../utils/tree-utils';
 import { TypeInferenceRuleDispatcherService } from './type-inference-rule-dispatcher.service';
 
-// Type inference tree node
 export interface TypeInferenceNode {
   id?: string;
   rule: string;
@@ -155,14 +153,11 @@ export class TypeInferenceService {
   private inferAbs(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
     if (expr.kind !== 'Abs') throw new Error('Expected Abs expression');
     
-    // Add parameter type to assumptions
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.param, expr.paramType);
     
-    // Infer type of body
     const bodyInference = this.withShadowedPolymorphism([expr.param], () => this.inferType(expr.body, newAssumptions));
     
-    // Result type is paramType -> bodyType
     const resultType: TypeNode = {
       kind: 'Func',
       from: expr.paramType,
@@ -181,7 +176,6 @@ export class TypeInferenceService {
   private inferApp(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
     if (expr.kind !== 'App') throw new Error('Expected App expression');
     
-    // Infer types of function and argument
     const fnInference = this.inferType(expr.fn, assumptions);
     const argInference = this.inferType(expr.arg, assumptions);
     
@@ -199,12 +193,10 @@ export class TypeInferenceService {
       if (!this.matchTypePattern(fnType.paramType, argInference.inferredType, substitutions)) {
         throw new Error('Type mismatch in application');
       }
-      // Substitute the bound variable with the witness in the body type (e.g. P(x)→Q(x) becomes P(a)→Q(a))
       const witnessName = expr.arg.kind === 'Var' ? expr.arg.name : fnType.param;
       const instantiatedBody = this.applyTypeSubstitutions(fnType.bodyType, substitutions);
       resultType = this.substituteInType(instantiatedBody, fnType.param, TypeFactories.typeVar(witnessName));
     } else if (fnType.kind === 'TypeVar' && fnType.name === '?') {
-      // Placeholder for free variables in lambda→expression: allow application, result unknown
       resultType = TypeFactories.typeVar('?');
     } else {
       throw new Error('Application of non-function type');
@@ -248,8 +240,6 @@ export class TypeInferenceService {
           type.argTypes.map(t => this.substituteInType(t, paramName, replacement))
         );
       case 'DependentFunc':
-        // Avoid substituting into a dependent body when the same binder name is reintroduced.
-        // This prevents accidental capture (e.g. turning ∃x:T. Q(x) into ∃x:T. Q(fst(a))).
         if (type.param === paramName) {
           return TypeFactories.dependentFunc(
             type.param,
@@ -263,7 +253,6 @@ export class TypeInferenceService {
           this.substituteInType(type.bodyType, paramName, replacement)
         );
       case 'DependentProd':
-        // Same shadowing rule as DependentFunc.
         if (type.param === paramName) {
           return TypeFactories.dependentProd(
             type.param,
@@ -369,7 +358,6 @@ export class TypeInferenceService {
     
     const innerInference = this.inferType(expr.expr, assumptions);
     
-    // The result type is the sum type specified in the expression
     const resultType = expr.asType;
 
     return {
@@ -386,7 +374,6 @@ export class TypeInferenceService {
     
     const innerInference = this.inferType(expr.expr, assumptions);
     
-    // The result type is the sum type specified in the expression
     const resultType = expr.asType;
 
     return {
@@ -403,7 +390,6 @@ export class TypeInferenceService {
     
     const exprInference = this.inferType(expr.expr, assumptions);
     
-    // Infer types of both branches
     const leftAssumptions = new Map(assumptions);
     leftAssumptions.set(expr.leftVar, expr.leftType);
     const leftInference = this.withShadowedPolymorphism([expr.leftVar], () => this.inferType(expr.leftBranch, leftAssumptions));
@@ -412,7 +398,6 @@ export class TypeInferenceService {
     rightAssumptions.set(expr.rightVar, expr.rightType);
     const rightInference = this.withShadowedPolymorphism([expr.rightVar], () => this.inferType(expr.rightBranch, rightAssumptions));
     
-    // Both branches must have the same type
     if (!this.typesEqual(leftInference.inferredType, rightInference.inferredType)) {
       throw new Error('Case branches must have the same type');
     }
@@ -590,7 +575,6 @@ export class TypeInferenceService {
     if (pairType.kind !== 'DependentProd' && !isPlaceholder) {
       throw new Error('LetDependentPair requires a dependent product type');
     }
-    // When pair has placeholder ? (free variable in lambda→expression), use let-binding types for body context
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.x, expr.xType);
     newAssumptions.set(expr.p, expr.pType);

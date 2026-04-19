@@ -10,9 +10,6 @@ type InteractiveSubmode = 'applicable' | 'all' | 'predict';
 
 @Injectable({ providedIn: 'root' })
 export class RuleFilterService {
-  /**
-   * Filter proof rules by applicability to the current sequent when submode is 'applicable'.
-   */
   filterProofRules(
     rules: readonly string[],
     popupNode: DerivationNode | NdNode | TypeInferenceNode | null,
@@ -82,7 +79,6 @@ export class RuleFilterService {
         case '⊤I':
           return goal.kind === 'True';
         case '⊥E1':
-        case '⊥E2':
           return true;
         case '¬I':
           return goal.kind === 'Not';
@@ -176,9 +172,6 @@ export class RuleFilterService {
     return false;
   }
 
-  /**
-   * Filter type inference rules by applicability to the current expression when submode is 'applicable'.
-   */
   filterTypeRules(
     rules: readonly string[],
     popupNode: DerivationNode | NdNode | TypeInferenceNode | null,

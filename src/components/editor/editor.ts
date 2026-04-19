@@ -76,11 +76,9 @@ export class Editor implements OnChanges {
   }
 
   private updatePlaceholder() {
-    // Only set code if there's a presetCode
     if (this.presetCode) {
       this.code = this.presetCode;
     } else {
-      // Keep code empty - placeholder will be shown in editorOptions
       this.code = '';
     }
     this.editorOptions = { ...this.buildEditorOptions() };

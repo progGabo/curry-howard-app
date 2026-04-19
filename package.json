@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test curry-howard-app",
     "test:headless": "ng test curry-howard-app --watch=false --browsers=ChromeHeadlessNoSandbox",
-    "test:regression": "ng test curry-howard-app --watch=false --browsers=ChromeHeadlessNoSandbox --include src/services/expression-to-lambda.regression.spec.ts --include src/services/lambda-to-expression.regression.spec.ts"
+    "test:regression": "ng test curry-howard-app --watch=false --browsers=ChromeHeadlessNoSandbox --include src/services/lambda-parser-service.regression.spec.ts --include src/services/lambda-to-expression.regression.spec.ts --include src/services/let-polymorphism.regression.spec.ts --include src/services/negation-bottom.regression.spec.ts --include src/services/type-inference-interactive.regression.spec.ts"
   },
   "prettier": {
     "overrides": [

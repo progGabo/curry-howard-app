@@ -74,7 +74,6 @@ class LambdaVisitorWrapper implements ParseTreeVisitor<unknown> {
     return this.astBuilder.visitTypeList(ctx);
   }
 
-  // Required by ParseTreeVisitor interface
   visitChildren(ctx: any): unknown {
     return this.astBuilder.visitChildren(ctx);
   }
@@ -87,7 +86,6 @@ class LambdaVisitorWrapper implements ParseTreeVisitor<unknown> {
     return this.astBuilder.visitErrorNode(ctx);
   }
 
-  // Required by ParseTreeVisitor interface
   visit(ctx: any): unknown {
     return this.astBuilder.visit(ctx);
   }
@@ -102,7 +100,6 @@ export class LambdaParserService {
         throw new Error("Lambda expression cannot be empty");
       }
       
-      // Normalize Unicode symbols to ASCII so the lexer recognizes them
       let processedCode = lambdaCode
         .replace(/\u03BB/g, '\\')   // λ (Greek lambda) -> \
         .replace(/\u2192/g, '->')   // → -> ->
@@ -116,9 +113,6 @@ export class LambdaParserService {
       const quantifiedAliases = this.extractQuantifiedTypeAliases(processedCode);
       processedCode = quantifiedAliases.rewrittenCode;
 
-      // Educational sugar: allow whole-term ascription for untyped lambdas,
-      // e.g. "\\x.x : A -> A" or "(\\x. x) : A -> A".
-      // Rewrite into parser-supported typed lambda form: "\\x:A. x".
       processedCode = this.rewriteUntypedLambdaAscription(processedCode);
       
       const inputStream = CharStream.fromString(processedCode);
@@ -126,20 +120,16 @@ export class LambdaParserService {
       const tokenStream = new CommonTokenStream(lexer);
       const parser = new LambdaParser(tokenStream);
       
-      // Enable better error reporting
       parser.removeErrorListeners();
       parser.addErrorListener({
         syntaxError: (recognizer, offendingSymbol, line, charPositionInLine, msg, e) => {
           throw new Error(`Syntax error at line ${line}:${charPositionInLine} - ${msg}`);
         },
         reportAmbiguity: (recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs) => {
-          // Optional: can be left empty or log if needed
         },
         reportAttemptingFullContext: (recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs) => {
-          // Optional: can be left empty or log if needed
         },
         reportContextSensitivity: (recognizer, dfa, startIndex, stopIndex, prediction, configs) => {
-          // Optional: can be left empty or log if needed
         }
       });
       
@@ -450,7 +440,6 @@ export class LambdaParserService {
       case 'App':
         const fnStr = this.formatExpr(expr.fn);
         const argStr = this.formatExpr(expr.arg);
-        // Add parentheses if needed for precedence
         const needsParens = expr.arg.kind === 'Abs' || expr.arg.kind === 'DependentAbs' || expr.arg.kind === 'App';
         return `${fnStr} ${needsParens ? `(${argStr})` : argStr}`;
       

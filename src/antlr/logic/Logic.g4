@@ -13,21 +13,25 @@ conclusion
     ;
 
 formula
-    : forall
-    | exists
-    | implication
-    ;
-
-forall
-    : FORALL variable DOT formula
-    ;
-
-exists
-    : EXISTS variable DOT formula
+    : implication
     ;
 
 implication
-    : disjunction (IMPL implication)?
+    : quantifiedExpr (IMPL implication)?
+    ;
+
+quantifiedExpr
+    : forall
+    | exists
+    | disjunction
+    ;
+
+forall
+    : FORALL variable DOT quantifiedExpr
+    ;
+
+exists
+    : EXISTS variable DOT quantifiedExpr
     ;
 
 disjunction
@@ -46,6 +50,8 @@ negation
 atom
     : LPAREN formula RPAREN
     | predicate
+    | TOP
+    | BOT
     | LOWERID
     | PRED
     ;
@@ -82,6 +88,8 @@ IMPL: '⇒' | '→' | '=>';
 AND: '∧' | '⋀' | '&&';
 OR: '∨' | '⋁' | '||';
 NOT: '¬' | '∼' | '~' | '!';
+TOP: 'T' | 'True' | 'true';
+BOT: 'F' | 'False' | 'false';
 FORALL: '∀' | 'forall' | 'Forall';
 EXISTS: '∃' | 'exists' | 'Exists';
 DOT: '.';

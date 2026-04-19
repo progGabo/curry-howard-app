@@ -1,7 +1,6 @@
 import { ExprNode, TypeNode } from '../models/lambda-node';
 import { FormulaNode, TermNode } from '../models/formula-node';
 
-// ExprNode type guards
 export function isVar(expr: ExprNode): expr is Extract<ExprNode, { kind: 'Var' }> {
   return expr.kind === 'Var';
 }
@@ -114,7 +113,6 @@ export function isLetDependentPair(expr: ExprNode): expr is Extract<ExprNode, { 
   return expr.kind === 'LetDependentPair';
 }
 
-// FormulaNode type guards
 export function isVarFormula(f: FormulaNode): f is Extract<FormulaNode, { kind: 'Var' }> {
   return f.kind === 'Var';
 }
@@ -155,7 +153,6 @@ export function isFalseFormula(f: FormulaNode): f is Extract<FormulaNode, { kind
   return f.kind === 'False';
 }
 
-// TermNode type guards
 export function isTermVar(term: TermNode): term is Extract<TermNode, { kind: 'TermVar' }> {
   return term.kind === 'TermVar';
 }
@@ -168,7 +165,6 @@ export function isTermFunc(term: TermNode): term is Extract<TermNode, { kind: 'T
   return term.kind === 'TermFunc';
 }
 
-// Generic type guard helper
 export function hasKind<T extends string>(
   node: { kind: string },
   kind: T

@@ -7,9 +7,10 @@ import { SequentContext } from "./LogicParser.js";
 import { AssumptionsContext } from "./LogicParser.js";
 import { ConclusionContext } from "./LogicParser.js";
 import { FormulaContext } from "./LogicParser.js";
+import { ImplicationContext } from "./LogicParser.js";
+import { QuantifiedExprContext } from "./LogicParser.js";
 import { ForallContext } from "./LogicParser.js";
 import { ExistsContext } from "./LogicParser.js";
-import { ImplicationContext } from "./LogicParser.js";
 import { DisjunctionContext } from "./LogicParser.js";
 import { ConjunctionContext } from "./LogicParser.js";
 import { NegationContext } from "./LogicParser.js";
@@ -55,6 +56,18 @@ export class LogicVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      */
     visitFormula?: (ctx: FormulaContext) => Result;
     /**
+     * Visit a parse tree produced by `LogicParser.implication`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitImplication?: (ctx: ImplicationContext) => Result;
+    /**
+     * Visit a parse tree produced by `LogicParser.quantifiedExpr`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitQuantifiedExpr?: (ctx: QuantifiedExprContext) => Result;
+    /**
      * Visit a parse tree produced by `LogicParser.forall`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -66,12 +79,6 @@ export class LogicVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      * @return the visitor result
      */
     visitExists?: (ctx: ExistsContext) => Result;
-    /**
-     * Visit a parse tree produced by `LogicParser.implication`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitImplication?: (ctx: ImplicationContext) => Result;
     /**
      * Visit a parse tree produced by `LogicParser.disjunction`.
      * @param ctx the parse tree

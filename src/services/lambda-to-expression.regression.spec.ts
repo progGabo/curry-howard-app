@@ -36,11 +36,9 @@ describe('Lambda → Expression regression', () => {
     { code: '\\x:A. \\y:B. \\z:C. x', expectContains: 'A → (B → (C → A))' },
     { code: 'let x = 0 in succ x', expectContains: 'Nat' },
     { code: 'let x = true in if x then true else false', expectContains: 'Bool' },
-    //{ code: 'let ⟨x : T, p : P(x)⟩ = e in ⟨x : T, p : P(x)⟩', expectContains: 'P(fst(e))' }
   ];
 
   const dependentPairCases = [
-    //{ code: 'let ⟨x : T, p : P(x)⟩ = e in p', expected: 'P(fst(e))' },
     { code: 'let ⟨x : T, p : P(x)⟩ = e in ⟨x : T, p : P(x)⟩', expected: '∃' },
   ];
 

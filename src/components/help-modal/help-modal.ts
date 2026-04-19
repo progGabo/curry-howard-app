@@ -35,7 +35,7 @@ export class HelpModalComponent {
   readonly sequentSpecialRules = ['id', 'WR', 'WL'];
 
   readonly ndIntroRules = ['⊤I', '¬I', '∧I', '∨I1', '∨I2', '→I'];
-  readonly ndElimRules = ['⊥E1', '⊥E2', '¬E', '∧E1', '∧E2', '∨E', '→E'];
+  readonly ndElimRules = ['⊥E1', '¬E', '∧E1', '∧E2', '∨E', '→E'];
   readonly ndQuantifierRules = ['∀I', '∀E', '∃I', '∃E'];
 
   constructor(private ruleFormula: RuleFormulaService) {}

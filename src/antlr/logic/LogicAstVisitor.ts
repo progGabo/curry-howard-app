@@ -6,6 +6,7 @@ import {
   ForallContext,
   ExistsContext,
   ImplicationContext,
+  QuantifiedExprContext,
   DisjunctionContext,
   ConjunctionContext,
   NegationContext,
@@ -45,22 +46,26 @@ export class LogicAstVisitor
   }
 
   visitFormula(ctx: FormulaContext): FormulaNode {
+    return this.visit(ctx.implication()!);
+  }
+
+  visitQuantifiedExpr(ctx: QuantifiedExprContext): FormulaNode {
     if (ctx.forall()) {
       return this.visit(ctx.forall()!);
     } else if (ctx.exists()) {
       return this.visit(ctx.exists()!);
     } else {
-      return this.visit(ctx.implication()!);
+      return this.visit(ctx.disjunction()!);
     }
   }
 
   visitForall(ctx: ForallContext): FormulaNode {
     const variable = this.visit(ctx.variable());
-    const formulaCtx = ctx.formula();
-    if (!formulaCtx) {
+    const bodyCtx = ctx.quantifiedExpr();
+    if (!bodyCtx) {
       throw new Error('Forall missing formula body');
     }
-    const body = this.visit(formulaCtx);
+    const body = this.visit(bodyCtx);
     return {
       kind: 'Forall',
       variable: variable.name,
@@ -70,7 +75,7 @@ export class LogicAstVisitor
 
   visitExists(ctx: ExistsContext): FormulaNode {
     const variable = this.visit(ctx.variable());
-    const body = this.visit(ctx.formula());
+    const body = this.visit(ctx.quantifiedExpr());
     return {
       kind: 'Exists',
       variable: variable.name,
@@ -79,7 +84,7 @@ export class LogicAstVisitor
   }
 
   visitImplication(ctx: ImplicationContext): FormulaNode {
-    const left = this.visit(ctx.disjunction());
+    const left = this.visit(ctx.quantifiedExpr());
     const rightCtx = ctx.implication();
 
     if (rightCtx) {
@@ -126,6 +131,10 @@ export class LogicAstVisitor
   visitAtom(ctx: AtomContext): FormulaNode {
     if (ctx.predicate()) {
       return this.visit(ctx.predicate()!);
+    } else if (ctx.TOP()) {
+      return { kind: 'True' };
+    } else if (ctx.BOT()) {
+      return { kind: 'False' };
     } else if (ctx.LOWERID()) {
       return {
         kind: 'Var',

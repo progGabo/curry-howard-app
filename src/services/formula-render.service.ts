@@ -16,21 +16,21 @@ export class FormulaRenderService {
       case 'Not':
         return `\\lnot ${this.parenthesize(formula.inner, formula)}`;
       case 'And':
-        return `${this.parenthesize(formula.left, formula)} \\land ${this.parenthesize(formula.right, formula)}`;
+        return `${this.parenthesize(formula.left, formula, 'left')} \\land ${this.parenthesize(formula.right, formula, 'right')}`;
       case 'Or':
-        return `${this.parenthesize(formula.left, formula)} \\lor ${this.parenthesize(formula.right, formula)}`;
+        return `${this.parenthesize(formula.left, formula, 'left')} \\lor ${this.parenthesize(formula.right, formula, 'right')}`;
       case 'Implies':
-        return `${this.parenthesize(formula.left, formula)} \\to ${this.parenthesize(formula.right, formula)}`;
+        return `${this.parenthesize(formula.left, formula, 'left')} \\to ${this.parenthesize(formula.right, formula, 'right')}`;
       case 'Forall':
         if (formula.domain) {
-          return `\\forall ${this.escapeIdentifier(formula.variable)}:${this.formulaToLatex(formula.domain)}.\\, ${this.formulaToLatex(formula.body)}`;
+          return `\\forall ${this.escapeIdentifier(formula.variable)}:${this.formulaToLatex(formula.domain)}.\\, ${this.parenthesize(formula.body, formula)}`;
         }
-        return `\\forall ${this.escapeIdentifier(formula.variable)}.\\, ${this.formulaToLatex(formula.body)}`;
+        return `\\forall ${this.escapeIdentifier(formula.variable)}.\\, ${this.parenthesize(formula.body, formula)}`;
       case 'Exists':
         if (formula.domain) {
-          return `\\exists ${this.escapeIdentifier(formula.variable)}:${this.formulaToLatex(formula.domain)}.\\, ${this.formulaToLatex(formula.body)}`;
+          return `\\exists ${this.escapeIdentifier(formula.variable)}:${this.formulaToLatex(formula.domain)}.\\, ${this.parenthesize(formula.body, formula)}`;
         }
-        return `\\exists ${this.escapeIdentifier(formula.variable)}.\\, ${this.formulaToLatex(formula.body)}`;
+        return `\\exists ${this.escapeIdentifier(formula.variable)}.\\, ${this.parenthesize(formula.body, formula)}`;
       case 'Predicate': {
         const args = formula.args.map((term) => this.termToLatex(term)).join(',\\, ');
         return `\\mathrm{${this.escapeText(formula.name)}}(${args})`;
@@ -67,28 +67,39 @@ export class FormulaRenderService {
       case 'Predicate':
       case 'True':
       case 'False':
+        return 6;
+      case 'Not':
         return 5;
+      case 'And':
+        return 4;
+      case 'Or':
+        return 3;
       case 'Forall':
       case 'Exists':
-        return 4;
-      case 'Not':
-        return 3;
-      case 'And':
         return 2;
-      case 'Or':
-        return 1;
       case 'Implies':
-        return 0;
+        return 1;
       case 'Paren':
-        return 6;
+        return 7;
       default:
         return -1;
     }
   }
 
-  private parenthesize(child: FormulaNode, parent: FormulaNode): string {
+  private parenthesize(child: FormulaNode, parent: FormulaNode, side: 'left' | 'right' | 'only' = 'only'): string {
     const childLatex = this.formulaToLatex(child);
-    return this.precedence(child) < this.precedence(parent) ? `(${childLatex})` : childLatex;
+    const cp = this.precedence(child);
+    const pp = this.precedence(parent);
+
+    if (cp < pp) return `(${childLatex})`;
+
+    if (cp === pp) {
+      if (parent.kind === 'Implies' && side === 'left' && child.kind === 'Implies') return `(${childLatex})`;
+      if (parent.kind === 'And' && side === 'right' && child.kind === 'And') return `(${childLatex})`;
+      if (parent.kind === 'Or' && side === 'right' && child.kind === 'Or') return `(${childLatex})`;
+    }
+
+    return childLatex;
   }
 
   private escapeIdentifier(value: string): string {

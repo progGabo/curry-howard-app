@@ -10,10 +10,6 @@ export interface ShowErrorOptions {
 export class NotificationService {
   constructor(private messageService: MessageService) {}
 
-  /**
-   * Show an error toast. Components typically get the message from I18nService
-   * and pass it here.
-   */
   showError(message: string, options?: ShowErrorOptions): void {
     this.messageService.add({
       severity: 'error',

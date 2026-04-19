@@ -1,7 +1,6 @@
 <div class="help-modal" *ngIf="visible" (click)="onBackdropClick()">
   <div class="help-modal__dialog" (click)="onDialogClick($event)">
     <div class="help-modal__header">
-      <!-- Tabs -->
       <div class="help-modal__tabs">
         <button
           *ngFor="let tab of tabs"
@@ -18,7 +17,6 @@
 
     <div class="help-modal__body">
 
-      <!-- ==================== TAB: Syntax vstupu ==================== -->
       <div *ngIf="activeTab === 'syntax'" class="help-tab-content">
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Textové skratky v editore' : 'Text shortcuts in the editor' }}</h4>
@@ -79,7 +77,6 @@
         </section>
       </div>
 
-      <!-- ==================== TAB: Ovládanie ==================== -->
       <div *ngIf="activeTab === 'controls'" class="help-tab-content">
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Ovládanie stromu' : 'Tree controls' }}</h4>
@@ -160,7 +157,6 @@
         </section>
       </div>
 
-      <!-- ==================== TAB: Curry-Howard ==================== -->
       <div *ngIf="activeTab === 'curry-howard'" class="help-tab-content">
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Curry-Howardov izomorfizmus' : 'Curry-Howard isomorphism' }}</h4>
@@ -212,7 +208,6 @@
               <tr><td>¬E ({{ currentLanguage === 'sk' ? 'eliminácia negácie' : 'negation elimination' }})</td><td>App ({{ currentLanguage === 'sk' ? 'aplikácia na ⊥' : 'application to ⊥' }})</td><td>f x</td></tr>
               <tr><td>⊤I ({{ currentLanguage === 'sk' ? 'zavedenie pravdy' : 'truth introduction' }})</td><td>Unit</td><td>⟨⟩</td></tr>
               <tr><td>⊥E1 ({{ currentLanguage === 'sk' ? 'eliminácia nepravdy 1' : 'falsity elimination 1' }})</td><td>absurd</td><td>absurd e</td></tr>
-              <tr><td>⊥E2 ({{ currentLanguage === 'sk' ? 'eliminácia nepravdy 2' : 'falsity elimination 2' }})</td><td>absurd ({{ currentLanguage === 'sk' ? 'dôkaz sporom' : 'proof by contradiction' }})</td><td>absurd (λk:¬A. t)</td></tr>
               <tr><td>∀I ({{ currentLanguage === 'sk' ? 'zavedenie univerzálu' : 'universal introduction' }})</td><td>DependentAbs</td><td>λx:T. t</td></tr>
               <tr><td>∀E ({{ currentLanguage === 'sk' ? 'eliminácia univerzálu' : 'universal elimination' }})</td><td>App</td><td>f t</td></tr>
               <tr><td>∃I ({{ currentLanguage === 'sk' ? 'zavedenie existenciálu' : 'existential introduction' }})</td><td>DependentPair</td><td>⟨t, e⟩</td></tr>
@@ -222,7 +217,6 @@
         </section>
       </div>
 
-      <!-- ==================== TAB: Sekventový kalkul ==================== -->
       <div *ngIf="activeTab === 'sequent'" class="help-tab-content">
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Špeciálne pravidlá' : 'Special rules' }}</h4>
@@ -252,7 +246,6 @@
         </section>
       </div>
 
-      <!-- ==================== TAB: Prirodzená dedukcia ==================== -->
       <div *ngIf="activeTab === 'natural-deduction'" class="help-tab-content">
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Zavádzacie pravidlá (Introduction)' : 'Introduction rules' }}</h4>

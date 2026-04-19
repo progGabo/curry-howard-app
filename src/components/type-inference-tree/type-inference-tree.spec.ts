@@ -43,12 +43,12 @@ describe('TypeInferenceTree', () => {
     expect(component.formatType(TypeFactories.bottom())).toBe('⊥');
   });
 
-  it('formats A → ⊥ as ¬A', () => {
+  it('formats A → ⊥ as arrow to bottom', () => {
     const neg = TypeFactories.func(TypeFactories.typeVar('A'), TypeFactories.bottom());
-    expect(component.formatType(neg)).toBe('¬A');
+    expect(component.formatType(neg)).toBe('A → ⊥');
   });
 
-  it('formats contraposition type with compressed negations', () => {
+  it('formats contraposition type with arrow-to-bottom negations', () => {
     const t = TypeFactories.func(
       TypeFactories.func(TypeFactories.typeVar('p'), TypeFactories.typeVar('q')),
       TypeFactories.func(
@@ -57,7 +57,7 @@ describe('TypeInferenceTree', () => {
       )
     );
 
-    expect(component.formatType(t)).toBe('(P → Q) → (¬Q → ¬P)');
+    expect(component.formatType(t)).toBe('(P → Q) → ((Q → ⊥) → (P → ⊥))');
   });
 
   it('formats nested negation consistently', () => {
@@ -66,6 +66,6 @@ describe('TypeInferenceTree', () => {
       TypeFactories.bottom()
     );
 
-    expect(component.formatType(t)).toBe('¬(¬A)');
+    expect(component.formatType(t)).toBe('(A → ⊥) → ⊥');
   });
 });

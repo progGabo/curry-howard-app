@@ -37,7 +37,6 @@ export interface CaseFactoryOptions {
   span?: Span;
 }
 
-// Lambda Expression Factories
 export const ExprFactories = {
   var: (name: string, span?: Span): ExprNode => ({ kind: 'Var', name: assertIdentifier(name, 'Variable name'), span }),
   
@@ -65,7 +64,6 @@ export const ExprFactories = {
   inr: (expr: ExprNode, asType: TypeNode, span?: Span): ExprNode => 
     ({ kind: 'Inr', expr, asType, span }),
   
-  // Dependent types for quantifiers
   dependentAbs: (param: string, paramType: TypeNode, body: ExprNode, span?: Span): ExprNode =>
     ({ kind: 'DependentAbs', param: assertIdentifier(param, 'Dependent lambda parameter'), paramType, body, span }),
   
@@ -153,7 +151,6 @@ export const ExprFactories = {
     ({ kind: 'Abort', expr, targetType, span }),
 };
 
-// Type Factories
 export const TypeFactories = {
   typeVar: (name: string): TypeNode => ({ kind: 'TypeVar', name: assertIdentifier(name, 'Type variable name') }),
   bool: (): TypeNode => ({ kind: 'Bool' }),
@@ -170,7 +167,6 @@ export const TypeFactories = {
     ({ kind: 'DependentProd', param: assertIdentifier(param, 'Dependent product binder'), paramType, bodyType }),
 };
 
-// Formula Factories
 export const FormulaFactories = {
   var: (name: string): FormulaNode => ({ kind: 'Var', name: assertIdentifier(name, 'Formula variable name') }),
   implies: (left: FormulaNode, right: FormulaNode): FormulaNode => 
@@ -190,7 +186,6 @@ export const FormulaFactories = {
   false: (): FormulaNode => ({ kind: 'False' }),
 };
 
-// Term Factories
 export const TermFactories = {
   var: (name: string): TermNode => ({ kind: 'TermVar', name: assertIdentifier(name, 'Term variable name') }),
   const: (name: string): TermNode => ({ kind: 'TermConst', name: assertIdentifier(name, 'Term constant name') }),

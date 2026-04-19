@@ -145,31 +145,26 @@ export class LambdaToExpressionService {
         return `case ${caseExpr} of ${expr.leftVar} → ${leftCase} | ${expr.rightVar} → ${rightCase}`;
       
       case 'Let':
-        // Let binding corresponds to assumption introduction
         const letValue = this.convertExprToFormula(expr.value);
         const letBody = this.convertExprToFormula(expr.inExpr);
         return `let ${expr.name} = ${letValue} in ${letBody}`;
       
       case 'LetPair':
-        // Let pair corresponds to conjunction elimination
         const pairValue = this.convertExprToFormula(expr.pair);
         const pairBody = this.convertExprToFormula(expr.inExpr);
         return `let [${expr.x}, ${expr.y}] = ${pairValue} in ${pairBody}`;
       
       case 'DependentAbs':
-        // ∀x:T. body (predicate logic)
         const depParamType = this.convertTypeToFormula(expr.paramType);
         const depBodyFormula = this.convertExprToFormula(expr.body);
         return `∀${expr.param}:${depParamType}. ${depBodyFormula}`;
       
       case 'DependentPair':
-        // ⟨witness, proof⟩ (∃ introduction)
         const witFormula = this.convertExprToFormula(expr.witness);
         const proofFormula = this.convertExprToFormula(expr.proof);
         return `⟨${witFormula}, ${proofFormula}⟩`;
       
       case 'LetDependentPair':
-        // let ⟨x, p⟩ = pair in body (∃ elimination)
         const dpPair = this.convertExprToFormula(expr.pair);
         const dpBody = this.convertExprToFormula(expr.inExpr);
         return `let ⟨${expr.x}, ${expr.p}⟩ = ${dpPair} in ${dpBody}`;
@@ -274,12 +269,7 @@ export class LambdaToExpressionService {
     return cycle === 0 ? base : `${base}${cycle + 1}`;
   }
 
-  // Helper method to create a sequent from a lambda expression
   createSequentFromLambda(lambdaExpr: ExprNode): SequentNode {
-    // This is a simplified implementation
-    // In a full implementation, you'd need to analyze the lambda expression
-    // and determine what assumptions and conclusions it represents
-    
     const formula = this.createFormulaFromLambda(lambdaExpr);
     
     return {
@@ -289,7 +279,6 @@ export class LambdaToExpressionService {
   }
 
   private createFormulaFromLambda(expr: ExprNode): FormulaNode {
-    // Curry-Howard: lambda term ↔ proof, type ↔ formula
     switch (expr.kind) {
       case 'Var':
         return { kind: 'Var', name: expr.name };
@@ -300,7 +289,6 @@ export class LambdaToExpressionService {
           right: this.createFormulaFromLambda(expr.body)
         };
       case 'DependentAbs':
-        // ∀x. body (predicate logic)
         return {
           kind: 'Forall',
           variable: expr.param,
@@ -322,7 +310,6 @@ export class LambdaToExpressionService {
       case 'Snd':
         return this.createFormulaFromLambda(expr.pair);
       case 'DependentPair':
-        // ∃x. (proof type) — proof of existential
         return {
           kind: 'Exists',
           variable: 'x',

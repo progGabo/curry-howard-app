@@ -62,6 +62,14 @@ export class NdAutoProverService {
           { hypothesisId: introduced.id, label: introduced.label }
         ]);
       }
+      case 'Not': {
+        const introduced = this.createHypothesis(goal.inner, '');
+        const bottomProof = this.prove([...context, goal.inner], FormulaFactories.false(), [...openHypotheses, introduced], fuel - 1);
+        if (!bottomProof) break;
+        return this.createNode('¬I', context, goal, [bottomProof], openHypotheses, [
+          { hypothesisId: introduced.id, label: introduced.label }
+        ]);
+      }
       case 'And': {
         const leftProof = this.prove(context, goal.left, openHypotheses, fuel - 1);
         if (!leftProof) break;
@@ -194,6 +202,25 @@ export class NdAutoProverService {
       return this.createNode('∨E', context, target, [disjunctionProof, leftProof, rightProof], openHypotheses, discharges);
     }
 
+    // ¬E synthesis: if ¬A is in context and we can prove A, derive ⊥ then use ⊥E1
+    const negations = derived.filter((entry): entry is { formula: Extract<FormulaNode, { kind: 'Not' }>; proof: NdNode } => entry.formula.kind === 'Not');
+    for (const negEntry of negations) {
+      const neg = negEntry.formula;
+      const negProof = negEntry.proof;
+
+      const innerProof = this.prove(context, neg.inner, openHypotheses, fuel - 1);
+      if (!innerProof) continue;
+
+      const bottom = FormulaFactories.false();
+      const bottomProof = this.createNode('¬E', context, bottom, [innerProof, negProof], openHypotheses, []);
+
+      if (Equality.formulasEqual(bottom, target)) {
+        return bottomProof;
+      }
+
+      return this.createNode('⊥E1', context, target, [bottomProof], openHypotheses, []);
+    }
+
     return null;
   }
 
@@ -215,6 +242,19 @@ export class NdAutoProverService {
       return this.createNode('⊥E1', context, goal, [bottomProof], openHypotheses, []);
     }
 
+    if (goal.kind === 'False' && fuel > 0) {
+      const negations = context.filter((f): f is Extract<FormulaNode, { kind: 'Not' }> => f.kind === 'Not');
+      for (const neg of negations) {
+        const innerProof = this.prove(context, neg.inner, openHypotheses, fuel - 1);
+        if (innerProof) {
+          const negProof = this.axForAssumption(context, neg, openHypotheses);
+          if (negProof) {
+            return this.createNode('¬E', context, goal, [innerProof, negProof], openHypotheses, []);
+          }
+        }
+      }
+    }
+
     return null;
   }
 
@@ -231,9 +271,8 @@ export class NdAutoProverService {
         return this.normalizeFormula(formula.inner);
       case 'Not':
         return {
-          kind: 'Implies',
-          left: this.normalizeFormula(formula.inner),
-          right: { kind: 'False' }
+          kind: 'Not',
+          inner: this.normalizeFormula(formula.inner)
         };
       case 'Implies':
         return {

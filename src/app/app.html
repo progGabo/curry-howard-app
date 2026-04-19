@@ -14,7 +14,6 @@
   (languageChange)="currentLanguage = $event"
 ></app-header>
 
-<!-- Slide Panel Toggle Button -->
 <button
   class="slide-panel-toggle"
   (click)="slidePanelVisible = !slidePanelVisible"
@@ -26,13 +25,11 @@
   <i [class]="slidePanelVisible ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"></i>
 </button>
 
-<!-- Slide Panel -->
 <div id="rules-slide-panel" class="slide-panel" [class.open]="slidePanelVisible" [attr.aria-hidden]="!slidePanelVisible">
   <div class="slide-panel-content">
     <div class="rule-formula-panel">
       <h3 class="formula-title">{{ t.ruleReference }}</h3>
       
-      <!-- All Rules Formulas Display -->
       <div class="formulas-list">
         <div class="formula-section" *ngIf="isSequentWorkflow">
           <h4 class="formula-section-header">{{ t.seqIdentityCut }}</h4>

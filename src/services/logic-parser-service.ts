@@ -58,12 +58,15 @@ export class LogicParserService {
       .replace(/[¬∼~]/g, '!');   // negation variants → !
 
     trimmed = trimmed
+      .replace(/⊤/g, 'True')       // ⊤ → True
+      .replace(/⊥/g, 'False');     // ⊥ → False
+
+    trimmed = trimmed
       .replace(/\s*\.\s*/g, '. ')
       .replace(/\b(forall|exists)\s+([a-z][a-zA-Z0-9_]*)\s+(?=(?:!|\(|[A-Za-z]))/gi, '$1 $2. ');
 
     trimmed = trimmed.replace(/\s+/g, ' ').trim();
     trimmed = this.parenthesizeQuantifierAfterNegation(trimmed);
-    trimmed = this.parenthesizeQuantifierAfterImplication(trimmed);
 
     const isSequent = trimmed.includes('|-');
     const preparedInput = isSequent ? trimmed : `|- ${trimmed}`;
@@ -226,36 +229,6 @@ export class LogicParserService {
     }
   }
 
-  private parenthesizeQuantifierAfterImplication(input: string): string {
-    let output = input;
-    let cursor = 0;
-
-    while (cursor < output.length) {
-      const implicationIndex = output.indexOf('=>', cursor);
-      if (implicationIndex === -1) break;
-
-      let quantifierStart = implicationIndex + 2;
-      while (quantifierStart < output.length && output[quantifierStart] === ' ') {
-        quantifierStart += 1;
-      }
-
-      const tail = output.slice(quantifierStart);
-      const quantifierMatch = /^(forall|exists)\b/i.exec(tail);
-      if (!quantifierMatch) {
-        cursor = implicationIndex + 2;
-        continue;
-      }
-
-      const baseDepth = this.parenthesisDepthAt(output, quantifierStart);
-      const end = this.findQuantifiedSegmentEnd(output, quantifierStart, baseDepth);
-
-      output = `${output.slice(0, quantifierStart)}(${output.slice(quantifierStart, end)})${output.slice(end)}`;
-      cursor = end + 2;
-    }
-
-    return output;
-  }
-
   private parenthesizeQuantifierAfterNegation(input: string): string {
     let output = input;
     let cursor = 0;
@@ -292,34 +265,6 @@ export class LogicParserService {
       else if (input[i] === ')') depth -= 1;
     }
     return depth;
-  }
-
-  private findQuantifiedSegmentEnd(input: string, start: number, baseDepth: number): number {
-    let depth = baseDepth;
-
-    for (let i = start; i < input.length; i++) {
-      const char = input[i];
-      if (char === '(') {
-        depth += 1;
-        continue;
-      }
-
-      if (char === ')') {
-        if (depth === baseDepth) {
-          return i;
-        }
-        depth -= 1;
-        continue;
-      }
-
-      if (depth === baseDepth) {
-        if (char === ',' || input.startsWith('|-', i)) {
-          return i;
-        }
-      }
-    }
-
-    return input.length;
   }
 
   private findQuantifiedSegmentEndForNegation(input: string, start: number, baseDepth: number): number {

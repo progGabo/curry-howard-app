@@ -38,15 +38,6 @@ export class NdRuleEngineService {
         return this.createNode('⊥E1', judgement, [premise], node.openHypotheses, []);
       }
 
-      case '⊥E2': {
-        const negGoal = FormulaFactories.not(goal);
-        const hyp = this.createHypothesis(negGoal, node.id);
-        const discharge: NdDischarge[] = [{ hypothesisId: hyp.id, label: hyp.label }];
-        return this.createNode('⊥E2', judgement, [
-          this.createNode('∅', { context: [...context, negGoal], goal: FormulaFactories.false() }, [], [...node.openHypotheses, hyp], [])
-        ], node.openHypotheses, discharge);
-      }
-
       case '∧I':
         if (goal.kind !== 'And') return null;
         return this.createNode('∧I', judgement, [

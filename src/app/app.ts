@@ -57,16 +57,15 @@ export class App {
   mode: 'auto' | 'interactive' = 'auto';
   interactiveSubmode: 'applicable' | 'all' | 'predict' = 'all';
   lambdaExpr: string = '';
-  lambdaExprNode: ExprNode | null = null; // Store the ExprNode for type inference
+  lambdaExprNode: ExprNode | null = null; 
   headerSection: HeaderSection = 'curry-howard';
   headerOption: HeaderOption = 'ch-expression-to-lambda';
   conversionMode: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction' = 'natural-deduction';
   resultExpression: string = '';
   typeInferenceTree: TypeInferenceNode | null = null;
   activeExpressionLambdaTab: 'proof' | 'type' = 'proof';
-  isPredicateLogic: boolean = false; // Track if predicate logic is detected
+  isPredicateLogic: boolean = false;
 
-  // UI state (non-logic)
   helpVisible: boolean = false;
   slidePanelVisible: boolean = false;
   currentLanguage: 'sk' | 'en' = 'sk';
@@ -91,7 +90,7 @@ export class App {
     { label: '(p ⇒ q) ⇒ (¬q ⇒ ¬p)', code: '(p ⇒ q) ⇒ (¬q ⇒ ¬p)' },
     { label: 'p ∧ q ⇒ p', code: '(p ∧ q) ⇒ p' },
     { label: 'p ⇒ p ∨ q', code: 'p ⇒ (p ∨ q)' },
-    { label: '∀x. P(x) ⇒ P(x)', code: '∀x. P(x) ⇒ P(x)' }
+    { label: '∀x. P(x) ⇒ P(t)', code: '∀x. P(x) ⇒ P(t)' }
   ];
   lambdaExamples = [
     { label: 'λx:Bool. λy:Bool. x', code: 'λx:Bool. λy:Bool. x' },
@@ -108,7 +107,6 @@ export class App {
   private predictionRuleRequestId = 0;
   private predictionTypeRuleRequestId = 0;
 
-  // Popup state
   predictionRuleRequest: { node: DerivationNode, rule: string, requestId: number } | null = null;
   predictionTypeRuleRequest: { node: TypeInferenceNode, rule: string, requestId: number } | null = null;
   ndPredictionRequest: {
@@ -119,7 +117,6 @@ export class App {
     userPredictions: string[];
   } | null = null;
 
-  // Quantifier inline input state
   sequentQuantifierRequest: {
     node: DerivationNode;
     rule: string;
@@ -138,7 +135,6 @@ export class App {
     label: string;
   } | null = null;
 
-  // Free formula inline input state (for ∧E1, ∧E2, →E, ¬E)
   ndFreeFormulaRequest: {
     node: NdNode;
     rule: NdRule;
@@ -146,7 +142,6 @@ export class App {
     label: string;
   } | null = null;
 
-  // Rule arrays (from constants)
   conclusionRules = [...CONCLUSION_RULES];
   assumptionRules = [...ASSUMPTION_RULES];
   specialRules = [...SPECIAL_RULES];
@@ -160,7 +155,7 @@ export class App {
   ndIntroRules = [...ND_INTRO_RULES];
   ndElimRules = [...ND_ELIM_RULES];
   ndQuantifierRules = [...ND_QUANTIFIER_RULES];
-  ndSidebarCoreRules = ['⊥E1', '⊥E2', '⊤I'];
+  ndSidebarCoreRules = ['⊥E1', '⊤I'];
   ndSidebarNegationRules = ['¬I', '¬E'];
   ndSidebarConjunctionRules = ['∧I', '∧E1', '∧E2'];
   ndSidebarDisjunctionRules = ['∨I1', '∨I2', '∨E'];
@@ -176,10 +171,7 @@ export class App {
   natRules = [...NAT_RULES];
   letRules = [...LET_RULES];
 
-  /** Incremented on parseAndBuild to reset tree canvas pan/zoom */
   treeCanvasResetTrigger: number = 0;
-
-  // History for step back (managed by TreeHistoryService)
 
   constructor(
     private logicParser: LogicParserService,
@@ -227,8 +219,6 @@ export class App {
   
   onInputChanged(newCode: string) {
     this.code = newCode;
-    // Reset predicate logic flag when input changes
-    // It will be recalculated when parseAndBuild is called
     this.isPredicateLogic = false;
   }
 
@@ -338,10 +328,10 @@ export class App {
 
   onNodeClicked(node: DerivationNode) {
     if (this.selectedNode === node) {
-      this.selectedNode = null; // zatvorí popup
+      this.selectedNode = null; 
       this.popup.close();
     } else {
-      this.selectedNode = node; // otvorí popup
+      this.selectedNode = node;
     }
   }
 
@@ -395,18 +385,15 @@ export class App {
       const ndNode = popupNode as NdNode;
       const ndRule = rule as NdRule;
 
-      // Clear any previous inline input requests
       this.ndQuantifierRequest = null;
       this.ndFreeFormulaRequest = null;
       this.ndPredictionRequest = null;
 
-      // Quantifier rules need inline input
       if (this.isNdQuantifierRule(ndRule)) {
         this.beginNdQuantifierInput(ndNode, ndRule);
         return;
       }
 
-      // Elimination rules may need a free formula if context doesn't match
       if (this.isNdFreeFormulaRule(ndRule)) {
         if (!this.naturalDeductionBuilder.canApply(ndNode, ndRule)) {
           this.beginNdFreeFormulaInput(ndNode, ndRule);
@@ -425,7 +412,6 @@ export class App {
     if (!('sequent' in popupNode)) return;
     const node = popupNode as DerivationNode;
 
-    // Quantifier rules need inline input
     const quantifierInfo = this.proofBuilder.getQuantifierInfo(node.sequent, rule, this.currentLanguage);
     if (quantifierInfo) {
       this.sequentQuantifierInputValue = '';
@@ -556,8 +542,6 @@ export class App {
 
     try {
       const initialAssumptions = this.buildNdTypeAssumptions();
-      // In the ND type tab we always show the evaluated inference tree,
-      // independent of proof-building mode (auto/interactive).
       this.typeInferenceTree = this.typeInference.buildTypeInferenceTree(ndLambda, initialAssumptions);
     } catch {
       this.typeInferenceTree = null;
@@ -630,7 +614,6 @@ export class App {
     this.selectedNode = null;
   }
 
-  // --- Sequent quantifier inline input ---
   cancelSequentQuantifierInput(): void {
     this.sequentQuantifierRequest = null;
     this.sequentQuantifierInputValue = '';
@@ -687,7 +670,6 @@ export class App {
     this.selectedNode = null;
   }
 
-  // --- ND quantifier inline input ---
   private isNdQuantifierRule(rule: NdRule): boolean {
     return rule === '∀I' || rule === '∀E' || rule === '∃I' || rule === '∃E';
   }
@@ -823,7 +805,6 @@ export class App {
         freeFormula = parsedFormula.left;
         break;
       case '¬E':
-        // For ¬E the user types φ, premises become φ and ¬φ
         freeFormula = parsedFormula;
         break;
       default:
@@ -1027,7 +1008,6 @@ export class App {
   }
 
   async parseAndBuild() {
-    // Check if code is empty
     if (!this.code || this.code.trim() === '') {
       this.notification.showError(this.t.errorNothingTyped, {
         summary: this.i18n.errorSummary(this.currentLanguage),
@@ -1039,7 +1019,6 @@ export class App {
     this.treeHistory.clear();
     this.treeCanvasResetTrigger++;
     this.ndPredictionRequest = null;
-    // Reset predicate logic flag (will be recalculated in parseExpressionToLambda)
     this.isPredicateLogic = false;
     
     try {

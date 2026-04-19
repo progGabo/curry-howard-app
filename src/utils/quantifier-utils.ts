@@ -1,36 +1,17 @@
 import { FormulaNode, TermNode } from '../models/formula-node';
 import { TermFactories } from './ast-factories';
 
-/**
- * Utility functions for quantifier rules:
- * - Term parsing
- * - Free variable detection
- * - Capture-avoiding substitution
- */
-
-/**
- * Parse a term from a string input.
- * Supports: variables (lowercase), constants (lowercase), function applications f(t1,...,tn)
- * 
- * Examples:
- * - "x" -> TermVar("x")
- * - "c" -> TermConst("c")
- * - "f(x, y)" -> TermFunc("f", [TermVar("x"), TermVar("y")])
- */
 export function parseTerm(input: string): TermNode | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  // Try to parse function application: f(t1,...,tn)
   const funcMatch = trimmed.match(/^([a-z][a-zA-Z0-9_]*)\s*\(([^)]*)\)$/);
   if (funcMatch) {
     const funcName = funcMatch[1];
     const argsStr = funcMatch[2].trim();
     if (argsStr === '') {
-      // Function with no arguments
       return TermFactories.func(funcName, []);
     }
-    // Parse comma-separated arguments
     const args: TermNode[] = [];
     let depth = 0;
     let current = '';
@@ -53,11 +34,8 @@ export function parseTerm(input: string): TermNode | null {
     return TermFactories.func(funcName, args);
   }
 
-  // Simple variable or constant (lowercase identifier)
   const varMatch = trimmed.match(/^[a-z][a-zA-Z0-9_]*$/);
   if (varMatch) {
-    // By convention, we'll treat single lowercase identifiers as variables
-    // Constants would typically be explicitly marked, but for simplicity we use TermVar
     return TermFactories.var(varMatch[0]);
   }
 
@@ -115,10 +93,6 @@ export function termToText(term: TermNode): string {
   }
 }
 
-/**
- * Get all free variables in a formula.
- * Returns a Set of variable names that occur free in the formula.
- */
 export function freeVarsFormula(f: FormulaNode): Set<string> {
   const freeVars = new Set<string>();
   
@@ -169,10 +143,6 @@ export function freeVarsFormula(f: FormulaNode): Set<string> {
   return freeVars;
 }
 
-/**
- * Get all free variables in a term.
- * Returns a Set of variable names that occur in the term.
- */
 export function freeVarsTerm(t: TermNode): Set<string> {
   const freeVars = new Set<string>();
   
@@ -182,7 +152,6 @@ export function freeVarsTerm(t: TermNode): Set<string> {
         freeVars.add(t.name);
         break;
       case 'TermConst':
-        // Constants don't contribute free variables
         break;
       case 'TermFunc':
         t.args.forEach(collect);
@@ -261,13 +230,6 @@ export function freeTermSymbolsInFormulas(formulas: FormulaNode[]): Set<string> 
   return symbols;
 }
 
-/**
- * Capture-avoiding substitution: A[t/x]
- * Substitutes term t for variable x in formula A, avoiding variable capture.
- * 
- * If t contains variables that would be captured by binders in A,
- * we alpha-rename the bound variables first.
- */
 export function substituteFormula(
   f: FormulaNode,
   x: string,
@@ -340,9 +302,6 @@ export function substituteFormula(
   return subst(f);
 }
 
-/**
- * Substitute term t for variable x in term u.
- */
 export function substituteTerm(u: TermNode, x: string, t: TermNode): TermNode {
   switch (u.kind) {
     case 'TermVar':
@@ -362,10 +321,6 @@ export function substituteTerm(u: TermNode, x: string, t: TermNode): TermNode {
   }
 }
 
-/**
- * Rename a variable in a formula (simple renaming, not capture-avoiding substitution).
- * Used for alpha-renaming bound variables.
- */
 function renameVariableInFormula(f: FormulaNode, oldVar: string, newVar: string): FormulaNode {
   switch (f.kind) {
     case 'Var':
@@ -374,7 +329,7 @@ function renameVariableInFormula(f: FormulaNode, oldVar: string, newVar: string)
     case 'Forall':
     case 'Exists': {
       const renamedBody = f.variable === oldVar 
-        ? f.body // Don't rename if it's the bound variable itself
+        ? f.body
         : renameVariableInFormula(f.body, oldVar, newVar);
       return {
         ...f,
@@ -463,9 +418,6 @@ function renameBoundVariableInFormula(f: FormulaNode, oldVar: string, newVar: st
   }
 }
 
-/**
- * Rename a variable in a term.
- */
 function renameVariableInTerm(t: TermNode, oldVar: string, newVar: string): TermNode {
   switch (t.kind) {
     case 'TermVar':
@@ -482,9 +434,6 @@ function renameVariableInTerm(t: TermNode, oldVar: string, newVar: string): Term
   }
 }
 
-/**
- * Generate a fresh variable name that doesn't conflict with existing variables.
- */
 function generateFreshVar(base: string, existing: Set<string>): string {
   let suffix = 0;
   let candidate = `${base}${suffix}`;

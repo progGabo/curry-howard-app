@@ -163,25 +163,6 @@ export class NdLambdaBuilderService {
         return ExprFactories.abort(bottomProof, this.formulaType.formulaToType(node.judgement.goal));
       }
 
-      case '⊥E2': {
-        const goal = node.judgement.goal;
-        if (node.premises.length < 1) return null;
-
-        const dischargedId = node.discharges?.[0]?.hypothesisId;
-        if (!dischargedId) return null;
-
-        const param = this.freshName('k');
-        const childEnv = new Map(env);
-        childEnv.set(dischargedId, param);
-
-        const body = this.extract(node.premises[0], childEnv);
-        if (!body) return null;
-
-        const negType = this.formulaType.formulaToType(FormulaFactories.not(goal));
-        const inner = ExprFactories.abs(param, negType, body);
-        return ExprFactories.abort(inner, this.formulaType.formulaToType(goal));
-      }
-
       case '⊤I':
         return ExprFactories.true();
 

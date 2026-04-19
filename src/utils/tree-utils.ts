@@ -1,9 +1,7 @@
 import { ExprNode } from '../models/lambda-node';
 import { FormulaNode } from '../models/formula-node';
 
-// Tree traversal utilities
 export class TreeUtils {
-  // Map over all nodes in a tree
   static mapExpr(
     expr: ExprNode,
     fn: (node: ExprNode) => ExprNode
@@ -49,7 +47,6 @@ export class TreeUtils {
     }
   }
 
-  // Find all nodes matching a predicate
   static findExpr(
     expr: ExprNode,
     predicate: (node: ExprNode) => boolean
@@ -90,7 +87,6 @@ export class TreeUtils {
     }
   }
 
-  // Count nodes
   static countNodes(expr: ExprNode): number {
     let count = 1;
     switch (expr.kind) {
@@ -136,7 +132,6 @@ export class TreeUtils {
     return count;
   }
 
-  // Get all free variables (covers all ExprNode kinds including DependentAbs, DependentPair, LetDependentPair)
   static getFreeVars(expr: ExprNode, bound: Set<string> = new Set()): Set<string> {
     switch (expr.kind) {
       case 'Var':
@@ -206,7 +201,6 @@ export class TreeUtils {
     }
   }
 
-  // Map over all formulas in a tree
   static mapFormula(
     formula: FormulaNode,
     fn: (node: FormulaNode) => FormulaNode
@@ -227,7 +221,6 @@ export class TreeUtils {
       case 'Exists':
         return { ...mapped, body: this.mapFormula(mapped.body, fn) };
       case 'Predicate':
-        // Predicates don't contain formulas, just terms
         return mapped;
       default:
         return mapped;

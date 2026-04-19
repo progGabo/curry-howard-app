@@ -6,7 +6,6 @@ export interface ShortcutApplyResult {
 
 export const SYMBOL_SHORTCUTS: Record<string, string> = {
   '\\impl': '⇒',
-  '\\to': '⇒',
   '\\and': '∧',
   '\\or': '∨',
   '\\not': '¬',
@@ -14,7 +13,10 @@ export const SYMBOL_SHORTCUTS: Record<string, string> = {
   '\\exists': '∃',
   '\\turnstile': '⊢',
   '\\vdash': '⊢',
-  '\\lambda': 'λ'
+  '\\lambda': 'λ',
+  '\\top': '⊤',
+  '\\bot': '⊥',
+  '\\bottom': '⊥'
 };
 
 export function applySymbolShortcut(text: string, cursor: number): ShortcutApplyResult {

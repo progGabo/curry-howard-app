@@ -4,7 +4,6 @@ export type NdRule =
   | 'Ax'
   | '⊤I'
   | '⊥E1'
-  | '⊥E2'
   | '¬I'
   | '¬E'
   | '∧I'

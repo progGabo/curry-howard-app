@@ -18,7 +18,6 @@ export class RuleFormulaService {
       description: 'Identity rule',
       type: 'special'
     },
-    // Conclusion rules
     '→R': {
       name: '→R (Implication Right)',
       formula: '\\frac{\\Gamma, \\varphi \\vdash \\Delta, \\psi}{\\Gamma \\vdash \\Delta, \\varphi \\Rightarrow \\psi}\\; (⇒R)',
@@ -129,12 +128,6 @@ export class RuleFormulaService {
       description: 'Explosion from falsity',
       type: 'assumption'
     },
-    '⊥E2': {
-      name: '⊥E2 (Explosion 2)',
-      formula: '\\frac{\\begin{array}{c}[\\neg \\varphi]\\\\ \\vdots \\\\ \\bot\\end{array}}{\\varphi}\\; (\\bot E2)',
-      description: 'Explosion with discharged assumption',
-      type: 'assumption'
-    },
     '¬I': {
       name: '¬I (Negation Introduction)',
       formula: '\\frac{\\begin{array}{c}[\\varphi]\\\\ \\vdots \\\\ \\bot\\end{array}}{\\neg \\varphi}\\; (\\neg I)',
@@ -219,7 +212,6 @@ export class RuleFormulaService {
       description: 'Existential elimination',
       type: 'assumption'
     },
-    // Type inference - Basic
     'Var': {
       name: 'Var (Variable)',
       formula: '\\frac{x : \\tau \\in \\Gamma}{\\Gamma \\vdash x : \\tau}',
@@ -244,7 +236,6 @@ export class RuleFormulaService {
       description: 'Zero constant',
       type: 'basic'
     },
-    // Type inference - Functions
     'Abs': {
       name: 'Abs (Abstraction)',
       formula: '\\frac{\\Gamma, x : \\tau_1 \\vdash e : \\tau_2}{\\Gamma \\vdash \\lambda x:\\tau_1. e : \\tau_1 \\to \\tau_2}',
@@ -257,7 +248,6 @@ export class RuleFormulaService {
       description: 'Function application',
       type: 'other'
     },
-    // Pairs
     'Pair': {
       name: 'Pair',
       formula: '\\frac{\\Gamma \\vdash e_1 : \\tau_1 \\quad \\Gamma \\vdash e_2 : \\tau_2}{\\Gamma \\vdash \\langle e_1, e_2 \\rangle : \\tau_1 \\times \\tau_2}',
@@ -282,7 +272,6 @@ export class RuleFormulaService {
       description: 'Pair pattern matching',
       type: 'other'
     },
-    // Dependent
     'DependentAbs': {
       name: 'DependentAbs',
       formula: '\\frac{\\Gamma, x : \\tau \\vdash e : P(x)}{\\Gamma \\vdash \\lambda x:\\tau. e : \\forall x:\\tau. P(x)}',
@@ -301,7 +290,6 @@ export class RuleFormulaService {
       description: 'Dependent pair elimination',
       type: 'other'
     },
-    // Sum
     'Inl': {
       name: 'Inl (Inject Left)',
       formula: '\\frac{\\Gamma \\vdash e : \\tau_1}{\\Gamma \\vdash \\text{inl} \\, e : \\tau_1 + \\tau_2}',
@@ -320,7 +308,6 @@ export class RuleFormulaService {
       description: 'Case analysis on sum',
       type: 'other'
     },
-    // Control Flow
     'If': {
       name: 'If (Conditional)',
       formula: '\\frac{\\Gamma \\vdash e_1 : \\text{Bool} \\quad \\Gamma \\vdash e_2 : \\tau \\quad \\Gamma \\vdash e_3 : \\tau}{\\Gamma \\vdash \\text{if} \\, e_1 \\, \\text{then} \\, e_2 \\, \\text{else} \\, e_3 : \\tau}',
@@ -333,7 +320,6 @@ export class RuleFormulaService {
       description: 'Local variable binding',
       type: 'other'
     },
-    // Naturals
     'Succ': {
       name: 'Succ (Successor)',
       formula: '\\frac{\\Gamma \\vdash e : \\text{Nat}}{\\Gamma \\vdash \\text{succ} \\, e : \\text{Nat}}',
@@ -467,12 +453,6 @@ export class RuleFormulaService {
       name: '⊥E1 (Eliminácia sporu 1)',
       formula: '\\frac{\\bot}{\\varphi}\\; (⊥E1)',
       description: 'Odvodenie formuly zo sporu',
-      type: 'assumption'
-    },
-    '⊥E2': {
-      name: '⊥E2 (Eliminácia sporu 2)',
-      formula: '\\frac{\\begin{array}{c}[\\neg \\varphi]\\\\ \\vdots \\\\ \\bot\\end{array}}{\\varphi}\\; (⊥E2)',
-      description: 'Odvodenie formuly so subdôkazom',
       type: 'assumption'
     },
     '¬I': {

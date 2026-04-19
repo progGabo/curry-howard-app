@@ -2,12 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 import { I18nService } from '../../services/i18n.service';
 
-/**
- * Modal component for quantifier rule input.
- * Used for:
- * - ∀R, ∃L: Input eigenvariable (fresh variable name)
- * - ∀L, ∃R: Input instantiation/witness term
- */
 @Component({
   selector: 'app-quantifier-input-modal',
   templateUrl: './quantifier-input-modal.html',
@@ -27,10 +21,9 @@ export class QuantifierInputModalComponent implements OnInit {
     | 'exists-intro'
     | 'exists-elim' = 'forall-right';
   placeholder: string = '';
-  isVariableInput: boolean = true; // true for eigenvariable, false for term
-  freeVars: string[] = []; // Free variables to check freshness against
+  isVariableInput: boolean = true;
+  freeVars: string[] = []; 
   
-  // Translations
   title: string = '';
   labelVariable: string = '';
   labelTerm: string = '';
