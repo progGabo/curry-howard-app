@@ -16,26 +16,14 @@ describe('Lambda → Expression regression', () => {
   });
 
   const lambdaCases = [
-    { code: '\\x:Bool. \\y:Bool. x', expectContains: 'Bool' },
     { code: '\\x.x : a -> a', expectContains: 'a → a' },
     { code: '\\f:(A->B). \\x:A. f x', expectContains: 'A → B' },
     { code: '\\x:A. x', expectContains: 'A → A' },
     { code: '\\x:A. \\y:B. <x,y>', expectContains: 'A → (B →' },
     { code: '\\x:T. \\p:P(x). p', expectContains: '∀x:T. P(x) → P(x)' },
     { code: 'let ⟨x : T, p : P(x)⟩ = e in ⟨x : T, p : P(x)⟩', expectContains: '∃' },
-    { code: '\\x:Nat. succ x', expectContains: 'Nat → Nat' },
-    { code: '\\x:Nat. iszero x', expectContains: 'Nat → Bool' },
-    { code: 'if true then false else true', expectContains: 'Bool' },
-    { code: 'let x = true in x', expectContains: 'Bool' },
-    { code: 'inl true as Bool + Nat', expectContains: 'Bool ∨ Nat' },
-    { code: 'inr 0 as Bool + Nat', expectContains: 'Bool ∨ Nat' },
     { code: '\\x:(A->B). \\y:A. x y', expectContains: '(A → B) → (A → B)' },
-    { code: '\\x:Bool. if x then true else false', expectContains: 'Bool → Bool' },
-    { code: '\\x:Nat. pred (succ x)', expectContains: 'Nat → Nat' },
-    { code: '\\x:Nat. iszero (pred x)', expectContains: 'Nat → Bool' },
     { code: '\\x:A. \\y:B. \\z:C. x', expectContains: 'A → (B → (C → A))' },
-    { code: 'let x = 0 in succ x', expectContains: 'Nat' },
-    { code: 'let x = true in if x then true else false', expectContains: 'Bool' },
   ];
 
   const dependentPairCases = [
@@ -55,7 +43,6 @@ describe('Lambda → Expression regression', () => {
 
   it('keeps parser normalization for unicode and ascii lambda syntax stable', () => {
     const pairs = [
-      ['λx:Bool. x', '\\x:Bool. x'],
       ['\\f:(A→B). \\x:A. f x', '\\f:(A->B). \\x:A. f x'],
       ['\\x:A. \\y:B. ⟨x,y⟩', '\\x:A. \\y:B. <x,y>']
     ];
@@ -113,11 +100,9 @@ describe('Lambda → Expression regression', () => {
 
   it('keeps sum/case typing examples stable', () => {
     const sumCases = [
-      { code: 'inl true as Bool + Nat', expectContains: 'Bool ∨ Nat' },
-      { code: 'inr 0 as Bool + Nat', expectContains: 'Bool ∨ Nat' },
       {
-        code: 'case inl true as Bool + Nat of inl b:Bool => b | inr n:Nat => false',
-        expectContains: 'Bool'
+        code: 'case inl (\\x:A. x) as (A->A) + B of inl f:(A->A) => f | inr b:B => \\x:A. x',
+        expectContains: 'A → A'
       }
     ];
 
@@ -141,19 +126,12 @@ describe('Lambda → Expression regression', () => {
     expect(expression).toContain('P(x)');
   });
 
-  it('distinguishes logical negation (→ ⊥) from Bool-valued functions', () => {
+  it('distinguishes logical negation (→ ⊥) from type-variable-valued functions', () => {
     const logicalNeg = lambdaParser.parseLambdaExpression('\\a:(p->q). \\b:(q->Bottom). \\c:p. b (a c)');
     const logicalNegType = typeInference.buildTypeInferenceTree(logicalNeg).inferredType;
     const logicalNegFormula = lambdaToExpression.convertLambdaToExpression(logicalNeg, logicalNegType);
 
-    const boolFn = lambdaParser.parseLambdaExpression('\\a:(p->q). \\b:(q->Bool). \\c:p. b (a c)');
-    const boolFnType = typeInference.buildTypeInferenceTree(boolFn).inferredType;
-    const boolFnFormula = lambdaToExpression.convertLambdaToExpression(boolFn, boolFnType);
-
     expect(logicalNegFormula).toContain('(p → q) → (¬q → ¬p)');
-    expect(logicalNegFormula).not.toContain('Bool');
-    expect(boolFnFormula).toContain('Bool');
-    expect(boolFnFormula).not.toContain('⊥');
   });
 
   it('prints q → ⊥ as ¬q and nested negation as ¬¬r', () => {

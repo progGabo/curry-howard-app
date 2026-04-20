@@ -14,93 +14,99 @@ export class RuleFormulaService {
   private rulFormulasEN: Record<string, RuleFormula> = {
     'id': {
       name: 'ID (Identity)',
-      formula: '\\frac{}{\\Gamma, \\varphi \\vdash \\Delta, \\varphi}\\; (ID)',
+      formula: '\\frac{}{\\Gamma, \\varphi \\vdash \\varphi}\\; (ID)',
       description: 'Identity rule',
       type: 'special'
     },
     '→R': {
       name: '→R (Implication Right)',
-      formula: '\\frac{\\Gamma, \\varphi \\vdash \\Delta, \\psi}{\\Gamma \\vdash \\Delta, \\varphi \\Rightarrow \\psi}\\; (⇒R)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash \\psi}{\\Gamma \\vdash \\varphi \\Rightarrow \\psi}\\; (⇒R)',
       description: 'Introduce implication on the right side',
       type: 'conclusion'
     },
     '∧R': {
       name: '∧R (Conjunction Right)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi \\quad \\Gamma \\vdash \\Delta, \\psi}{\\Gamma \\vdash \\Delta, \\varphi \\land \\psi}\\; (∧R)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Gamma \\vdash \\psi}{\\Gamma \\vdash \\varphi \\land \\psi}\\; (∧R)',
       description: 'Introduce conjunction on the right side',
       type: 'conclusion'
     },
-    '∨R': {
-      name: '∨R (Disjunction Right)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi \\quad \\Gamma \\vdash \\Delta, \\psi}{\\Gamma \\vdash \\Delta, \\varphi \\lor \\psi}\\; (∨R)',
-      description: 'Introduce disjunction on the right side',
+    '∨R1': {
+      name: '∨R1 (Disjunction Right 1)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi}{\\Gamma \\vdash \\varphi \\lor \\psi}\\; (∨R1)',
+      description: 'Introduce disjunction on the right side (left disjunct)',
+      type: 'conclusion'
+    },
+    '∨R2': {
+      name: '∨R2 (Disjunction Right 2)',
+      formula: '\\frac{\\Gamma \\vdash \\psi}{\\Gamma \\vdash \\varphi \\lor \\psi}\\; (∨R2)',
+      description: 'Introduce disjunction on the right side (right disjunct)',
       type: 'conclusion'
     },
     '¬R': {
       name: '¬R (Negation Right)',
-      formula: '\\frac{\\Gamma, p \\vdash \\Delta}{\\Gamma \\vdash \\Delta, \\neg p}\\; (¬R)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash \\bot}{\\Gamma \\vdash \\neg \\varphi}\\; (¬R)',
       description: 'Introduce negation on the right side',
       type: 'conclusion'
     },
     '∀R': {
       name: '∀R (Forall Right)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi[y/x]}{\\Gamma \\vdash \\Delta, (\\forall x)\\varphi}\\; (∀R)',
-      description: 'Introduce universal quantifier (x must be fresh/new)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi[y/x]}{\\Gamma \\vdash (\\forall x)\\varphi}\\; (∀R)',
+      description: 'Introduce universal quantifier (y must be fresh/new)',
       type: 'conclusion'
     },
     '∃R': {
       name: '∃R (Exists Right)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi[t/x]}{\\Gamma \\vdash \\Delta, (\\exists x)\\varphi}\\; (∃R)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi[t/x]}{\\Gamma \\vdash (\\exists x)\\varphi}\\; (∃R)',
       description: 'Introduce existential quantifier',
       type: 'conclusion'
     },
     // Assumption rules
     '→L': {
       name: '→L (Implication Left)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi \\quad \\psi, \\Sigma \\vdash \\Lambda}{\\Gamma, \\Delta, \\varphi \\Rightarrow \\psi \\vdash \\Lambda, \\Sigma}\\; (⇒L)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\Rightarrow \\psi \\vdash A}\\; (⇒L)',
       description: 'Eliminate implication on the left side',
       type: 'assumption'
     },
-    '∧L': {
-      name: '∧L (Conjunction Left)',
-      formula: '\\frac{\\Gamma, \\varphi, \\psi \\vdash \\Delta}{\\Gamma, \\varphi \\land \\psi \\vdash \\Delta}\\; (∧L)',
-      description: 'Eliminate conjunction on the left side',
+    '∧L1': {
+      name: '∧L1 (Conjunction Left 1)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash A}{\\Gamma, \\varphi \\land \\psi \\vdash A}\\; (∧L1)',
+      description: 'Eliminate conjunction on the left side (left conjunct)',
+      type: 'assumption'
+    },
+    '∧L2': {
+      name: '∧L2 (Conjunction Left 2)',
+      formula: '\\frac{\\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\land \\psi \\vdash A}\\; (∧L2)',
+      description: 'Eliminate conjunction on the left side (right conjunct)',
       type: 'assumption'
     },
     '∨L': {
       name: '∨L (Disjunction Left)',
-      formula: '\\frac{\\Gamma, \\varphi \\vdash \\Delta \\quad \\Gamma, \\psi \\vdash \\Delta}{\\Gamma, \\varphi \\lor \\psi \\vdash \\Delta}\\; (∨L)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash A \\quad \\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\lor \\psi \\vdash A}\\; (∨L)',
       description: 'Eliminate disjunction on the left side',
       type: 'assumption'
     },
     '¬L': {
       name: '¬L (Negation Left)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, p}{\\Gamma, \\neg p \\vdash \\Delta}\\; (¬L)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi}{\\Gamma, \\neg \\varphi \\vdash A}\\; (¬L)',
       description: 'Eliminate negation on the left side',
       type: 'assumption'
     },
     '∀L': {
       name: '∀L (Forall Left)',
-      formula: '\\frac{\\Gamma, \\varphi[t/x] \\vdash \\Delta}{\\Gamma, (\\forall x)\\varphi \\vdash \\Delta}\\; (∀L)',
+      formula: '\\frac{\\Gamma, \\varphi[t/x] \\vdash A}{\\Gamma, (\\forall x)\\varphi \\vdash A}\\; (∀L)',
       description: 'Instantiate universal quantifier',
       type: 'assumption'
     },
     '∃L': {
       name: '∃L (Exists Left)',
-      formula: '\\frac{\\Gamma, \\varphi[y/x] \\vdash \\Delta}{\\Gamma, (\\exists x)\\varphi \\vdash \\Delta}\\; (∃L)',
-      description: 'Eliminate existential quantifier (x must be fresh/new)',
+      formula: '\\frac{\\Gamma, \\varphi[y/x] \\vdash A}{\\Gamma, (\\exists x)\\varphi \\vdash A}\\; (∃L)',
+      description: 'Eliminate existential quantifier (y must be fresh/new)',
       type: 'assumption'
     },
     // Special rules
-    'WR': {
-      name: 'WR (Weakening Right)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta}{\\Gamma \\vdash \\Delta, \\varphi}\\; (WR)',
-      description: 'Add an extra conclusion formula.',
-      type: 'special'
-    },
     'WL': {
       name: 'WL (Weakening Left)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta}{\\Gamma, \\varphi \\vdash \\Delta}\\; (WL)',
+      formula: '\\frac{\\Gamma \\vdash A}{\\Gamma, \\varphi \\vdash A}\\; (WL)',
       description: 'Add an extra assumption formula.',
       type: 'special'
     },
@@ -218,24 +224,6 @@ export class RuleFormulaService {
       description: 'Variable type inference',
       type: 'basic'
     },
-    'True': {
-      name: 'True',
-      formula: '\\frac{}{\\Gamma \\vdash \\text{true} : \\text{Bool}}',
-      description: 'True constant',
-      type: 'basic'
-    },
-    'False': {
-      name: 'False',
-      formula: '\\frac{}{\\Gamma \\vdash \\text{false} : \\text{Bool}}',
-      description: 'False constant',
-      type: 'basic'
-    },
-    'Zero': {
-      name: 'Zero',
-      formula: '\\frac{}{\\Gamma \\vdash 0 : \\text{Nat}}',
-      description: 'Zero constant',
-      type: 'basic'
-    },
     'Abs': {
       name: 'Abs (Abstraction)',
       formula: '\\frac{\\Gamma, x : \\tau_1 \\vdash e : \\tau_2}{\\Gamma \\vdash \\lambda x:\\tau_1. e : \\tau_1 \\to \\tau_2}',
@@ -308,34 +296,10 @@ export class RuleFormulaService {
       description: 'Case analysis on sum',
       type: 'other'
     },
-    'If': {
-      name: 'If (Conditional)',
-      formula: '\\frac{\\Gamma \\vdash e_1 : \\text{Bool} \\quad \\Gamma \\vdash e_2 : \\tau \\quad \\Gamma \\vdash e_3 : \\tau}{\\Gamma \\vdash \\text{if} \\, e_1 \\, \\text{then} \\, e_2 \\, \\text{else} \\, e_3 : \\tau}',
-      description: 'Conditional expression',
-      type: 'other'
-    },
     'Let': {
       name: 'Let (Local binding)',
       formula: '\\frac{\\Gamma \\vdash t_1 : T_1 \\qquad \\Gamma, x : \\mathrm{gen}(\\Gamma,T_1) \\vdash t_2 : T_2}{\\Gamma \\vdash \\mathrm{let}\\; x = t_1\\; \\mathrm{in}\\; t_2 : T_2}',
       description: 'Local variable binding',
-      type: 'other'
-    },
-    'Succ': {
-      name: 'Succ (Successor)',
-      formula: '\\frac{\\Gamma \\vdash e : \\text{Nat}}{\\Gamma \\vdash \\text{succ} \\, e : \\text{Nat}}',
-      description: 'Natural number successor',
-      type: 'other'
-    },
-    'Pred': {
-      name: 'Pred (Predecessor)',
-      formula: '\\frac{\\Gamma \\vdash e : \\text{Nat}}{\\Gamma \\vdash \\text{pred} \\, e : \\text{Nat}}',
-      description: 'Natural number predecessor',
-      type: 'other'
-    },
-    'IsZero': {
-      name: 'IsZero',
-      formula: '\\frac{\\Gamma \\vdash e : \\text{Nat}}{\\Gamma \\vdash \\text{iszero} \\, e : \\text{Bool}}',
-      description: 'Test if zero',
       type: 'other'
     }
   };
@@ -343,91 +307,97 @@ export class RuleFormulaService {
   private ruleFormulasSK: Record<string, RuleFormula> = {
     'id': {
       name: 'ID (Identita)',
-      formula: '\\frac{}{\\Gamma, \\varphi \\vdash \\Delta, \\varphi}\\; (ID)',
+      formula: '\\frac{}{\\Gamma, \\varphi \\vdash \\varphi}\\; (ID)',
       description: 'Pravidlo identity',
       type: 'special'
     },
     '→R': {
       name: '→R (Implikácia vpravo)',
-      formula: '\\frac{\\Gamma, \\varphi \\vdash \\Delta, \\psi}{\\Gamma \\vdash \\Delta, \\varphi \\Rightarrow \\psi}\\; (⇒R)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash \\psi}{\\Gamma \\vdash \\varphi \\Rightarrow \\psi}\\; (⇒R)',
       description: 'Reprezentácia implikácie na pravej strane',
       type: 'conclusion'
     },
     '∧R': {
       name: '∧R (Konjunkcia vpravo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi \\quad \\Gamma \\vdash \\Delta, \\psi}{\\Gamma \\vdash \\Delta, \\varphi \\land \\psi}\\; (∧R)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Gamma \\vdash \\psi}{\\Gamma \\vdash \\varphi \\land \\psi}\\; (∧R)',
       description: 'Reprezentácia konjunkcie na pravej strane',
       type: 'conclusion'
     },
-    '∨R': {
-      name: '∨R (Disjunkcia vpravo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi \\quad \\Gamma \\vdash \\Delta, \\psi}{\\Gamma \\vdash \\Delta, \\varphi \\lor \\psi}\\; (∨R)',
-      description: 'Reprezentácia disjunkcie na pravej strane',
+    '∨R1': {
+      name: '∨R1 (Disjunkcia vpravo 1)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi}{\\Gamma \\vdash \\varphi \\lor \\psi}\\; (∨R1)',
+      description: 'Reprezentácia disjunkcie na pravej strane (ľavý disjunkt)',
+      type: 'conclusion'
+    },
+    '∨R2': {
+      name: '∨R2 (Disjunkcia vpravo 2)',
+      formula: '\\frac{\\Gamma \\vdash \\psi}{\\Gamma \\vdash \\varphi \\lor \\psi}\\; (∨R2)',
+      description: 'Reprezentácia disjunkcie na pravej strane (pravý disjunkt)',
       type: 'conclusion'
     },
     '¬R': {
       name: '¬R (Negácia vpravo)',
-      formula: '\\frac{\\Gamma, p \\vdash \\Delta}{\\Gamma \\vdash \\Delta, \\neg p}\\; (¬R)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash \\bot}{\\Gamma \\vdash \\neg \\varphi}\\; (¬R)',
       description: 'Reprezentácia negácie na pravej strane',
       type: 'conclusion'
     },
     '∀R': {
       name: '∀R (Všetkých vpravo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi[y/x]}{\\Gamma \\vdash \\Delta, (\\forall x)\\varphi}\\; (∀R)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi[y/x]}{\\Gamma \\vdash (\\forall x)\\varphi}\\; (∀R)',
       description: 'Reprezentácia univerzálneho kvantifikátora',
       type: 'conclusion'
     },
     '∃R': {
       name: '∃R (Existuje vpravo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi[t/x]}{\\Gamma \\vdash \\Delta, (\\exists x)\\varphi}\\; (∃R)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi[t/x]}{\\Gamma \\vdash (\\exists x)\\varphi}\\; (∃R)',
       description: 'Reprezentácia existenciálneho kvantifikátora',
       type: 'conclusion'
     },
     '→L': {
       name: '→L (Implikácia vľavo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, \\varphi \\quad \\psi, \\Sigma \\vdash \\Lambda}{\\Gamma, \\Delta, \\varphi \\Rightarrow \\psi \\vdash \\Lambda, \\Sigma}\\; (⇒L)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\Rightarrow \\psi \\vdash A}\\; (⇒L)',
       description: 'Eliminácia implikácie na ľavej strane',
       type: 'assumption'
     },
-    '∧L': {
-      name: '∧L (Konjunkcia vľavo)',
-      formula: '\\frac{\\Gamma, \\varphi, \\psi \\vdash \\Delta}{\\Gamma, \\varphi \\land \\psi \\vdash \\Delta}\\; (∧L)',
-      description: 'Eliminácia konjunkcie na ľavej strane',
+    '∧L1': {
+      name: '∧L1 (Konjunkcia vľavo 1)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash A}{\\Gamma, \\varphi \\land \\psi \\vdash A}\\; (∧L1)',
+      description: 'Eliminácia konjunkcie na ľavej strane (ľavá zložka)',
+      type: 'assumption'
+    },
+    '∧L2': {
+      name: '∧L2 (Konjunkcia vľavo 2)',
+      formula: '\\frac{\\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\land \\psi \\vdash A}\\; (∧L2)',
+      description: 'Eliminácia konjunkcie na ľavej strane (pravá zložka)',
       type: 'assumption'
     },
     '∨L': {
       name: '∨L (Disjunkcia vľavo)',
-      formula: '\\frac{\\Gamma, \\varphi \\vdash \\Delta \\quad \\Gamma, \\psi \\vdash \\Delta}{\\Gamma, \\varphi \\lor \\psi \\vdash \\Delta}\\; (∨L)',
+      formula: '\\frac{\\Gamma, \\varphi \\vdash A \\quad \\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\lor \\psi \\vdash A}\\; (∨L)',
       description: 'Eliminácia disjunkcie na ľavej strane',
       type: 'assumption'
     },
     '¬L': {
       name: '¬L (Negácia vľavo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta, p}{\\Gamma, \\neg p \\vdash \\Delta}\\; (¬L)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi}{\\Gamma, \\neg \\varphi \\vdash A}\\; (¬L)',
       description: 'Eliminácia negácie na ľavej strane',
       type: 'assumption'
     },
     '∀L': {
       name: '∀L (Všetkých vľavo)',
-      formula: '\\frac{\\Gamma, \\varphi[t/x] \\vdash \\Delta}{\\Gamma, (\\forall x)\\varphi \\vdash \\Delta}\\; (∀L)',
+      formula: '\\frac{\\Gamma, \\varphi[t/x] \\vdash A}{\\Gamma, (\\forall x)\\varphi \\vdash A}\\; (∀L)',
       description: 'Inštancia univerzálneho kvantifikátora',
       type: 'assumption'
     },
     '∃L': {
       name: '∃L (Existuje vľavo)',
-      formula: '\\frac{\\Gamma, \\varphi[y/x] \\vdash \\Delta}{\\Gamma, (\\exists x)\\varphi \\vdash \\Delta}\\; (∃L)',
+      formula: '\\frac{\\Gamma, \\varphi[y/x] \\vdash A}{\\Gamma, (\\exists x)\\varphi \\vdash A}\\; (∃L)',
       description: 'Eliminácia existenciálneho kvantifikátora',
       type: 'assumption'
     },
-    'WR': {
-      name: 'WR (Zoslabenie vpravo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta}{\\Gamma \\vdash \\Delta, \\varphi}\\; (WR)',
-      description: 'Pridaj ďalšiu formulu do záveru.',
-      type: 'special'
-    },
     'WL': {
       name: 'WL (Zoslabenie vľavo)',
-      formula: '\\frac{\\Gamma \\vdash \\Delta}{\\Gamma, \\varphi \\vdash \\Delta}\\; (WL)',
+      formula: '\\frac{\\Gamma \\vdash A}{\\Gamma, \\varphi \\vdash A}\\; (WL)',
       description: 'Pridaj ďalší predpoklad.',
       type: 'special'
     },
@@ -545,24 +515,6 @@ export class RuleFormulaService {
       description: 'Odvodenie typu premennej',
       type: 'basic'
     },
-    'True': {
-      name: 'True',
-      formula: '\\frac{}{\\Gamma \\vdash \\text{true} : \\text{Bool}}',
-      description: 'Konštanta True',
-      type: 'basic'
-    },
-    'False': {
-      name: 'False',
-      formula: '\\frac{}{\\Gamma \\vdash \\text{false} : \\text{Bool}}',
-      description: 'Konštanta False',
-      type: 'basic'
-    },
-    'Zero': {
-      name: 'Zero',
-      formula: '\\frac{}{\\Gamma \\vdash 0 : \\text{Nat}}',
-      description: 'Konštanta Zero',
-      type: 'basic'
-    },
     'Abs': {
       name: 'Abs (Abstrakcia)',
       formula: '\\frac{\\Gamma, x : \\tau_1 \\vdash e : \\tau_2}{\\Gamma \\vdash \\lambda x:\\tau_1. e : \\tau_1 \\to \\tau_2}',
@@ -635,34 +587,10 @@ export class RuleFormulaService {
       description: 'Analýza prípadov na sume',
       type: 'other'
     },
-    'If': {
-      name: 'If (Podmienka)',
-      formula: '\\frac{\\Gamma \\vdash e_1 : \\text{Bool} \\quad \\Gamma \\vdash e_2 : \\tau \\quad \\Gamma \\vdash e_3 : \\tau}{\\Gamma \\vdash \\text{if} \\, e_1 \\, \\text{then} \\, e_2 \\, \\text{else} \\, e_3 : \\tau}',
-      description: 'Podmienený výraz',
-      type: 'other'
-    },
     'Let': {
       name: 'Let (Lokálne viazanie)',
       formula: '\\frac{\\Gamma \\vdash t_1 : T_1 \\qquad \\Gamma, x : \\mathrm{gen}(\\Gamma,T_1) \\vdash t_2 : T_2}{\\Gamma \\vdash \\mathrm{let}\\; x = t_1\\; \\mathrm{in}\\; t_2 : T_2}',
       description: 'Lokálne viazanie premennej',
-      type: 'other'
-    },
-    'Succ': {
-      name: 'Succ (Nástupca)',
-      formula: '\\frac{\\Gamma \\vdash e : \\text{Nat}}{\\Gamma \\vdash \\text{succ} \\, e : \\text{Nat}}',
-      description: 'Nástupca prirodzeného čísla',
-      type: 'other'
-    },
-    'Pred': {
-      name: 'Pred (Predchodca)',
-      formula: '\\frac{\\Gamma \\vdash e : \\text{Nat}}{\\Gamma \\vdash \\text{pred} \\, e : \\text{Nat}}',
-      description: 'Predchodca prirodzeného čísla',
-      type: 'other'
-    },
-    'IsZero': {
-      name: 'IsZero',
-      formula: '\\frac{\\Gamma \\vdash e : \\text{Nat}}{\\Gamma \\vdash \\text{iszero} \\, e : \\text{Bool}}',
-      description: 'Test rovnosti nule',
       type: 'other'
     }
   };

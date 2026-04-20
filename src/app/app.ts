@@ -35,8 +35,6 @@ import {
   PAIR_RULES,
   DEPENDENT_RULES,
   SUM_RULES,
-  CONDITIONAL_RULES,
-  NAT_RULES,
   LET_RULES
 } from '../constants/rules';
 
@@ -62,6 +60,8 @@ export class App {
   headerOption: HeaderOption = 'ch-expression-to-lambda';
   conversionMode: 'expression-to-lambda' | 'lambda-to-expression' | 'natural-deduction' = 'natural-deduction';
   resultExpression: string = '';
+  rawType: string = '';
+  letBindings: string[] = [];
   typeInferenceTree: TypeInferenceNode | null = null;
   activeExpressionLambdaTab: 'proof' | 'type' = 'proof';
   isPredicateLogic: boolean = false;
@@ -77,7 +77,6 @@ export class App {
     'LETPAIR',
     'CASE',
     'LETDEPENDENTPAIR',
-    'IF',
     'LET'
   ]);
 
@@ -90,10 +89,10 @@ export class App {
     { label: '(p ⇒ q) ⇒ (¬q ⇒ ¬p)', code: '(p ⇒ q) ⇒ (¬q ⇒ ¬p)' },
     { label: 'p ∧ q ⇒ p', code: '(p ∧ q) ⇒ p' },
     { label: 'p ⇒ p ∨ q', code: 'p ⇒ (p ∨ q)' },
-    { label: '∀x. P(x) ⇒ P(t)', code: '∀x. P(x) ⇒ P(t)' }
+    { label: '∀x:T. P(x) ⇒ P(t)', code: '∀x:T. P(x) ⇒ P(t)' }
   ];
   lambdaExamples = [
-    { label: 'λx:Bool. λy:Bool. x', code: 'λx:Bool. λy:Bool. x' },
+    { label: 'λx:A. λy:A. x', code: 'λx:A. λy:A. x' },
     { label: 'λf:(A⇒B). λx:A. f x', code: 'λf:(A->B). λx:A. f x' },
     { label: 'λx:A. x', code: 'λx:A. x' },
     { label: 'λx:A. λy:B. ⟨x,y⟩', code: 'λx:A. λy:B. <x,y>' },
@@ -147,11 +146,11 @@ export class App {
   specialRules = [...SPECIAL_RULES];
   seqSidebarIdentityCutRules = ['id'];
   seqSidebarNegationRules = ['¬L', '¬R'];
-  seqSidebarConjunctionRules = ['∧L', '∧R'];
-  seqSidebarDisjunctionRules = ['∨R', '∨L'];
+  seqSidebarConjunctionRules = ['∧L1', '∧L2', '∧R'];
+  seqSidebarDisjunctionRules = ['∨R1', '∨R2', '∨L'];
   seqSidebarImplicationRules = ['→R', '→L'];
   seqSidebarQuantifierRules = ['∀L', '∀R', '∃L', '∃R'];
-  seqSidebarWeakeningRules = ['WL', 'WR'];
+  seqSidebarWeakeningRules = ['WL'];
   ndIntroRules = [...ND_INTRO_RULES];
   ndElimRules = [...ND_ELIM_RULES];
   ndQuantifierRules = [...ND_QUANTIFIER_RULES];
@@ -167,8 +166,6 @@ export class App {
   pairRules = [...PAIR_RULES];
   dependentRules = [...DEPENDENT_RULES];
   sumRules = [...SUM_RULES];
-  conditionalRules = [...CONDITIONAL_RULES];
-  natRules = [...NAT_RULES];
   letRules = [...LET_RULES];
 
   treeCanvasResetTrigger: number = 0;
@@ -306,8 +303,9 @@ export class App {
     this.lambdaExprNode = null;
     this.isPredicateLogic = false;
     this.resultExpression = '';
+    this.rawType = '';
+    this.letBindings = [];
     this.typeInferenceTree = null;
-    this.selectedNode = null;
     this.selectedNdNode = null;
     this.selectedTypeNode = null;
     this.ruleError = null;
@@ -1058,8 +1056,9 @@ export class App {
     this.lambdaExprNode = null;
 
     if (parsed.notProvable) {
+      this.proofTree = null;
       const message = this.currentLanguage === 'sk'
-        ? 'Vzorec nie je dokázateľný v sekventovom kalkule.'
+        ? 'Výrok nie je dokázateľný v sekventovom kalkule.'
         : 'Formula is not provable in sequent calculus.';
       this.notification.showError(message, {
         summary: this.i18n.errorSummary(this.currentLanguage),
@@ -1082,7 +1081,7 @@ export class App {
     this.naturalDeductionTree = parsed.naturalDeductionTree;
     if (parsed.notProvable) {
       const message = this.currentLanguage === 'sk'
-        ? 'Vzorec nie je dokázateľný v intuicionistickej prirodzenej dedukcii.'
+        ? 'Výrok nie je dokázateľný v intuicionistickej prirodzenej dedukcii.'
         : 'Formula is not provable in intuitionistic natural deduction.';
       this.notification.showError(message, {
         summary: this.i18n.errorSummary(this.currentLanguage),
@@ -1104,9 +1103,13 @@ export class App {
       const parsed = this.parseFacade.parseLambdaInput(this.code, this.mode);
       this.typeInferenceTree = parsed.typeInferenceTree;
       this.resultExpression = parsed.resultExpression;
+      this.rawType = parsed.rawType;
+      this.letBindings = parsed.letBindings;
       this.lambdaExpr = parsed.lambdaExpr;
     } catch (error: unknown) {
       this.resultExpression = '';
+      this.rawType = '';
+      this.letBindings = [];
       this.lambdaExpr = this.code;
       this.typeInferenceTree = null;
       const errorMsg = error instanceof Error ? `: ${error.message}` : '';

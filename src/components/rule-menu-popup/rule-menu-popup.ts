@@ -21,8 +21,6 @@ export class RuleMenuPopupComponent {
   @Input() filteredPairRules: string[] = [];
   @Input() filteredDependentRules: string[] = [];
   @Input() filteredSumRules: string[] = [];
-  @Input() filteredConditionalRules: string[] = [];
-  @Input() filteredNatRules: string[] = [];
   @Input() filteredLetRules: string[] = [];
   @Input() filteredNdIntroRules: string[] = [];
   @Input() filteredNdElimRules: string[] = [];

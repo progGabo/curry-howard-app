@@ -43,7 +43,7 @@
 
       <div class="conclusion" #conclusionEl [style.--line-width.px]="lineWidthPx" [style.--line-offset.px]="lineOffsetPx" [ngClass]="{ selected: isSelected, 'clickable-for-fill': hasPendingPrediction || predictionActive }" (click)="handleNodeClicked(r)">
         <button 
-          *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Var' && r.rule !== 'True' && r.rule !== 'False' && r.rule !== 'Zero'"
+          *ngIf="mode === 'interactive' && !r.children?.length && r.rule !== 'Var'"
           class="rule-plus-btn"
           (click)="onPlusButtonClick($event)"
           [title]="t.addRule"
@@ -51,7 +51,7 @@
         >
           <span class="plus-icon">+</span>
         </button>
-        <span class="rule" *ngIf="r.children?.length || r.rule === 'Var' || r.rule === 'True' || r.rule === 'False' || r.rule === 'Zero'">
+        <span class="rule" *ngIf="r.children?.length || r.rule === 'Var'">
           {{ r.rule }}
         </span>
         <div class="inference-content">

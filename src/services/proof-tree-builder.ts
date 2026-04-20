@@ -58,6 +58,7 @@ export class ProofTreeBuilderService {
       return { rule: 'Ax', sequent, children: [] };
     }
 
+    // Right rules first (decompose the conclusion)
     const implRight = conclusions.find(f => f.kind === 'Implies');
     if (implRight) return this.applyImplRight(sequent, implRight, false);
 
@@ -67,20 +68,8 @@ export class ProofTreeBuilderService {
     const orRight = conclusions.find(f => f.kind === 'Or');
     if (orRight) return this.applyOrRight(sequent, orRight);
 
-    const implLeft = assumptions.findIndex(f => f.kind === 'Implies');
-    if (implLeft !== -1) return this.applyImplLeft(sequent, implLeft);
-
-    const andLeft = assumptions.findIndex(f => f.kind === 'And');
-    if (andLeft !== -1) return this.applyAndLeft(sequent, andLeft);
-
-    const orLeft = assumptions.findIndex(f => f.kind === 'Or');
-    if (orLeft !== -1) return this.applyOrLeft(sequent, orLeft);
-
     const notRight = conclusions.find(f => f.kind === 'Not');
     if (notRight) return this.applyNotRight(sequent, notRight);
-
-    const notLeft = assumptions.findIndex(f => f.kind === 'Not');
-    if (notLeft !== -1) return this.applyNotLeft(sequent, notLeft);
 
     const forallRight = conclusions.find(f => f.kind === 'Forall');
     if (forallRight) {
@@ -94,6 +83,19 @@ export class ProofTreeBuilderService {
       return result;
     }
 
+    // Left rules (decompose assumptions)
+    const implLeft = assumptions.findIndex(f => f.kind === 'Implies');
+    if (implLeft !== -1) return this.applyImplLeft(sequent, implLeft);
+
+    const andLeft = assumptions.findIndex(f => f.kind === 'And');
+    if (andLeft !== -1) return this.applyAndLeft(sequent, andLeft);
+
+    const orLeft = assumptions.findIndex(f => f.kind === 'Or');
+    if (orLeft !== -1) return this.applyOrLeft(sequent, orLeft);
+
+    const notLeft = assumptions.findIndex(f => f.kind === 'Not');
+    if (notLeft !== -1) return this.applyNotLeft(sequent, notLeft);
+
     const forallLeft = assumptions.findIndex(f => f.kind === 'Forall');
     if (forallLeft !== -1) {
       const result = await this.applyForallLeft(sequent, forallLeft, false);
@@ -106,9 +108,6 @@ export class ProofTreeBuilderService {
       return result;
     }
 
-    const wr = await this.applyWeakeningRight(sequent);
-    if (wr) return wr;
-
     const wl = await this.applyWeakeningLeft(sequent);
     if (wl) return wl;
 
@@ -117,13 +116,10 @@ export class ProofTreeBuilderService {
 
     private async applyImplRight(sequent: SequentNode, impl: FormulaNode, isInteractive = false): Promise<DerivationNode> {
     const implF = impl as any;
-    const newConclusions = sequent.conclusions.map(c =>
-      Equality.formulasEqual(c, impl) ? implF.right : c
-    );
 
     const newSeq: SequentNode = {
       assumptions: [...sequent.assumptions, implF.left],
-      conclusions: newConclusions
+      conclusions: [implF.right]
     };
 
     const child = isInteractive ? this.buildInteractiveRoot(newSeq) : await this.applyRules(newSeq);
@@ -143,7 +139,7 @@ export class ProofTreeBuilderService {
 
     const leftPremise: SequentNode = {
       assumptions: [...gamma],
-      conclusions: [...sequent.conclusions, impl.left]
+      conclusions: [impl.left]
     };
 
     const rightPremise: SequentNode = {
@@ -165,16 +161,12 @@ export class ProofTreeBuilderService {
 
     const left: SequentNode = {
       assumptions: [...sequent.assumptions],
-      conclusions: sequent.conclusions.map(c =>
-        Equality.formulasEqual(c, andF) ? and.left : c
-      )
+      conclusions: [and.left]
     };
 
     const right: SequentNode = {
       assumptions: [...sequent.assumptions],
-      conclusions: sequent.conclusions.map(c =>
-        Equality.formulasEqual(c, andF) ? and.right : c
-      )
+      conclusions: [and.right]
     };
 
     const leftChild = isInteractive ? this.buildInteractiveRoot(left) : await this.applyRules(left);
@@ -187,42 +179,74 @@ export class ProofTreeBuilderService {
     };
   }
 
-  private async applyAndLeft(sequent: SequentNode, idx: number, isInteractive: boolean = false): Promise<DerivationNode> {
+  private async applyAndLeft(sequent: SequentNode, idx: number, isInteractive: boolean = false, side?: 'left' | 'right'): Promise<DerivationNode> {
     const and = sequent.assumptions[idx] as FormulaNode & { left: FormulaNode; right: FormulaNode };
     const gamma = sequent.assumptions.filter((_, i) => i !== idx);
-    const newAssumptions = [...gamma, and.left, and.right];
 
-    const newSequent: SequentNode = {
-      assumptions: newAssumptions,
+    if (isInteractive) {
+      const chosen = side === 'right' ? and.right : and.left;
+      const ruleName = side === 'right' ? '∧L2' : '∧L1';
+      const newSeq: SequentNode = {
+        assumptions: [...gamma, chosen],
+        conclusions: sequent.conclusions
+      };
+      const child = this.buildInteractiveRoot(newSeq);
+      return { rule: ruleName, sequent, usedFormula: and, children: [child] };
+    }
+
+    // Automatic mode: try left conjunct first, then right
+    const leftSeq: SequentNode = {
+      assumptions: [...gamma, and.left],
       conclusions: sequent.conclusions
     };
+    const leftResult = await this.applyRules(leftSeq);
+    if (!this.hasError(leftResult)) {
+      return { rule: '∧L1', sequent, usedFormula: and, children: [leftResult] };
+    }
 
-    const child = isInteractive ? this.buildInteractiveRoot(newSequent) : await this.applyRules(newSequent);
-    return {
-      rule: '∧L',
-      sequent,
-      usedFormula: and,
-      children: [child]
+    const rightSeq: SequentNode = {
+      assumptions: [...gamma, and.right],
+      conclusions: sequent.conclusions
     };
+    const rightResult = await this.applyRules(rightSeq);
+    return { rule: '∧L2', sequent, usedFormula: and, children: [rightResult] };
   }
 
-  private async applyOrRight(sequent: SequentNode, orFormula: FormulaNode, isInteractive: boolean = false): Promise<DerivationNode> {
+  private async applyOrRight(sequent: SequentNode, orFormula: FormulaNode, isInteractive: boolean = false, side?: 'left' | 'right'): Promise<DerivationNode> {
     if (orFormula.kind !== 'Or') throw new Error('Expected disjunction');
 
-    const newConclusions = sequent.conclusions.filter(c => !Equality.formulasEqual(c, orFormula));
+    if (isInteractive) {
+      const chosenConclusion = side === 'right' ? orFormula.right : orFormula.left;
+      const ruleName = side === 'right' ? '∨R2' : '∨R1';
+      const newSeq: SequentNode = {
+        assumptions: sequent.assumptions,
+        conclusions: [chosenConclusion]
+      };
+      const child = this.buildInteractiveRoot(newSeq);
+      return { rule: ruleName, sequent, usedFormula: orFormula, children: [child] };
+    }
 
-    const leftSequent: SequentNode = {
+    // Automatic mode: try left disjunct first, then right
+    const leftSeq: SequentNode = {
       assumptions: sequent.assumptions,
-      conclusions: [...newConclusions, orFormula.left, orFormula.right]
+      conclusions: [orFormula.left]
     };
+    const leftResult = await this.applyRules(leftSeq);
+    if (!this.hasError(leftResult)) {
+      return { rule: '∨R1', sequent, usedFormula: orFormula, children: [leftResult] };
+    }
 
-    const child = isInteractive ? this.buildInteractiveRoot(leftSequent) : await this.applyRules(leftSequent);
-    return {
-      rule: '∨R',
-      sequent,
-      usedFormula: orFormula,
-      children: [child]
+    const rightSeq: SequentNode = {
+      assumptions: sequent.assumptions,
+      conclusions: [orFormula.right]
     };
+    const rightResult = await this.applyRules(rightSeq);
+    return { rule: '∨R2', sequent, usedFormula: orFormula, children: [rightResult] };
+  }
+
+  private hasError(node: DerivationNode): boolean {
+    if (node.rule === 'error') return true;
+    return node.children?.some(c => this.hasError(c)) ?? false;
   }
 
   private async applyOrLeft(sequent: SequentNode, orIndex: number, isInteractive: boolean = false): Promise<DerivationNode> {
@@ -252,11 +276,10 @@ export class ProofTreeBuilderService {
 
   private async applyNotRight(sequent: SequentNode, notF: FormulaNode, isInteractive: boolean = false): Promise<DerivationNode> {
     const not = notF as any;
-    const newConclusions = sequent.conclusions.filter(c => !Equality.formulasEqual(c, notF));
 
     const newSequent: SequentNode = {
       assumptions: [...sequent.assumptions, not.inner],
-      conclusions: newConclusions
+      conclusions: [FormulaFactories.false()]
     };
 
     const child = isInteractive ? this.buildInteractiveRoot(newSequent) : await this.applyRules(newSequent);
@@ -274,7 +297,7 @@ export class ProofTreeBuilderService {
 
     const newSequent: SequentNode = {
       assumptions: gamma,
-      conclusions: [...sequent.conclusions, not.inner]
+      conclusions: [not.inner]
     };
 
     const child = isInteractive ? this.buildInteractiveRoot(newSequent) : await this.applyRules(newSequent);
@@ -342,12 +365,9 @@ export class ProofTreeBuilderService {
     
     const substitutedBody = substituteFormula(body, variable, TermFactories.var(eigenVar));
     
-    const newConclusions = sequent.conclusions.map(c => 
-      Equality.formulasEqual(c, forallF) ? substitutedBody : c
-    );
     const newSeq: SequentNode = {
       assumptions: sequent.assumptions,
-      conclusions: newConclusions
+      conclusions: [substitutedBody]
     };
     
     const child = isInteractive ? this.buildInteractiveRoot(newSeq) : await this.applyRules(newSeq);
@@ -401,12 +421,9 @@ export class ProofTreeBuilderService {
     
     const substituted = substituteFormula(body, variable, term);
     
-    const newConclusions = sequent.conclusions.map(c => 
-      Equality.formulasEqual(c, existsF) ? substituted : c
-    );
     const newSeq: SequentNode = {
       assumptions: sequent.assumptions,
-      conclusions: newConclusions
+      conclusions: [substituted]
     };
     
     const child = await this.deriveChildNode(newSeq, isInteractive);
@@ -549,30 +566,10 @@ export class ProofTreeBuilderService {
     return String(result).trim();
   }
 
-  private async applyWeakeningRight(sequent: SequentNode, isInteractive: boolean = false): Promise<DerivationNode | null> {
-    const match = sequent.conclusions.find(c =>
-      sequent.assumptions.some(a => Equality.formulasEqual(a, c))
-    );
-
-    if (!match || sequent.conclusions.length <= 1) return null;
-
-    const newSequent: SequentNode = {
-      assumptions: sequent.assumptions,
-      conclusions: [match]
-    };
-
-    const child = isInteractive ? this.buildInteractiveRoot(newSequent) : await this.applyRules(newSequent);
-    return {
-      rule: 'WR',
-      sequent,
-      children: [child]
-    };
-  }
-
   private isAxiom(sequent: SequentNode): boolean {
-    return sequent.assumptions.some(a =>
-      sequent.conclusions.some(c => Equality.formulasEqual(a, c))
-    );
+    const conclusion = sequent.conclusions[0];
+    if (!conclusion) return false;
+    return sequent.assumptions.some(a => Equality.formulasEqual(a, conclusion));
   }
 
   private freshVariable(base: string, usedVars: string[], avoidVars: string[]): string {
@@ -613,13 +610,21 @@ export class ProofTreeBuilderService {
         const and = this.findConclusionByKind(sequent, 'And');
         return and ? this.applyAndRight(sequent, and, isInteractive) : null;
       },
-      '∧L': async () => {
+      '∧L1': async () => {
         const index = this.findAssumptionIndexByKind(sequent, 'And');
-        return index !== -1 ? this.applyAndLeft(sequent, index, isInteractive) : null;
+        return index !== -1 ? this.applyAndLeft(sequent, index, isInteractive, 'left') : null;
       },
-      '∨R': async () => {
+      '∧L2': async () => {
+        const index = this.findAssumptionIndexByKind(sequent, 'And');
+        return index !== -1 ? this.applyAndLeft(sequent, index, isInteractive, 'right') : null;
+      },
+      '∨R1': async () => {
         const or = this.findConclusionByKind(sequent, 'Or');
-        return or ? this.applyOrRight(sequent, or, isInteractive) : null;
+        return or ? this.applyOrRight(sequent, or, isInteractive, 'left') : null;
+      },
+      '∨R2': async () => {
+        const or = this.findConclusionByKind(sequent, 'Or');
+        return or ? this.applyOrRight(sequent, or, isInteractive, 'right') : null;
       },
       '∨L': async () => {
         const index = this.findAssumptionIndexByKind(sequent, 'Or');
@@ -634,7 +639,6 @@ export class ProofTreeBuilderService {
         return index !== -1 ? this.applyNotLeft(sequent, index, isInteractive) : null;
       },
       'WL': async () => this.applyWeakeningLeft(sequent, isInteractive),
-      'WR': async () => this.applyWeakeningRight(sequent, isInteractive),
       '∀R': async () => {
         const forall = this.findConclusionByKind(sequent, 'Forall');
         return forall ? this.applyForallRight(sequent, forall, isInteractive, language, quantifierInput) : null;

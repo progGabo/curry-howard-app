@@ -9,7 +9,6 @@ import { LamExprContext } from "./LambdaParser.js";
 import { LetExprContext } from "./LambdaParser.js";
 import { LetPairExprContext } from "./LambdaParser.js";
 import { LetDependentPairExprContext } from "./LambdaParser.js";
-import { IfExprContext } from "./LambdaParser.js";
 import { CaseExprContext } from "./LambdaParser.js";
 import { AppExprContext } from "./LambdaParser.js";
 import { AtomContext } from "./LambdaParser.js";
@@ -65,12 +64,6 @@ export class LambdaVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      * @return the visitor result
      */
     visitLetDependentPairExpr?: (ctx: LetDependentPairExprContext) => Result;
-    /**
-     * Visit a parse tree produced by `LambdaParser.ifExpr`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitIfExpr?: (ctx: IfExprContext) => Result;
     /**
      * Visit a parse tree produced by `LambdaParser.caseExpr`.
      * @param ctx the parse tree

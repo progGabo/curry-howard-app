@@ -86,6 +86,6 @@ export function parenthesizeFormula(child: FormulaNode, parent: FormulaNode): st
 
 export function sequentToText(sequent: { assumptions: FormulaNode[]; conclusions: FormulaNode[] }): string {
   const assumptions = sequent.assumptions.map(formulaToText).join(', ');
-  const conclusions = sequent.conclusions.map(formulaToText).join(', ');
-  return `${assumptions} ⊢ ${conclusions}`;
+  const conclusion = sequent.conclusions[0] ? formulaToText(sequent.conclusions[0]) : '';
+  return `${assumptions} ⊢ ${conclusion}`;
 }

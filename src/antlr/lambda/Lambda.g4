@@ -12,7 +12,6 @@ term
   | letDependentPairExpr
   | letPairExpr
   | letExpr
-  | ifExpr
   | caseExpr
   | appExpr
   ;
@@ -38,11 +37,6 @@ letDependentPairExpr
   ;
 
 
-ifExpr
-  : IF term THEN term ELSE term
-  ;
-
-
 caseExpr
   : CASE term OF INL VAR COLON type FATARROW term BAR INTR VAR COLON type FATARROW term
   ;
@@ -55,12 +49,6 @@ appExpr
 
 atom
   : VAR
-  | TRUE
-  | FALSE
-  | ZERO
-  | SUCC atom
-  | PRED atom
-  | ISZERO atom
   | LPAREN term RPAREN
   | LPAREN term COMMA term RPAREN           
   | LANGLE term (COLON type)? COMMA term (COLON type)? RANGLE   
@@ -71,7 +59,8 @@ atom
 // -------------- Types --------------
 
 type
-  : sumType (ARROW type)?
+  : LPAREN VAR COLON type RPAREN ARROW type   // dependent function type: (x: T) -> P(x)
+  | sumType (ARROW type)?
   ;
 
 sumType
@@ -85,8 +74,7 @@ prodType
 atomicType
   : TYPEID
   | VAR
-  | BOOL
-  | NAT
+
   | predicateType
   | LPAREN type RPAREN
   ;
@@ -103,21 +91,13 @@ typeList
 
 LET     : 'let';
 IN      : 'in';
-IF      : 'if';
-THEN    : 'then';
-ELSE    : 'else';
+
 CASE    : 'case';
 OF      : 'of';
 INL     : 'inl';
 INTR    : 'inr';
 AS      : 'as';
-BOOL    : 'Bool';
-NAT     : 'Nat';
-TRUE    : 'true';
-FALSE   : 'false';
-SUCC    : 'succ';
-PRED    : 'pred';
-ISZERO  : 'iszero';
+
 
 LAMBDA  : 'λ' | '\\';
 ARROW   : '->' | '→';
@@ -137,7 +117,6 @@ LANGLE  : '<' | '⟨';
 RANGLE  : '>' | '⟩';
 
 TYPEID  : [A-Z] [A-Za-z0-9_]* ;
-ZERO    : '0';
 VAR     : [a-z_] [A-Za-z0-9_]* ;
 
 WS              : [ \t\r\n\u000C]+ -> skip ;

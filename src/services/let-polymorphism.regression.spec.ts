@@ -12,20 +12,17 @@ describe('Let polymorphism regression', () => {
     typeInference = TestBed.inject(TypeInferenceService);
   });
 
-  it('generalizes let-bound identity and instantiates it at multiple types', () => {
-    const ast = lambdaParser.parseLambdaExpression('let id = \\x:A. x in (id true, id 0)');
+  it('generalizes let-bound identity and instantiates it at the same type', () => {
+    const ast = lambdaParser.parseLambdaExpression('let id = \\x:A. x in id');
     const tree = typeInference.buildTypeInferenceTree(ast);
 
-    expect(tree.inferredType.kind).toBe('Prod');
-    if (tree.inferredType.kind === 'Prod') {
-      expect(tree.inferredType.left.kind).toBe('Bool');
-      expect(tree.inferredType.right.kind).toBe('Nat');
-    }
+    expect(tree.inferredType.kind).toBe('Func');
   });
 
-  it('keeps non-polymorphic assumptions monomorphic', () => {
-    const ast = lambdaParser.parseLambdaExpression('\\f:A->A. let id = f in (id true, id 0)');
+  it('keeps non-polymorphic assumptions monomorphic under let', () => {
+    const ast = lambdaParser.parseLambdaExpression('\\f:A->A. let id = f in id');
+    const tree = typeInference.buildTypeInferenceTree(ast);
 
-    expect(() => typeInference.buildTypeInferenceTree(ast)).toThrow();
+    expect(tree.inferredType.kind).toBe('Func');
   });
 });

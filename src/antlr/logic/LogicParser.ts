@@ -167,28 +167,11 @@ export class LogicParser extends antlr.Parser {
     public conclusion(): ConclusionContext {
         let localContext = new ConclusionContext(this.context, this.state);
         this.enterRule(localContext, 4, LogicParser.RULE_conclusion);
-        let _la: number;
         try {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 53;
             this.formula();
-            this.state = 58;
-            this.errorHandler.sync(this);
-            _la = this.tokenStream.LA(1);
-            while (_la === 13) {
-                {
-                {
-                this.state = 54;
-                this.match(LogicParser.COMMA);
-                this.state = 55;
-                this.formula();
-                }
-                }
-                this.state = 60;
-                this.errorHandler.sync(this);
-                _la = this.tokenStream.LA(1);
-            }
             }
         }
         catch (re) {
@@ -210,7 +193,7 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 61;
+            this.state = 55;
             this.implication();
             }
         }
@@ -234,16 +217,16 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 63;
+            this.state = 57;
             this.quantifiedExpr();
-            this.state = 66;
+            this.state = 60;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 2) {
                 {
-                this.state = 64;
+                this.state = 58;
                 this.match(LogicParser.IMPL);
-                this.state = 65;
+                this.state = 59;
                 this.implication();
                 }
             }
@@ -267,20 +250,20 @@ export class LogicParser extends antlr.Parser {
         let localContext = new QuantifiedExprContext(this.context, this.state);
         this.enterRule(localContext, 10, LogicParser.RULE_quantifiedExpr);
         try {
-            this.state = 71;
+            this.state = 65;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case LogicParser.FORALL:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 68;
+                this.state = 62;
                 this.forall();
                 }
                 break;
             case LogicParser.EXISTS:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 69;
+                this.state = 63;
                 this.exists();
                 }
                 break;
@@ -292,7 +275,7 @@ export class LogicParser extends antlr.Parser {
             case LogicParser.LOWERID:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 70;
+                this.state = 64;
                 this.disjunction();
                 }
                 break;
@@ -319,13 +302,13 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 73;
+            this.state = 67;
             this.match(LogicParser.FORALL);
-            this.state = 74;
+            this.state = 68;
             this.variable();
-            this.state = 75;
+            this.state = 69;
             this.match(LogicParser.DOT);
-            this.state = 76;
+            this.state = 70;
             this.quantifiedExpr();
             }
         }
@@ -348,13 +331,13 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 78;
+            this.state = 72;
             this.match(LogicParser.EXISTS);
-            this.state = 79;
+            this.state = 73;
             this.variable();
-            this.state = 80;
+            this.state = 74;
             this.match(LogicParser.DOT);
-            this.state = 81;
+            this.state = 75;
             this.quantifiedExpr();
             }
         }
@@ -378,21 +361,21 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 83;
+            this.state = 77;
             this.conjunction();
-            this.state = 88;
+            this.state = 82;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while (_la === 4) {
                 {
                 {
-                this.state = 84;
+                this.state = 78;
                 this.match(LogicParser.OR);
-                this.state = 85;
+                this.state = 79;
                 this.conjunction();
                 }
                 }
-                this.state = 90;
+                this.state = 84;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
@@ -418,21 +401,21 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 91;
+            this.state = 85;
             this.negation();
-            this.state = 96;
+            this.state = 90;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while (_la === 3) {
                 {
                 {
-                this.state = 92;
+                this.state = 86;
                 this.match(LogicParser.AND);
-                this.state = 93;
+                this.state = 87;
                 this.negation();
                 }
                 }
-                this.state = 98;
+                this.state = 92;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
@@ -455,15 +438,15 @@ export class LogicParser extends antlr.Parser {
         let localContext = new NegationContext(this.context, this.state);
         this.enterRule(localContext, 20, LogicParser.RULE_negation);
         try {
-            this.state = 102;
+            this.state = 96;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case LogicParser.NOT:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 99;
+                this.state = 93;
                 this.match(LogicParser.NOT);
-                this.state = 100;
+                this.state = 94;
                 this.negation();
                 }
                 break;
@@ -474,7 +457,7 @@ export class LogicParser extends antlr.Parser {
             case LogicParser.LOWERID:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 101;
+                this.state = 95;
                 this.atom();
                 }
                 break;
@@ -499,52 +482,52 @@ export class LogicParser extends antlr.Parser {
         let localContext = new AtomContext(this.context, this.state);
         this.enterRule(localContext, 22, LogicParser.RULE_atom);
         try {
-            this.state = 113;
+            this.state = 107;
             this.errorHandler.sync(this);
-            switch (this.interpreter.adaptivePredict(this.tokenStream, 9, this.context) ) {
+            switch (this.interpreter.adaptivePredict(this.tokenStream, 8, this.context) ) {
             case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 104;
+                this.state = 98;
                 this.match(LogicParser.LPAREN);
-                this.state = 105;
+                this.state = 99;
                 this.formula();
-                this.state = 106;
+                this.state = 100;
                 this.match(LogicParser.RPAREN);
                 }
                 break;
             case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 108;
+                this.state = 102;
                 this.predicate();
                 }
                 break;
             case 3:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 109;
+                this.state = 103;
                 this.match(LogicParser.TOP);
                 }
                 break;
             case 4:
                 this.enterOuterAlt(localContext, 4);
                 {
-                this.state = 110;
+                this.state = 104;
                 this.match(LogicParser.BOT);
                 }
                 break;
             case 5:
                 this.enterOuterAlt(localContext, 5);
                 {
-                this.state = 111;
+                this.state = 105;
                 this.match(LogicParser.LOWERID);
                 }
                 break;
             case 6:
                 this.enterOuterAlt(localContext, 6);
                 {
-                this.state = 112;
+                this.state = 106;
                 this.match(LogicParser.PRED);
                 }
                 break;
@@ -570,21 +553,21 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 115;
+            this.state = 109;
             this.match(LogicParser.PRED);
-            this.state = 116;
+            this.state = 110;
             this.match(LogicParser.LPAREN);
-            this.state = 118;
+            this.state = 112;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 11 || _la === 15) {
                 {
-                this.state = 117;
+                this.state = 111;
                 this.termList();
                 }
             }
 
-            this.state = 120;
+            this.state = 114;
             this.match(LogicParser.RPAREN);
             }
         }
@@ -608,21 +591,21 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 122;
+            this.state = 116;
             this.term();
-            this.state = 127;
+            this.state = 121;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while (_la === 13) {
                 {
                 {
-                this.state = 123;
+                this.state = 117;
                 this.match(LogicParser.COMMA);
-                this.state = 124;
+                this.state = 118;
                 this.term();
                 }
                 }
-                this.state = 129;
+                this.state = 123;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
@@ -645,38 +628,38 @@ export class LogicParser extends antlr.Parser {
         let localContext = new TermContext(this.context, this.state);
         this.enterRule(localContext, 28, LogicParser.RULE_term);
         try {
-            this.state = 137;
+            this.state = 131;
             this.errorHandler.sync(this);
-            switch (this.interpreter.adaptivePredict(this.tokenStream, 12, this.context) ) {
+            switch (this.interpreter.adaptivePredict(this.tokenStream, 11, this.context) ) {
             case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 130;
+                this.state = 124;
                 this.variable();
                 }
                 break;
             case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 131;
+                this.state = 125;
                 this.constant();
                 }
                 break;
             case 3:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 132;
+                this.state = 126;
                 this.functionApp();
                 }
                 break;
             case 4:
                 this.enterOuterAlt(localContext, 4);
                 {
-                this.state = 133;
+                this.state = 127;
                 this.match(LogicParser.LPAREN);
-                this.state = 134;
+                this.state = 128;
                 this.term();
-                this.state = 135;
+                this.state = 129;
                 this.match(LogicParser.RPAREN);
                 }
                 break;
@@ -701,7 +684,7 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 139;
+            this.state = 133;
             this.match(LogicParser.LOWERID);
             }
         }
@@ -724,7 +707,7 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 141;
+            this.state = 135;
             this.match(LogicParser.LOWERID);
             }
         }
@@ -748,21 +731,21 @@ export class LogicParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 143;
+            this.state = 137;
             this.match(LogicParser.LOWERID);
-            this.state = 144;
+            this.state = 138;
             this.match(LogicParser.LPAREN);
-            this.state = 146;
+            this.state = 140;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 11 || _la === 15) {
                 {
-                this.state = 145;
+                this.state = 139;
                 this.termList();
                 }
             }
 
-            this.state = 148;
+            this.state = 142;
             this.match(LogicParser.RPAREN);
             }
         }
@@ -781,56 +764,53 @@ export class LogicParser extends antlr.Parser {
     }
 
     public static readonly _serializedATN: number[] = [
-        4,1,16,151,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,16,145,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
         2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,1,0,3,0,38,8,0,1,0,1,0,3,
         0,42,8,0,1,0,1,0,1,1,1,1,1,1,5,1,49,8,1,10,1,12,1,52,9,1,1,2,1,2,
-        1,2,5,2,57,8,2,10,2,12,2,60,9,2,1,3,1,3,1,4,1,4,1,4,3,4,67,8,4,1,
-        5,1,5,1,5,3,5,72,8,5,1,6,1,6,1,6,1,6,1,6,1,7,1,7,1,7,1,7,1,7,1,8,
-        1,8,1,8,5,8,87,8,8,10,8,12,8,90,9,8,1,9,1,9,1,9,5,9,95,8,9,10,9,
-        12,9,98,9,9,1,10,1,10,1,10,3,10,103,8,10,1,11,1,11,1,11,1,11,1,11,
-        1,11,1,11,1,11,1,11,3,11,114,8,11,1,12,1,12,1,12,3,12,119,8,12,1,
-        12,1,12,1,13,1,13,1,13,5,13,126,8,13,10,13,12,13,129,9,13,1,14,1,
-        14,1,14,1,14,1,14,1,14,1,14,3,14,138,8,14,1,15,1,15,1,16,1,16,1,
-        17,1,17,1,17,3,17,147,8,17,1,17,1,17,1,17,0,0,18,0,2,4,6,8,10,12,
-        14,16,18,20,22,24,26,28,30,32,34,0,0,153,0,37,1,0,0,0,2,45,1,0,0,
-        0,4,53,1,0,0,0,6,61,1,0,0,0,8,63,1,0,0,0,10,71,1,0,0,0,12,73,1,0,
-        0,0,14,78,1,0,0,0,16,83,1,0,0,0,18,91,1,0,0,0,20,102,1,0,0,0,22,
-        113,1,0,0,0,24,115,1,0,0,0,26,122,1,0,0,0,28,137,1,0,0,0,30,139,
-        1,0,0,0,32,141,1,0,0,0,34,143,1,0,0,0,36,38,3,2,1,0,37,36,1,0,0,
-        0,37,38,1,0,0,0,38,39,1,0,0,0,39,41,5,1,0,0,40,42,3,4,2,0,41,40,
-        1,0,0,0,41,42,1,0,0,0,42,43,1,0,0,0,43,44,5,0,0,1,44,1,1,0,0,0,45,
-        50,3,6,3,0,46,47,5,13,0,0,47,49,3,6,3,0,48,46,1,0,0,0,49,52,1,0,
-        0,0,50,48,1,0,0,0,50,51,1,0,0,0,51,3,1,0,0,0,52,50,1,0,0,0,53,58,
-        3,6,3,0,54,55,5,13,0,0,55,57,3,6,3,0,56,54,1,0,0,0,57,60,1,0,0,0,
-        58,56,1,0,0,0,58,59,1,0,0,0,59,5,1,0,0,0,60,58,1,0,0,0,61,62,3,8,
-        4,0,62,7,1,0,0,0,63,66,3,10,5,0,64,65,5,2,0,0,65,67,3,8,4,0,66,64,
-        1,0,0,0,66,67,1,0,0,0,67,9,1,0,0,0,68,72,3,12,6,0,69,72,3,14,7,0,
-        70,72,3,16,8,0,71,68,1,0,0,0,71,69,1,0,0,0,71,70,1,0,0,0,72,11,1,
-        0,0,0,73,74,5,8,0,0,74,75,3,30,15,0,75,76,5,10,0,0,76,77,3,10,5,
-        0,77,13,1,0,0,0,78,79,5,9,0,0,79,80,3,30,15,0,80,81,5,10,0,0,81,
-        82,3,10,5,0,82,15,1,0,0,0,83,88,3,18,9,0,84,85,5,4,0,0,85,87,3,18,
-        9,0,86,84,1,0,0,0,87,90,1,0,0,0,88,86,1,0,0,0,88,89,1,0,0,0,89,17,
-        1,0,0,0,90,88,1,0,0,0,91,96,3,20,10,0,92,93,5,3,0,0,93,95,3,20,10,
-        0,94,92,1,0,0,0,95,98,1,0,0,0,96,94,1,0,0,0,96,97,1,0,0,0,97,19,
-        1,0,0,0,98,96,1,0,0,0,99,100,5,5,0,0,100,103,3,20,10,0,101,103,3,
-        22,11,0,102,99,1,0,0,0,102,101,1,0,0,0,103,21,1,0,0,0,104,105,5,
-        11,0,0,105,106,3,6,3,0,106,107,5,12,0,0,107,114,1,0,0,0,108,114,
-        3,24,12,0,109,114,5,6,0,0,110,114,5,7,0,0,111,114,5,15,0,0,112,114,
-        5,14,0,0,113,104,1,0,0,0,113,108,1,0,0,0,113,109,1,0,0,0,113,110,
-        1,0,0,0,113,111,1,0,0,0,113,112,1,0,0,0,114,23,1,0,0,0,115,116,5,
-        14,0,0,116,118,5,11,0,0,117,119,3,26,13,0,118,117,1,0,0,0,118,119,
-        1,0,0,0,119,120,1,0,0,0,120,121,5,12,0,0,121,25,1,0,0,0,122,127,
-        3,28,14,0,123,124,5,13,0,0,124,126,3,28,14,0,125,123,1,0,0,0,126,
-        129,1,0,0,0,127,125,1,0,0,0,127,128,1,0,0,0,128,27,1,0,0,0,129,127,
-        1,0,0,0,130,138,3,30,15,0,131,138,3,32,16,0,132,138,3,34,17,0,133,
-        134,5,11,0,0,134,135,3,28,14,0,135,136,5,12,0,0,136,138,1,0,0,0,
-        137,130,1,0,0,0,137,131,1,0,0,0,137,132,1,0,0,0,137,133,1,0,0,0,
-        138,29,1,0,0,0,139,140,5,15,0,0,140,31,1,0,0,0,141,142,5,15,0,0,
-        142,33,1,0,0,0,143,144,5,15,0,0,144,146,5,11,0,0,145,147,3,26,13,
-        0,146,145,1,0,0,0,146,147,1,0,0,0,147,148,1,0,0,0,148,149,5,12,0,
-        0,149,35,1,0,0,0,14,37,41,50,58,66,71,88,96,102,113,118,127,137,
-        146
+        1,3,1,3,1,4,1,4,1,4,3,4,61,8,4,1,5,1,5,1,5,3,5,66,8,5,1,6,1,6,1,
+        6,1,6,1,6,1,7,1,7,1,7,1,7,1,7,1,8,1,8,1,8,5,8,81,8,8,10,8,12,8,84,
+        9,8,1,9,1,9,1,9,5,9,89,8,9,10,9,12,9,92,9,9,1,10,1,10,1,10,3,10,
+        97,8,10,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,3,11,108,8,
+        11,1,12,1,12,1,12,3,12,113,8,12,1,12,1,12,1,13,1,13,1,13,5,13,120,
+        8,13,10,13,12,13,123,9,13,1,14,1,14,1,14,1,14,1,14,1,14,1,14,3,14,
+        132,8,14,1,15,1,15,1,16,1,16,1,17,1,17,1,17,3,17,141,8,17,1,17,1,
+        17,1,17,0,0,18,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,
+        0,0,146,0,37,1,0,0,0,2,45,1,0,0,0,4,53,1,0,0,0,6,55,1,0,0,0,8,57,
+        1,0,0,0,10,65,1,0,0,0,12,67,1,0,0,0,14,72,1,0,0,0,16,77,1,0,0,0,
+        18,85,1,0,0,0,20,96,1,0,0,0,22,107,1,0,0,0,24,109,1,0,0,0,26,116,
+        1,0,0,0,28,131,1,0,0,0,30,133,1,0,0,0,32,135,1,0,0,0,34,137,1,0,
+        0,0,36,38,3,2,1,0,37,36,1,0,0,0,37,38,1,0,0,0,38,39,1,0,0,0,39,41,
+        5,1,0,0,40,42,3,4,2,0,41,40,1,0,0,0,41,42,1,0,0,0,42,43,1,0,0,0,
+        43,44,5,0,0,1,44,1,1,0,0,0,45,50,3,6,3,0,46,47,5,13,0,0,47,49,3,
+        6,3,0,48,46,1,0,0,0,49,52,1,0,0,0,50,48,1,0,0,0,50,51,1,0,0,0,51,
+        3,1,0,0,0,52,50,1,0,0,0,53,54,3,6,3,0,54,5,1,0,0,0,55,56,3,8,4,0,
+        56,7,1,0,0,0,57,60,3,10,5,0,58,59,5,2,0,0,59,61,3,8,4,0,60,58,1,
+        0,0,0,60,61,1,0,0,0,61,9,1,0,0,0,62,66,3,12,6,0,63,66,3,14,7,0,64,
+        66,3,16,8,0,65,62,1,0,0,0,65,63,1,0,0,0,65,64,1,0,0,0,66,11,1,0,
+        0,0,67,68,5,8,0,0,68,69,3,30,15,0,69,70,5,10,0,0,70,71,3,10,5,0,
+        71,13,1,0,0,0,72,73,5,9,0,0,73,74,3,30,15,0,74,75,5,10,0,0,75,76,
+        3,10,5,0,76,15,1,0,0,0,77,82,3,18,9,0,78,79,5,4,0,0,79,81,3,18,9,
+        0,80,78,1,0,0,0,81,84,1,0,0,0,82,80,1,0,0,0,82,83,1,0,0,0,83,17,
+        1,0,0,0,84,82,1,0,0,0,85,90,3,20,10,0,86,87,5,3,0,0,87,89,3,20,10,
+        0,88,86,1,0,0,0,89,92,1,0,0,0,90,88,1,0,0,0,90,91,1,0,0,0,91,19,
+        1,0,0,0,92,90,1,0,0,0,93,94,5,5,0,0,94,97,3,20,10,0,95,97,3,22,11,
+        0,96,93,1,0,0,0,96,95,1,0,0,0,97,21,1,0,0,0,98,99,5,11,0,0,99,100,
+        3,6,3,0,100,101,5,12,0,0,101,108,1,0,0,0,102,108,3,24,12,0,103,108,
+        5,6,0,0,104,108,5,7,0,0,105,108,5,15,0,0,106,108,5,14,0,0,107,98,
+        1,0,0,0,107,102,1,0,0,0,107,103,1,0,0,0,107,104,1,0,0,0,107,105,
+        1,0,0,0,107,106,1,0,0,0,108,23,1,0,0,0,109,110,5,14,0,0,110,112,
+        5,11,0,0,111,113,3,26,13,0,112,111,1,0,0,0,112,113,1,0,0,0,113,114,
+        1,0,0,0,114,115,5,12,0,0,115,25,1,0,0,0,116,121,3,28,14,0,117,118,
+        5,13,0,0,118,120,3,28,14,0,119,117,1,0,0,0,120,123,1,0,0,0,121,119,
+        1,0,0,0,121,122,1,0,0,0,122,27,1,0,0,0,123,121,1,0,0,0,124,132,3,
+        30,15,0,125,132,3,32,16,0,126,132,3,34,17,0,127,128,5,11,0,0,128,
+        129,3,28,14,0,129,130,5,12,0,0,130,132,1,0,0,0,131,124,1,0,0,0,131,
+        125,1,0,0,0,131,126,1,0,0,0,131,127,1,0,0,0,132,29,1,0,0,0,133,134,
+        5,15,0,0,134,31,1,0,0,0,135,136,5,15,0,0,136,33,1,0,0,0,137,138,
+        5,15,0,0,138,140,5,11,0,0,139,141,3,26,13,0,140,139,1,0,0,0,140,
+        141,1,0,0,0,141,142,1,0,0,0,142,143,5,12,0,0,143,35,1,0,0,0,13,37,
+        41,50,60,65,82,90,96,107,112,121,131,140
     ];
 
     private static __ATN: antlr.ATN;
@@ -940,23 +920,8 @@ export class ConclusionContext extends antlr.ParserRuleContext {
     public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
         super(parent, invokingState);
     }
-    public formula(): FormulaContext[];
-    public formula(i: number): FormulaContext | null;
-    public formula(i?: number): FormulaContext[] | FormulaContext | null {
-        if (i === undefined) {
-            return this.getRuleContexts(FormulaContext);
-        }
-
-        return this.getRuleContext(i, FormulaContext);
-    }
-    public COMMA(): antlr.TerminalNode[];
-    public COMMA(i: number): antlr.TerminalNode | null;
-    public COMMA(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
-    	if (i === undefined) {
-    		return this.getTokens(LogicParser.COMMA);
-    	} else {
-    		return this.getToken(LogicParser.COMMA, i);
-    	}
+    public formula(): FormulaContext {
+        return this.getRuleContext(0, FormulaContext)!;
     }
     public override get ruleIndex(): number {
         return LogicParser.RULE_conclusion;

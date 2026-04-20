@@ -31,6 +31,9 @@ export interface AppTranslations {
   convertLambda: string;
   lambdaExpression: string;
   exprType: string;
+  rawType: string;
+  generalizedBinding: string;
+  curryHowardReading: string;
   proofTree: string;
   typeInference: string;
   footerText: string;
@@ -69,7 +72,6 @@ export interface AppTranslations {
   pairsAndSums: string;
   dependentTypes: string;
   controlFlow: string;
-  naturals: string;
   addRule: string;
   predictSequent: string;
   predictExpression: string;
@@ -115,8 +117,8 @@ const SK: AppTranslations = {
   curryHoward: 'Curry-Howard',
   proofs: 'Dôkazy',
   sequentCalculus: 'Sekventový kalkul',
-  exprToLambda: 'Výraz → Lambda',
-  lambdaToExpr: 'Lambda → Výraz',
+  exprToLambda: 'Výrok → Lambda',
+  lambdaToExpr: 'Lambda → Výrok',
   naturalDeduction: 'Prirodzená dedukcia',
   autoMode: 'Auto',
   interactiveMode: 'Interaktívny',
@@ -128,12 +130,15 @@ const SK: AppTranslations = {
   darkMode: 'Tmavý režim',
   lightMode: 'Svetlý režim',
   examples: 'Príklady',
-  chooseExampleExpr: 'Vyberte príklad výrazu',
+  chooseExampleExpr: 'Vyberte výrok',
   chooseExampleLambda: 'Vyberte príklad λ',
   generateProof: 'Generovať dôkaz',
   convertLambda: 'Konvertovať',
   lambdaExpression: 'Lambda výraz',
   exprType: 'Typ výrazu',
+  rawType: 'Typ výrazu (surový)',
+  generalizedBinding: 'Generalizované viazanie',
+  curryHowardReading: 'Curry–Howard interpretácia',
   proofTree: 'Dôkazový strom',
   typeInference: 'Odvodenie typov',
   footerText: 'Curry-Howard – dôkazový asistent',
@@ -169,7 +174,6 @@ const SK: AppTranslations = {
   pairsAndSums: 'Páry a sumy',
   dependentTypes: 'Závislé (∀ / ∃)',
   controlFlow: 'Riadenie toku',
-  naturals: 'Prirodzené čísla',
   addRule: 'Pridať pravidlo',
   predictSequent: 'Predikuj sekvent',
   predictExpression: 'Predikuj výraz',
@@ -190,8 +194,8 @@ const EN: AppTranslations = {
   curryHoward: 'Curry-Howard',
   proofs: 'Proofs',
   sequentCalculus: 'Sequent calculus',
-  exprToLambda: 'Expression → Lambda',
-  lambdaToExpr: 'Lambda → Expression',
+  exprToLambda: 'Formula → Lambda',
+  lambdaToExpr: 'Lambda → Formula',
   naturalDeduction: 'Natural Deduction',
   autoMode: 'Auto',
   interactiveMode: 'Interactive',
@@ -203,12 +207,15 @@ const EN: AppTranslations = {
   darkMode: 'Dark mode',
   lightMode: 'Light mode',
   examples: 'Examples',
-  chooseExampleExpr: 'Choose example expression',
+  chooseExampleExpr: 'Choose formula',
   chooseExampleLambda: 'Choose example λ',
   generateProof: 'Generate proof',
   convertLambda: 'Convert',
   lambdaExpression: 'Lambda expression',
   exprType: 'Expression type',
+  rawType: 'Raw type',
+  generalizedBinding: 'Generalized binding',
+  curryHowardReading: 'Curry–Howard reading',
   proofTree: 'Proof tree',
   typeInference: 'Type inference',
   footerText: 'Curry-Howard – proof assistant',
@@ -244,7 +251,6 @@ const EN: AppTranslations = {
   pairsAndSums: 'Pairs & Sums',
   dependentTypes: 'Dependent (∀ / ∃)',
   controlFlow: 'Control Flow',
-  naturals: 'Naturals',
   addRule: 'Add rule',
   predictSequent: 'Predict sequent',
   predictExpression: 'Predict expression',

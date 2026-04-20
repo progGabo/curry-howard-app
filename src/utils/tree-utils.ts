@@ -31,17 +31,6 @@ export class TreeUtils {
         };
       case 'Let':
         return { ...mapped, value: this.mapExpr(mapped.value, fn), inExpr: this.mapExpr(mapped.inExpr, fn) };
-      case 'If':
-        return {
-          ...mapped,
-          cond: this.mapExpr(mapped.cond, fn),
-          thenBranch: this.mapExpr(mapped.thenBranch, fn),
-          elseBranch: this.mapExpr(mapped.elseBranch, fn)
-        };
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        return { ...mapped, expr: this.mapExpr(mapped.expr, fn) };
       default:
         return mapped;
     }
@@ -74,14 +63,6 @@ export class TreeUtils {
                this.findExpr(expr.rightBranch, predicate);
       case 'Let':
         return this.findExpr(expr.value, predicate) || this.findExpr(expr.inExpr, predicate);
-      case 'If':
-        return this.findExpr(expr.cond, predicate) ||
-               this.findExpr(expr.thenBranch, predicate) ||
-               this.findExpr(expr.elseBranch, predicate);
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        return this.findExpr(expr.expr, predicate);
       default:
         return null;
     }
@@ -117,16 +98,6 @@ export class TreeUtils {
         break;
       case 'Let':
         count += this.countNodes(expr.value) + this.countNodes(expr.inExpr);
-        break;
-      case 'If':
-        count += this.countNodes(expr.cond) +
-                 this.countNodes(expr.thenBranch) +
-                 this.countNodes(expr.elseBranch);
-        break;
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        count += this.countNodes(expr.expr);
         break;
     }
     return count;
@@ -182,20 +153,6 @@ export class TreeUtils {
           ...this.getFreeVars(expr.value, bound),
           ...this.getFreeVars(expr.inExpr, new Set([...bound, expr.name]))
         ]);
-      case 'If':
-        return new Set([
-          ...this.getFreeVars(expr.cond, bound),
-          ...this.getFreeVars(expr.thenBranch, bound),
-          ...this.getFreeVars(expr.elseBranch, bound)
-        ]);
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        return this.getFreeVars(expr.expr, bound);
-      case 'True':
-      case 'False':
-      case 'Zero':
-        return new Set();
       default:
         return new Set();
     }

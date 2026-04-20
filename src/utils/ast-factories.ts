@@ -136,26 +136,13 @@ export const ExprFactories = {
   let: (name: string, value: ExprNode, inExpr: ExprNode, span?: Span): ExprNode => 
     ({ kind: 'Let', name: assertIdentifier(name, 'Let binder'), value, inExpr, span }),
   
-  if: (cond: ExprNode, thenBranch: ExprNode, elseBranch: ExprNode, span?: Span): ExprNode => 
-    ({ kind: 'If', cond, thenBranch, elseBranch, span }),
-  
-  true: (span?: Span): ExprNode => ({ kind: 'True', span }),
-  false: (span?: Span): ExprNode => ({ kind: 'False', span }),
-  zero: (span?: Span): ExprNode => ({ kind: 'Zero', span }),
-  
-  succ: (expr: ExprNode, span?: Span): ExprNode => ({ kind: 'Succ', expr, span }),
-  pred: (expr: ExprNode, span?: Span): ExprNode => ({ kind: 'Pred', expr, span }),
-  isZero: (expr: ExprNode, span?: Span): ExprNode => ({ kind: 'IsZero', expr, span }),
-
   abort: (expr: ExprNode, targetType: TypeNode, span?: Span): ExprNode =>
     ({ kind: 'Abort', expr, targetType, span }),
 };
 
 export const TypeFactories = {
   typeVar: (name: string): TypeNode => ({ kind: 'TypeVar', name: assertIdentifier(name, 'Type variable name') }),
-  bool: (): TypeNode => ({ kind: 'Bool' }),
   bottom: (): TypeNode => ({ kind: 'Bottom' }),
-  nat: (): TypeNode => ({ kind: 'Nat' }),
   func: (from: TypeNode, to: TypeNode): TypeNode => ({ kind: 'Func', from, to }),
   prod: (left: TypeNode, right: TypeNode): TypeNode => ({ kind: 'Prod', left, right }),
   sum: (left: TypeNode, right: TypeNode): TypeNode => ({ kind: 'Sum', left, right }),

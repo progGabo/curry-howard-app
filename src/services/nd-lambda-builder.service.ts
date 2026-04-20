@@ -164,7 +164,7 @@ export class NdLambdaBuilderService {
       }
 
       case '⊤I':
-        return ExprFactories.true();
+        return ExprFactories.var('⊤');
 
       case '∀I': {
         const goal = node.judgement.goal;
@@ -243,7 +243,7 @@ export class NdLambdaBuilderService {
 
   private extractLeaf(node: NdNode, env: Map<string, string>): ExprNode | null {
     if (node.rule === '⊤I') {
-      return ExprFactories.true();
+      return ExprFactories.var('⊤');
     }
 
     if (node.rule === 'Ax' || node.branchStatus === 'closed-hypothesis') {
@@ -356,28 +356,14 @@ export class NdLambdaBuilderService {
           return { ...node, pair: visit(node.pair, bound) };
         case 'Inl':
         case 'Inr':
-        case 'Succ':
-        case 'Pred':
-        case 'IsZero':
         case 'Abort':
           return { ...node, expr: visit(node.expr, bound) };
-        case 'If':
-          return {
-            ...node,
-            cond: visit(node.cond, bound),
-            thenBranch: visit(node.thenBranch, bound),
-            elseBranch: visit(node.elseBranch, bound)
-          };
         case 'DependentPair':
           return {
             ...node,
             witness: visit(node.witness, bound),
             proof: visit(node.proof, bound)
           };
-        case 'True':
-        case 'False':
-        case 'Zero':
-          return node;
       }
     };
 
@@ -487,28 +473,14 @@ export class NdLambdaBuilderService {
           return { ...node, pair: visit(node.pair, active) };
         case 'Inl':
         case 'Inr':
-        case 'Succ':
-        case 'Pred':
-        case 'IsZero':
         case 'Abort':
           return { ...node, expr: visit(node.expr, active) };
-        case 'If':
-          return {
-            ...node,
-            cond: visit(node.cond, active),
-            thenBranch: visit(node.thenBranch, active),
-            elseBranch: visit(node.elseBranch, active)
-          };
         case 'DependentPair':
           return {
             ...node,
             witness: visit(node.witness, active),
             proof: visit(node.proof, active)
           };
-        case 'True':
-        case 'False':
-        case 'Zero':
-          return node;
       }
     };
 
@@ -531,9 +503,6 @@ export class NdLambdaBuilderService {
         return this.collectFreeVariables(expr.pair, bound);
       case 'Inl':
       case 'Inr':
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
       case 'Abort':
         return this.collectFreeVariables(expr.expr, bound);
       case 'Case':
@@ -562,16 +531,6 @@ export class NdLambdaBuilderService {
           ...this.collectFreeVariables(expr.pair, bound),
           ...this.collectFreeVariables(expr.inExpr, new Set([...bound, expr.x, expr.p]))
         ]);
-      case 'If':
-        return new Set([
-          ...this.collectFreeVariables(expr.cond, bound),
-          ...this.collectFreeVariables(expr.thenBranch, bound),
-          ...this.collectFreeVariables(expr.elseBranch, bound)
-        ]);
-      case 'True':
-      case 'False':
-      case 'Zero':
-        return new Set();
     }
   }
 

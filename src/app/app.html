@@ -164,19 +164,7 @@
 
         <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
           <h4 class="formula-section-header">{{ t.controlFlow }}</h4>
-          <div class="formula-item" *ngFor="let rule of conditionalRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
-            <div class="formula-item-header">{{ rule }}</div>
-            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
-          </div>
           <div class="formula-item" *ngFor="let rule of letRules" [class.formula-item--full-row]="isTypeInferenceSidebarFullRow(rule)">
-            <div class="formula-item-header">{{ rule }}</div>
-            <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
-          </div>
-        </div>
-
-        <div class="formula-section" *ngIf="isLambdaToExpressionWorkflow">
-          <h4 class="formula-section-header">{{ t.naturals }}</h4>
-          <div class="formula-item" *ngFor="let rule of natRules">
             <div class="formula-item-header">{{ rule }}</div>
             <div class="formula-item-box" [appKatex]="getRuleFormula(rule)"></div>
           </div>
@@ -217,8 +205,14 @@
             </div>
           </div>
           <div class="result-type" *ngIf="isLambdaToExpressionWorkflow && resultExpression">
-            <h4>{{ t.exprType }}</h4>
-            <pre>{{ resultExpression }}</pre>
+            <div *ngIf="letBindings.length > 0" class="result-section">
+              <h4>{{ t.generalizedBinding }}</h4>
+              <pre *ngFor="let binding of letBindings">{{ binding }}</pre>
+            </div>
+            <div class="result-section">
+              <h4>{{ t.exprType }}</h4>
+              <pre>{{ resultExpression }}</pre>
+            </div>
           </div>
         </div>
       </div>
@@ -380,8 +374,6 @@
   [filteredPairRules]="filterRules(pairRules, 'type')"
   [filteredDependentRules]="filterRules(dependentRules, 'type')"
   [filteredSumRules]="filterRules(sumRules, 'type')"
-  [filteredConditionalRules]="filterRules(conditionalRules, 'type')"
-  [filteredNatRules]="filterRules(natRules, 'type')"
   [filteredLetRules]="filterRules(letRules, 'type')"
   [filteredNdIntroRules]="filterRules(ndIntroRules, 'nd')"
   [filteredNdElimRules]="filterRules(ndElimRules, 'nd')"

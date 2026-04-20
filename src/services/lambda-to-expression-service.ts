@@ -36,12 +36,8 @@ export class LambdaToExpressionService {
     switch (type.kind) {
       case 'TypeVar':
         return this.formatTypeVariableName(type.name);
-      case 'Bool':
-        return 'Bool';
       case 'Bottom':
         return '⊥';
-      case 'Nat':
-        return 'Nat';
       case 'Func':
         const fromF = this.convertTypeToLogicalFormula(type.from);
         const toF = this.convertTypeToLogicalFormula(type.to);
@@ -114,30 +110,6 @@ export class LambdaToExpressionService {
         const inrType = this.convertTypeToFormula(expr.asType);
         return `${inrType} ∨ ${inrFormula}`;
       
-      case 'True':
-        return '⊤';
-      
-      case 'False':
-        return '⊥';
-      
-      case 'Zero':
-        return '0';
-      
-      case 'Succ':
-        return `succ(${this.convertExprToFormula(expr.expr)})`;
-      
-      case 'Pred':
-        return `pred(${this.convertExprToFormula(expr.expr)})`;
-      
-      case 'IsZero':
-        return `iszero(${this.convertExprToFormula(expr.expr)})`;
-      
-      case 'If':
-        const condFormula = this.convertExprToFormula(expr.cond);
-        const thenFormula = this.convertExprToFormula(expr.thenBranch);
-        const elseFormula = this.convertExprToFormula(expr.elseBranch);
-        return `if ${condFormula} then ${thenFormula} else ${elseFormula}`;
-      
       case 'Case':
         const caseExpr = this.convertExprToFormula(expr.expr);
         const leftCase = this.convertExprToFormula(expr.leftBranch);
@@ -184,12 +156,8 @@ export class LambdaToExpressionService {
     switch (type.kind) {
       case 'TypeVar':
         return this.formatTypeVariableName(type.name);
-      case 'Bool':
-        return 'Bool';
       case 'Bottom':
         return '⊥';
-      case 'Nat':
-        return 'Nat';
       case 'Func':
         const fromFormula = this.convertTypeToFormula(type.from);
         const toFormula = this.convertTypeToFormula(type.to);
@@ -214,11 +182,11 @@ export class LambdaToExpressionService {
       case 'DependentFunc':
         const dfFrom = this.convertTypeToFormula(type.paramType);
         const dfTo = this.convertTypeToFormula(type.bodyType);
-        return `(${type.param}: ${dfFrom}) → ${dfTo}`;
+        return `Π${type.param}:${dfFrom}. ${dfTo}`;
       case 'DependentProd':
         const dpFrom = this.convertTypeToFormula(type.paramType);
         const dpTo = this.convertTypeToFormula(type.bodyType);
-        return `∃${type.param}:${dpFrom}. ${dpTo}`;
+        return `Σ${type.param}:${dpFrom}. ${dpTo}`;
       default:
         return `[${(type as any).kind}]`;
     }
@@ -317,10 +285,6 @@ export class LambdaToExpressionService {
         };
       case 'LetDependentPair':
         return this.createFormulaFromLambda(expr.inExpr);
-      case 'True':
-        return { kind: 'True' };
-      case 'False':
-        return { kind: 'False' };
       default:
         return { kind: 'Var', name: 'Unknown' };
     }

@@ -42,7 +42,7 @@ export class LogicAstVisitor
   }
 
   visitConclusion(ctx: ConclusionContext): FormulaNode[] {
-    return ctx.formula().map(f => this.visit(f));
+    return [this.visit(ctx.formula()!)];
   }
 
   visitFormula(ctx: FormulaContext): FormulaNode {

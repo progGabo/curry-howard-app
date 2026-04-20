@@ -37,7 +37,7 @@
 
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Logické výrazy / sekventy' : 'Logical expressions / sequents' }}</h4>
-          <p>{{ currentLanguage === 'sk' ? 'Vstup pre smer' : 'Input for the' }} <strong>{{ currentLanguage === 'sk' ? 'Výraz → Lambda' : 'Expression → Lambda' }}</strong> {{ currentLanguage === 'sk' ? 'a sekciu' : 'direction and the' }} <strong>{{ currentLanguage === 'sk' ? 'Dôkazy' : 'Proofs' }}</strong>{{ currentLanguage === 'sk' ? ':' : ' section:' }}</p>
+          <p>{{ currentLanguage === 'sk' ? 'Vstup pre smer' : 'Input for the' }} <strong>{{ currentLanguage === 'sk' ? 'Výrok → Lambda' : 'Expression → Lambda' }}</strong> {{ currentLanguage === 'sk' ? 'a sekciu' : 'direction and the' }} <strong>{{ currentLanguage === 'sk' ? 'Dôkazy' : 'Proofs' }}</strong>{{ currentLanguage === 'sk' ? ':' : ' section:' }}</p>
           <table class="help-table">
             <thead><tr><th>{{ currentLanguage === 'sk' ? 'Zápis' : 'Syntax' }}</th><th>{{ currentLanguage === 'sk' ? 'Význam' : 'Meaning' }}</th></tr></thead>
             <tbody>
@@ -56,7 +56,7 @@
 
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Lambda výrazy' : 'Lambda expressions' }}</h4>
-          <p>{{ currentLanguage === 'sk' ? 'Vstup pre smer' : 'Input for the' }} <strong>{{ currentLanguage === 'sk' ? 'Lambda → Výraz' : 'Lambda → Expression' }}</strong>{{ currentLanguage === 'sk' ? ':' : ' direction:' }}</p>
+          <p>{{ currentLanguage === 'sk' ? 'Vstup pre smer' : 'Input for the' }} <strong>{{ currentLanguage === 'sk' ? 'Lambda → Výrok' : 'Lambda → Expression' }}</strong>{{ currentLanguage === 'sk' ? ':' : ' direction:' }}</p>
           <table class="help-table">
             <thead><tr><th>{{ currentLanguage === 'sk' ? 'Zápis' : 'Syntax' }}</th><th>{{ currentLanguage === 'sk' ? 'Význam' : 'Meaning' }}</th></tr></thead>
             <tbody>
@@ -67,9 +67,7 @@
               <tr><td><code>let (x, y) = p in t</code></td><td>{{ currentLanguage === 'sk' ? 'dekompozícia páru' : 'pair decomposition' }}</td></tr>
               <tr><td><code>inl t</code> / <code>inr t</code></td><td>{{ currentLanguage === 'sk' ? 'injekcia do súčtového typu' : 'injection into sum type' }}</td></tr>
               <tr><td><code>case s of inl x =&gt; t1 | inr y =&gt; t2</code></td><td>{{ currentLanguage === 'sk' ? 'vzorové rozvetvenie' : 'pattern matching' }}</td></tr>
-              <tr><td><code>if c then t else e</code></td><td>{{ currentLanguage === 'sk' ? 'podmienka' : 'conditional' }}</td></tr>
               <tr><td><code>let x = e in t</code></td><td>{{ currentLanguage === 'sk' ? 'let väzba' : 'let binding' }}</td></tr>
-              <tr><td><code>0</code>, <code>succ n</code>, <code>pred n</code>, <code>iszero n</code></td><td>{{ currentLanguage === 'sk' ? 'prirodzené čísla' : 'natural numbers' }}</td></tr>
               <tr><td><code>(x:T) → B(x)</code> / <code>(x:T) -&gt; B(x)</code></td><td>{{ currentLanguage === 'sk' ? 'závislý typ (Π)' : 'dependent type (Π)' }}</td></tr>
               <tr><td><code>∃x:T. P(x)</code></td><td>{{ currentLanguage === 'sk' ? 'závislý pár (Σ)' : 'dependent pair (Σ)' }}</td></tr>
             </tbody>
@@ -91,7 +89,7 @@
         <section class="help-section">
           <h4>{{ currentLanguage === 'sk' ? 'Sekcie aplikácie' : 'Application sections' }}</h4>
           <ul class="help-flow">
-            <li><strong>Curry-Howard</strong> — {{ currentLanguage === 'sk' ? 'demonštrácia Curry-Howardovho izomorfizmu medzi logickými dôkazmi a lambda výrazmi. Dva smery:' : 'demonstration of the Curry-Howard isomorphism between logical proofs and lambda terms. Two directions:' }} <em>{{ currentLanguage === 'sk' ? 'Výraz → Lambda' : 'Expression → Lambda' }}</em> {{ currentLanguage === 'sk' ? 'a' : 'and' }} <em>{{ currentLanguage === 'sk' ? 'Lambda → Výraz' : 'Lambda → Expression' }}</em>.</li>
+            <li><strong>Curry-Howard</strong> — {{ currentLanguage === 'sk' ? 'demonštrácia Curry-Howardovho izomorfizmu medzi logickými dôkazmi a lambda výrazmi. Dva smery:' : 'demonstration of the Curry-Howard isomorphism between logical proofs and lambda terms. Two directions:' }} <em>{{ currentLanguage === 'sk' ? 'Výrok → Lambda' : 'Expression → Lambda' }}</em> {{ currentLanguage === 'sk' ? 'a' : 'and' }} <em>{{ currentLanguage === 'sk' ? 'Lambda → Výrok' : 'Lambda → Expression' }}</em>.</li>
             <li><strong>{{ currentLanguage === 'sk' ? 'Dôkazy' : 'Proofs' }}</strong> — {{ currentLanguage === 'sk' ? 'dokazovanie výrokov v' : 'proving propositions in' }} <em>{{ currentLanguage === 'sk' ? 'sekventovom kalkule' : 'sequent calculus' }}</em> {{ currentLanguage === 'sk' ? 'alebo' : 'or' }} <em>{{ currentLanguage === 'sk' ? 'prirodzenej dedukcii' : 'natural deduction' }}</em>.</li>
           </ul>
         </section>

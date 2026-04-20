@@ -9,7 +9,6 @@ import { LamExprContext } from "./LambdaParser.js";
 import { LetExprContext } from "./LambdaParser.js";
 import { LetPairExprContext } from "./LambdaParser.js";
 import { LetDependentPairExprContext } from "./LambdaParser.js";
-import { IfExprContext } from "./LambdaParser.js";
 import { CaseExprContext } from "./LambdaParser.js";
 import { AppExprContext } from "./LambdaParser.js";
 import { AtomContext } from "./LambdaParser.js";
@@ -86,16 +85,6 @@ export class LambdaListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitLetDependentPairExpr?: (ctx: LetDependentPairExprContext) => void;
-    /**
-     * Enter a parse tree produced by `LambdaParser.ifExpr`.
-     * @param ctx the parse tree
-     */
-    enterIfExpr?: (ctx: IfExprContext) => void;
-    /**
-     * Exit a parse tree produced by `LambdaParser.ifExpr`.
-     * @param ctx the parse tree
-     */
-    exitIfExpr?: (ctx: IfExprContext) => void;
     /**
      * Enter a parse tree produced by `LambdaParser.caseExpr`.
      * @param ctx the parse tree

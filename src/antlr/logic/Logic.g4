@@ -9,7 +9,7 @@ assumptions
     ;
 
 conclusion
-    : formula (COMMA formula)*
+    : formula
     ;
 
 formula
@@ -88,8 +88,8 @@ IMPL: '⇒' | '→' | '=>';
 AND: '∧' | '⋀' | '&&';
 OR: '∨' | '⋁' | '||';
 NOT: '¬' | '∼' | '~' | '!';
-TOP: 'T' | 'True' | 'true';
-BOT: 'F' | 'False' | 'false';
+TOP: 'True' | 'true';
+BOT: 'False' | 'false';
 FORALL: '∀' | 'forall' | 'Forall';
 EXISTS: '∃' | 'exists' | 'Exists';
 DOT: '.';

@@ -2,9 +2,7 @@ export interface Span { start: number; end: number; }
 
 export type TypeNode =
   | { id?: number; span?: Span; kind: 'TypeVar'; name: string }     // TYPEID
-  | { id?: number; span?: Span; kind: 'Bool' }                       // BOOL
   | { id?: number; span?: Span; kind: 'Bottom' }                     // ⊥ (logical falsehood)
-  | { id?: number; span?: Span; kind: 'Nat' }                        // NAT
   | { id?: number; span?: Span; kind: 'Func'; from: TypeNode; to: TypeNode } // A -> B
   | { id?: number; span?: Span; kind: 'Prod'; left: TypeNode; right: TypeNode } // A * B
   | { id?: number; span?: Span; kind: 'Sum'; left: TypeNode; right: TypeNode }  // A + B
@@ -41,17 +39,6 @@ export type ExprNode =
       ; leftVar: string; leftType: TypeNode; leftBranch: ExprNode
       ; rightVar: string; rightType: TypeNode; rightBranch: ExprNode
     }
-
-  // if t then u else v
-  | { id?: number; span?: Span; kind: 'If'; cond: ExprNode; thenBranch: ExprNode; elseBranch: ExprNode }
-
-  // Bool a Nat fragment
-  | { id?: number; span?: Span; kind: 'True' }
-  | { id?: number; span?: Span; kind: 'False' }
-  | { id?: number; span?: Span; kind: 'Zero' }                       // 0
-  | { id?: number; span?: Span; kind: 'Succ'; expr: ExprNode }       // succ t
-  | { id?: number; span?: Span; kind: 'Pred'; expr: ExprNode }       // pred t
-  | { id?: number; span?: Span; kind: 'IsZero'; expr: ExprNode }     // iszero t
 
   // Dependent types for quantifiers
   | { id?: number; span?: Span; kind: 'DependentAbs'; param: string; paramType: TypeNode; body: ExprNode } // λx:T. t (dependent)

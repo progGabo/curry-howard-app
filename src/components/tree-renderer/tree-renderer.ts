@@ -60,7 +60,7 @@ export class TreeRendererComponent implements AfterViewChecked {
       return this.children.length > 0 || this.root.rule === 'Ax' || this.root.rule === 'id';
     }
 
-    return this.children.length > 0 || ['Var', 'True', 'False', 'Zero'].includes(this.root.rule);
+    return this.children.length > 0 || ['Var'].includes(this.root.rule);
   }
 
   get isLeaf(): boolean {
@@ -81,7 +81,7 @@ export class TreeRendererComponent implements AfterViewChecked {
       return this.root.rule !== 'Ax' && this.root.rule !== 'id';
     }
 
-    return !['Var', 'True', 'False', 'Zero'].includes(this.root.rule);
+    return !['Var'].includes(this.root.rule);
   }
 
   get addRuleTitle(): string {

@@ -78,9 +78,7 @@ export class Equality {
       case 'Sum':
         const bProd = b as typeof a;
         return this.typesEqual(a.left, bProd.left) && this.typesEqual(a.right, bProd.right);
-      case 'Bool':
       case 'Bottom':
-      case 'Nat':
         return true;
       case 'PredicateType':
         const bPred = b as typeof a;
@@ -142,19 +140,6 @@ export class Equality {
         return a.name === bLet.name &&
                this.exprsEqual(a.value, bLet.value) &&
                this.exprsEqual(a.inExpr, bLet.inExpr);
-      case 'If':
-        const bIf = b as typeof a;
-        return this.exprsEqual(a.cond, bIf.cond) &&
-               this.exprsEqual(a.thenBranch, bIf.thenBranch) &&
-               this.exprsEqual(a.elseBranch, bIf.elseBranch);
-      case 'True':
-      case 'False':
-      case 'Zero':
-        return true;
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        return this.exprsEqual(a.expr, (b as typeof a).expr);
       case 'DependentAbs':
         const bDepAbs = b as typeof a;
         return a.param === bDepAbs.param &&

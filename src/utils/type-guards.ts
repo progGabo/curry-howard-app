@@ -37,44 +37,8 @@ export function isLet(expr: ExprNode): expr is Extract<ExprNode, { kind: 'Let' }
   return expr.kind === 'Let';
 }
 
-export function isIf(expr: ExprNode): expr is Extract<ExprNode, { kind: 'If' }> {
-  return expr.kind === 'If';
-}
-
-export function isTrue(expr: ExprNode): expr is Extract<ExprNode, { kind: 'True' }> {
-  return expr.kind === 'True';
-}
-
-export function isFalse(expr: ExprNode): expr is Extract<ExprNode, { kind: 'False' }> {
-  return expr.kind === 'False';
-}
-
-export function isZero(expr: ExprNode): expr is Extract<ExprNode, { kind: 'Zero' }> {
-  return expr.kind === 'Zero';
-}
-
-export function isSucc(expr: ExprNode): expr is Extract<ExprNode, { kind: 'Succ' }> {
-  return expr.kind === 'Succ';
-}
-
-export function isPred(expr: ExprNode): expr is Extract<ExprNode, { kind: 'Pred' }> {
-  return expr.kind === 'Pred';
-}
-
-export function isIsZero(expr: ExprNode): expr is Extract<ExprNode, { kind: 'IsZero' }> {
-  return expr.kind === 'IsZero';
-}
-
 export function isTypeVar(type: TypeNode): type is Extract<TypeNode, { kind: 'TypeVar' }> {
   return type.kind === 'TypeVar';
-}
-
-export function isBoolType(type: TypeNode): type is Extract<TypeNode, { kind: 'Bool' }> {
-  return type.kind === 'Bool';
-}
-
-export function isNatType(type: TypeNode): type is Extract<TypeNode, { kind: 'Nat' }> {
-  return type.kind === 'Nat';
 }
 
 export function isFuncType(type: TypeNode): type is Extract<TypeNode, { kind: 'Func' }> {

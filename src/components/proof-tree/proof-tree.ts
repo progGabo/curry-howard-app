@@ -307,9 +307,7 @@ export class ProofTree implements AfterViewChecked {
         if (!impl || impl.kind !== 'Implies') return null;
         return [{
           assumptions: [...assumptions, impl.left],
-          conclusions: conclusions.map((c: FormulaNode) => 
-            this.formulasEqual(c, impl) ? impl.right : c
-          )
+          conclusions: [impl.right]
         }];
       }
       
@@ -318,29 +316,23 @@ export class ProofTree implements AfterViewChecked {
         if (idx === -1) return null;
         const implF = assumptions[idx];
         if (implF.kind !== 'Implies') return null;
-        const newAssumptions = [...assumptions.slice(0, idx), implF.right, ...assumptions.slice(idx + 1)];
+        const gamma = assumptions.filter((_: FormulaNode, i: number) => i !== idx);
         return [
-          { assumptions, conclusions: [...conclusions, implF.left] },
-          { assumptions: newAssumptions, conclusions }
+          { assumptions: gamma, conclusions: [implF.left] },
+          { assumptions: [...gamma, implF.right], conclusions }
         ];
       }
       
       case '∧R': {
         const and = conclusions.find((f: FormulaNode) => f.kind === 'And');
         if (!and || and.kind !== 'And') return null;
-        const leftConclusions = conclusions.map((c: FormulaNode) => 
-          this.formulasEqual(c, and) ? and.left : c
-        );
-        const rightConclusions = conclusions.map((c: FormulaNode) => 
-          this.formulasEqual(c, and) ? and.right : c
-        );
         return [
-          { assumptions, conclusions: leftConclusions },
-          { assumptions, conclusions: rightConclusions }
+          { assumptions, conclusions: [and.left] },
+          { assumptions, conclusions: [and.right] }
         ];
       }
       
-      case '∧L': {
+      case '∧L1': {
         const idx = assumptions.findIndex((f: FormulaNode) => f.kind === 'And');
         if (idx === -1) return null;
         const andF = assumptions[idx];
@@ -349,6 +341,20 @@ export class ProofTree implements AfterViewChecked {
           assumptions: [
             ...assumptions.slice(0, idx),
             andF.left,
+            ...assumptions.slice(idx + 1)
+          ],
+          conclusions
+        }];
+      }
+      
+      case '∧L2': {
+        const idx = assumptions.findIndex((f: FormulaNode) => f.kind === 'And');
+        if (idx === -1) return null;
+        const andF = assumptions[idx];
+        if (andF.kind !== 'And') return null;
+        return [{
+          assumptions: [
+            ...assumptions.slice(0, idx),
             andF.right,
             ...assumptions.slice(idx + 1)
           ],
@@ -356,16 +362,21 @@ export class ProofTree implements AfterViewChecked {
         }];
       }
       
-      case '∨R': {
+      case '∨R1': {
         const or = conclusions.find((f: FormulaNode) => f.kind === 'Or');
         if (!or || or.kind !== 'Or') return null;
         return [{
           assumptions,
-          conclusions: conclusions.map((c: FormulaNode) => 
-            this.formulasEqual(c, or) ? or.left : c
-          ).concat(conclusions.map((c: FormulaNode) => 
-            this.formulasEqual(c, or) ? or.right : c
-          ).filter((c, i, arr) => i === arr.findIndex(x => this.formulasEqual(x, c)) && !this.formulasEqual(c, or.left)))
+          conclusions: [or.left]
+        }];
+      }
+      
+      case '∨R2': {
+        const or = conclusions.find((f: FormulaNode) => f.kind === 'Or');
+        if (!or || or.kind !== 'Or') return null;
+        return [{
+          assumptions,
+          conclusions: [or.right]
         }];
       }
       
@@ -387,7 +398,7 @@ export class ProofTree implements AfterViewChecked {
         if (!not || not.kind !== 'Not') return null;
         return [{
           assumptions: [...assumptions, not.inner],
-          conclusions: conclusions.filter((c: FormulaNode) => !this.formulasEqual(c, not))
+          conclusions: [{ kind: 'False' } as FormulaNode]
         }];
       }
       
@@ -398,7 +409,7 @@ export class ProofTree implements AfterViewChecked {
         if (notF.kind !== 'Not') return null;
         return [{
           assumptions: assumptions.filter((_: FormulaNode, i: number) => i !== idx),
-          conclusions: [...conclusions, notF.inner]
+          conclusions: [notF.inner]
         }];
       }
       
@@ -410,22 +421,12 @@ export class ProofTree implements AfterViewChecked {
         }];
       }
       
-      case 'WR': {
-        if (conclusions.length === 0) return null;
-        return [{
-          assumptions,
-          conclusions: conclusions.slice(1)
-        }];
-      }
-      
       case '∀R': {
         const forall = conclusions.find((f: FormulaNode) => f.kind === 'Forall');
         if (!forall || forall.kind !== 'Forall') return null;
         return [{
           assumptions,
-          conclusions: conclusions.map((c: FormulaNode) => 
-            this.formulasEqual(c, forall) ? forall.body : c
-          )
+          conclusions: [forall.body]
         }];
       }
       
@@ -449,9 +450,7 @@ export class ProofTree implements AfterViewChecked {
         if (!exists || exists.kind !== 'Exists') return null;
         return [{
           assumptions,
-          conclusions: conclusions.map((c: FormulaNode) => 
-            this.formulasEqual(c, exists) ? exists.body : c
-          )
+          conclusions: [exists.body]
         }];
       }
       

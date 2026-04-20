@@ -7,7 +7,6 @@ export interface LambdaVisitor<T> {
   visitLetExpr(ctx: any): T;
   visitLetPairExpr(ctx: any): T;
   visitLetDependentPairExpr(ctx: any): T;
-  visitIfExpr(ctx: any): T;
   visitCaseExpr(ctx: any): T;
   visitAppExpr(ctx: any): T;
   visitAtom(ctx: any): T;
@@ -26,7 +25,6 @@ import {
   LetExprContext,
   LetPairExprContext,
   LetDependentPairExprContext,
-  IfExprContext,
   CaseExprContext,
   AppExprContext,
   AtomContext,
@@ -93,26 +91,13 @@ function exprBodyTypeReferencesVar(expr: ExprNode, varName: string): boolean {
         exprBodyTypeReferencesVar((expr as any).pair, varName) ||
         exprBodyTypeReferencesVar(expr.inExpr, varName)
       );
-    case "If":
-      return (
-        exprBodyTypeReferencesVar(expr.cond, varName) ||
-        exprBodyTypeReferencesVar(expr.thenBranch, varName) ||
-        exprBodyTypeReferencesVar(expr.elseBranch, varName)
-      );
     case "DependentPair":
       return (
         typeContainsVar((expr as any).witnessType, varName) ||
         exprBodyTypeReferencesVar((expr as any).witness, varName) ||
         exprBodyTypeReferencesVar((expr as any).proof, varName)
       );
-    case "Succ":
-    case "Pred":
-    case "IsZero":
-      return exprBodyTypeReferencesVar(expr.expr, varName);
     case "Var":
-    case "True":
-    case "False":
-    case "Zero":
       return false;
     default:
       return false;
@@ -191,11 +176,6 @@ export class AstBuilder
       if (!letCtx) throw new Error("LetExpr context is null");
       return this.visitLetExpr(letCtx);
     }
-    if (ctx.ifExpr()) {
-      const ifCtx = ctx.ifExpr();
-      if (!ifCtx) throw new Error("IfExpr context is null");
-      return this.visitIfExpr(ifCtx);
-    }
     if (ctx.caseExpr()) {
       const caseCtx = ctx.caseExpr();
       if (!caseCtx) throw new Error("CaseExpr context is null");
@@ -203,7 +183,7 @@ export class AstBuilder
     }
     const appCtx = ctx.appExpr();
     if (!appCtx) {
-      throw new Error("Term must have at least one expression type (lamExpr, letPairExpr, letExpr, ifExpr, caseExpr, or appExpr)");
+      throw new Error("Term must have at least one expression type (lamExpr, letPairExpr, letExpr, caseExpr, or appExpr)");
     }
     return this.visitAppExpr(appCtx);
   }
@@ -248,15 +228,6 @@ export class AstBuilder
     return ExprFactories.letDependentPair(x, xType, p, pType, pair, inExpr, spanOf(ctx));
   }
 
-  visitIfExpr(ctx: IfExprContext): ExprNode {
-    return ExprFactories.if(
-      this.visit(ctx.term(0)!) as ExprNode,
-      this.visit(ctx.term(1)!) as ExprNode,
-      this.visit(ctx.term(2)!) as ExprNode,
-      spanOf(ctx)
-    );
-  }
-
   visitCaseExpr(ctx: CaseExprContext): ExprNode {
     return ExprFactories.case(
       this.visit(ctx.term(0)!) as ExprNode,
@@ -295,35 +266,6 @@ export class AstBuilder
 
     if (ctx.VAR()) {
       return ExprFactories.var(ctx.VAR()!.getText(), spanOf(ctx));
-    }
-
-    if (ctx.TRUE()) return ExprFactories.true(spanOf(ctx));
-    if (ctx.FALSE()) return ExprFactories.false(spanOf(ctx));
-
-    if (ctx.ZERO()) return ExprFactories.zero(spanOf(ctx));
-    if (ctx.SUCC()) {
-      const atomCtx = ctx.atom();
-      if (!atomCtx) {
-        throw new Error("SUCC requires an atom expression");
-      }
-      const inner = this.visitAtom(atomCtx) as ExprNode;
-      return ExprFactories.succ(inner, spanOf(ctx));
-    }
-    if (ctx.PRED()) {
-      const atomCtx = ctx.atom();
-      if (!atomCtx) {
-        throw new Error("PRED requires an atom expression");
-      }
-      const inner = this.visitAtom(atomCtx) as ExprNode;
-      return ExprFactories.pred(inner, spanOf(ctx));
-    }
-    if (ctx.ISZERO()) {
-      const atomCtx = ctx.atom();
-      if (!atomCtx) {
-        throw new Error("ISZERO requires an atom expression");
-      }
-      const inner = this.visitAtom(atomCtx) as ExprNode;
-      return ExprFactories.isZero(inner, spanOf(ctx));
     }
 
     if (ctx.LPAREN() && ctx.RPAREN() && ctx.term().length === 1 && !ctx.COMMA()) {
@@ -393,9 +335,16 @@ export class AstBuilder
   }
 
   visitType(ctx: TypeContext): TypeNode {
+    // Dependent function type: (x: T) -> P(x)
+    if (ctx.VAR() && ctx.COLON() && ctx.LPAREN() && ctx.RPAREN() && ctx.ARROW()) {
+      const param = ctx.VAR()!.getText();
+      const paramType = this.visitType(ctx.type_(0)!) as TypeNode;
+      const bodyType = this.visitType(ctx.type_(1)!) as TypeNode;
+      return TypeFactories.dependentFunc(param, paramType, bodyType);
+    }
     const left = this.visitSumType(ctx.sumType()!) as TypeNode;
     if (ctx.ARROW()) {
-      return TypeFactories.func(left, this.visitType(ctx.type()!) as TypeNode); // pravá asociácia
+      return TypeFactories.func(left, this.visitType(ctx.type_(0)!) as TypeNode); // pravá asociácia
     }
     return left;
   }
@@ -428,12 +377,6 @@ export class AstBuilder
     }
     if (ctx.VAR()) {
       return TypeFactories.typeVar(ctx.VAR()!.getText());
-    }
-    if (ctx.BOOL()) {
-      return TypeFactories.bool();
-    }
-    if (ctx.NAT()) {
-      return TypeFactories.nat();
     }
     if ((ctx as any).predicateType && (ctx as any).predicateType()) {
       return this.visitPredicateType((ctx as any).predicateType()!) as TypeNode;

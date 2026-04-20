@@ -128,33 +128,11 @@
         </div>
       </div>
 
-      <div class="rule-section" *ngIf="filteredConditionalRules.length || filteredLetRules.length">
+      <div class="rule-section" *ngIf="filteredLetRules.length">
         <div class="section-title">{{ t.controlFlow }}</div>
         <div class="rule-buttons">
           <button 
-            *ngFor="let rule of filteredConditionalRules" 
-            type="button" 
-            (click)="onTypeRuleClick(rule)"
-            class="rule-btn"
-          >
-            {{ rule }}
-          </button>
-          <button 
             *ngFor="let rule of filteredLetRules" 
-            type="button" 
-            (click)="onTypeRuleClick(rule)"
-            class="rule-btn"
-          >
-            {{ rule }}
-          </button>
-        </div>
-      </div>
-
-      <div class="rule-section" *ngIf="filteredNatRules.length">
-        <div class="section-title">{{ t.naturals }}</div>
-        <div class="rule-buttons">
-          <button 
-            *ngFor="let rule of filteredNatRules" 
             type="button" 
             (click)="onTypeRuleClick(rule)"
             class="rule-btn"

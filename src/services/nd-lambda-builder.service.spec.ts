@@ -425,9 +425,6 @@ describe('NdLambdaBuilderService', () => {
           return;
         case 'Inl':
         case 'Inr':
-        case 'Succ':
-        case 'Pred':
-        case 'IsZero':
         case 'Abort':
           visit(node.expr);
           return;
@@ -455,14 +452,9 @@ describe('NdLambdaBuilderService', () => {
           visit(node.value);
           visit(node.inExpr);
           return;
-        case 'True':
-        case 'False':
-        case 'Zero':
         case 'DependentPair':
-          if (node.kind === 'DependentPair') {
-            visit(node.witness);
-            visit(node.proof);
-          }
+          visit(node.witness);
+          visit(node.proof);
           return;
       }
     };

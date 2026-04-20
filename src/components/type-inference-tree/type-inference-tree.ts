@@ -36,12 +36,12 @@ export class TypeInferenceTree implements AfterViewChecked {
   canShowPlusButton = (node: TreeRenderNode): boolean => {
     const typeNode = node as TypeInferenceNode;
     if (this.mode !== 'interactive') return false;
-    return !typeNode.children?.length && typeNode.rule !== 'Var' && typeNode.rule !== 'True' && typeNode.rule !== 'False' && typeNode.rule !== 'Zero';
+    return !typeNode.children?.length && typeNode.rule !== 'Var';
   };
 
   canShowRule = (node: TreeRenderNode): boolean => {
     const typeNode = node as TypeInferenceNode;
-    return !!typeNode.children?.length || typeNode.rule === 'Var' || typeNode.rule === 'True' || typeNode.rule === 'False' || typeNode.rule === 'Zero';
+    return !!typeNode.children?.length || typeNode.rule === 'Var';
   };
 
   onRendererNodeClicked(node: TreeRenderNode): void {
@@ -152,13 +152,13 @@ export class TypeInferenceTree implements AfterViewChecked {
   }
 
   getExpectedChildrenCount(rule: string): number {
-    if (['Var', 'True', 'False', 'Zero'].includes(rule)) {
+    if (['Var'].includes(rule)) {
       return 0;
     }
-    if (['Abs', 'DependentAbs', 'Succ', 'Pred', 'IsZero', 'Inl', 'Inr', 'Fst', 'Snd'].includes(rule)) {
+    if (['Abs', 'DependentAbs', 'Inl', 'Inr', 'Fst', 'Snd'].includes(rule)) {
       return 1;
     }
-    if (['App', 'Pair', 'Let', 'LetPair', 'If', 'DependentPair', 'LetDependentPair'].includes(rule)) {
+    if (['App', 'Pair', 'Let', 'LetPair', 'DependentPair', 'LetDependentPair'].includes(rule)) {
       return 2;
     }
     if (['Case'].includes(rule)) {
@@ -239,9 +239,6 @@ export class TypeInferenceTree implements AfterViewChecked {
   computeExpectedExpressions(expr: ExprNode, rule: string): ExprNode[] {
     switch (rule) {
       case 'Var':
-      case 'True':
-      case 'False':
-      case 'Zero':
         return []; 
       
       case 'Abs':
@@ -286,12 +283,6 @@ export class TypeInferenceTree implements AfterViewChecked {
         }
         break;
       
-      case 'If':
-        if (expr.kind === 'If') {
-          return [expr.cond, expr.thenBranch, expr.elseBranch];
-        }
-        break;
-      
       case 'Case':
         if (expr.kind === 'Case') {
           return [expr.expr, expr.leftBranch, expr.rightBranch];
@@ -306,14 +297,6 @@ export class TypeInferenceTree implements AfterViewChecked {
       
       case 'Inr':
         if (expr.kind === 'Inr') {
-          return [expr.expr];
-        }
-        break;
-      
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        if (expr.kind === 'Succ' || expr.kind === 'Pred' || expr.kind === 'IsZero') {
           return [expr.expr];
         }
         break;
@@ -399,14 +382,6 @@ export class TypeInferenceTree implements AfterViewChecked {
         }
         return false;
       
-      case 'If':
-        if (actual.kind === 'If') {
-          return this.compareExpressions(expected.cond, actual.cond) &&
-                 this.compareExpressions(expected.thenBranch, actual.thenBranch) &&
-                 this.compareExpressions(expected.elseBranch, actual.elseBranch);
-        }
-        return false;
-      
       case 'Case':
         if (actual.kind === 'Case') {
           return this.compareExpressions(expected.expr, actual.expr) &&
@@ -428,19 +403,6 @@ export class TypeInferenceTree implements AfterViewChecked {
           return this.compareExpressions(expected.expr, actual.expr);
         }
         return false;
-      
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        if (actual.kind === expected.kind) {
-          return this.compareExpressions(expected.expr, actual.expr);
-        }
-        return false;
-      
-      case 'True':
-      case 'False':
-      case 'Zero':
-        return actual.kind === expected.kind;
       
       case 'DependentAbs':
         if (actual.kind === 'DependentAbs') {
@@ -484,8 +446,11 @@ export class TypeInferenceTree implements AfterViewChecked {
     switch (expr.kind) {
       case 'Var':
         return expr.name;
-      case 'Abs':
-        return `λ${expr.param}:${this.formatType(expr.paramType)}. ${this.formatExpr(expr.body)}`;
+      case 'Abs': {
+        const typeStr = this.formatType(expr.paramType);
+        const typeNeedsParens = expr.paramType.kind === 'DependentFunc' || expr.paramType.kind === 'DependentProd';
+        return `λ${expr.param}:${typeNeedsParens ? `(${typeStr})` : typeStr}. ${this.formatExpr(expr.body)}`;
+      }
       case 'App':
         const fnStr = this.formatExpr(expr.fn);
         const argStr = this.formatExpr(expr.arg);
@@ -507,20 +472,6 @@ export class TypeInferenceTree implements AfterViewChecked {
         return `let ${expr.name} = ${this.formatExpr(expr.value)} in ${this.formatExpr(expr.inExpr)}`;
       case 'LetPair':
         return `let [${expr.x}, ${expr.y}] = ${this.formatExpr(expr.pair)} in ${this.formatExpr(expr.inExpr)}`;
-      case 'If':
-        return `if ${this.formatExpr(expr.cond)} then ${this.formatExpr(expr.thenBranch)} else ${this.formatExpr(expr.elseBranch)}`;
-      case 'True':
-        return 'true';
-      case 'False':
-        return 'false';
-      case 'Zero':
-        return '0';
-      case 'Succ':
-        return `succ ${this.formatExpr(expr.expr)}`;
-      case 'Pred':
-        return `pred ${this.formatExpr(expr.expr)}`;
-      case 'IsZero':
-        return `iszero ${this.formatExpr(expr.expr)}`;
       case 'DependentAbs':
         return `λ${expr.param}:${this.formatType(expr.paramType)}. ${this.formatExpr(expr.body)}`;
       case 'DependentPair':
@@ -540,12 +491,8 @@ export class TypeInferenceTree implements AfterViewChecked {
     switch (type.kind) {
       case 'TypeVar':
         return this.formatTypeVariableName(type.name);
-      case 'Bool':
-        return 'Bool';
       case 'Bottom':
         return '⊥';
-      case 'Nat':
-        return 'Nat';
       case 'Func':
         const fromStr = this.formatType(type.from);
         const toStr = this.formatType(type.to);
@@ -565,12 +512,12 @@ export class TypeInferenceTree implements AfterViewChecked {
         const sumRightNeedsParens = this.needsParensForProductOrSumOperand(type.right);
         return `${sumLeftNeedsParens ? `(${sumLeftStr})` : sumLeftStr} + ${sumRightNeedsParens ? `(${sumRightStr})` : sumRightStr}`;
       case 'PredicateType':
-        const args = type.argTypes.map((t: any) => this.formatType(t)).join(', ');
+        const args = type.argTypes.map((t: any) => this.formatTermType(t)).join(', ');
         return `${type.name}(${args})`;
       case 'DependentFunc':
-        return `(${type.param}: ${this.formatType(type.paramType)}) -> ${this.formatType(type.bodyType)}`;
+        return `Π${type.param}:${this.formatTermType(type.paramType)}. ${this.formatType(type.bodyType)}`;
       case 'DependentProd':
-        return `∃${type.param}:${this.formatType(type.paramType)}. ${this.formatType(type.bodyType)}`;
+        return `Σ${type.param}:${this.formatTermType(type.paramType)}. ${this.formatType(type.bodyType)}`;
       default:
         return `[${type.kind}]`;
     }
@@ -582,6 +529,17 @@ export class TypeInferenceTree implements AfterViewChecked {
       return this.polyIndexToGreek(polyIndex);
     }
     return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  private formatTermType(type: any): string {
+    if (type.kind === 'TypeVar') {
+      const polyIndex = this.tryParsePolyIndex(type.name);
+      if (polyIndex !== null) {
+        return this.polyIndexToGreek(polyIndex);
+      }
+      return type.name;
+    }
+    return this.formatType(type);
   }
 
   private tryParsePolyIndex(name: string): number | null {

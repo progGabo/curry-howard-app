@@ -141,16 +141,6 @@ export class NdAutoProverService {
       const implication = implicationEntry.formula;
       const implicationProof = implicationEntry.proof;
 
-      if (!Equality.formulasEqual(implication.right, target)) {
-        if (
-          implication.right.kind === 'And' &&
-          !Equality.formulasEqual(implication.right.left, target) &&
-          !Equality.formulasEqual(implication.right.right, target)
-        ) {
-          continue;
-        }
-      }
-
       const antecedentProof = this.prove(context, implication.left, openHypotheses, fuel - 1);
       if (!antecedentProof) continue;
 
@@ -167,6 +157,14 @@ export class NdAutoProverService {
         if (Equality.formulasEqual(implication.right.right, target)) {
           return this.createNode('∧E2', context, target, [derivedConsequent], openHypotheses, []);
         }
+      }
+
+      // Chain: use derived consequent as new context entry and recurse
+      const extendedContext = [...context, implication.right];
+      const chainResult = this.prove(extendedContext, target, openHypotheses, fuel - 1);
+      if (chainResult) {
+        this.replaceAxiomLeaf(chainResult, implication.right, derivedConsequent);
+        return chainResult;
       }
     }
 
@@ -417,5 +415,19 @@ export class NdAutoProverService {
       formula,
       introducedAtNodeId: parentNodeId
     };
+  }
+
+  private replaceAxiomLeaf(root: NdNode, formula: FormulaNode, replacement: NdNode): boolean {
+    for (let i = 0; i < root.premises.length; i++) {
+      const premise = root.premises[i];
+      if (premise.rule === '∅' && Equality.formulasEqual(premise.judgement.goal, formula)) {
+        root.premises[i] = replacement;
+        return true;
+      }
+      if (this.replaceAxiomLeaf(premise, formula, replacement)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

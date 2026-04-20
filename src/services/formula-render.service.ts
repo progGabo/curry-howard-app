@@ -5,8 +5,8 @@ import { FormulaNode, SequentNode, TermNode } from '../models/formula-node';
 export class FormulaRenderService {
   sequentToLatex(sequent: SequentNode): string {
     const assumptions = sequent.assumptions.map((formula) => this.formulaToLatex(formula)).join(',\\, ');
-    const conclusions = sequent.conclusions.map((formula) => this.formulaToLatex(formula)).join(',\\, ');
-    return `${assumptions} \\vdash ${conclusions}`;
+    const conclusion = sequent.conclusions[0] ? this.formulaToLatex(sequent.conclusions[0]) : '';
+    return `${assumptions} \\vdash ${conclusion}`;
   }
 
   formulaToLatex(formula: FormulaNode): string {

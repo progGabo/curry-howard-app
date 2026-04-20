@@ -69,7 +69,7 @@ export class FormulaTypeService {
         return TypeFactories.predicate(f.name, argTypes);
       
       case 'True':
-        return TypeFactories.bool();
+        return TypeFactories.typeVar('⊤');
       case 'False':
         return TypeFactories.bottom();
       

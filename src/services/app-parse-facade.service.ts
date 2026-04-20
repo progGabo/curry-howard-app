@@ -28,6 +28,8 @@ export interface NaturalDeductionParseResult {
 export interface LambdaParseResult {
   typeInferenceTree: TypeInferenceNode | null;
   resultExpression: string;
+  rawType: string;
+  letBindings: string[];
   lambdaExpr: string;
 }
 
@@ -99,9 +101,22 @@ export class AppParseFacadeService {
       ? this.lambdaToExpression.convertLambdaToExpression(lambdaExpr, typeInferenceTree.inferredType)
       : '';
 
+    const rawType = typeInferenceTree
+      ? this.typeInference.formatType(typeInferenceTree.inferredType)
+      : '';
+
+    const letBindings: string[] = [];
+    for (const [name, scheme] of this.typeInference.getLetBindings()) {
+      if (scheme.quantified.length > 0) {
+        letBindings.push(this.typeInference.formatScheme(name, scheme));
+      }
+    }
+
     return {
       typeInferenceTree,
       resultExpression,
+      rawType,
+      letBindings,
       lambdaExpr: this.lambdaParser.formatLambdaExpression(lambdaExpr)
     };
   }

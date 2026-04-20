@@ -17,7 +17,7 @@ export interface TypeInferenceNode {
   };
 }
 
-interface TypeScheme {
+export interface TypeScheme {
   quantified: string[];
   type: TypeNode;
 }
@@ -25,12 +25,27 @@ interface TypeScheme {
 @Injectable({ providedIn: 'root' })
 export class TypeInferenceService {
   private polymorphicBindings = new Map<string, TypeScheme>();
+  private collectedLetBindings = new Map<string, TypeScheme>();
   private polyVarCounter = 0;
 
   constructor(private ruleDispatcher: TypeInferenceRuleDispatcherService) {}
 
+  getLetBindings(): Map<string, TypeScheme> {
+    return new Map(this.collectedLetBindings);
+  }
+
+  formatScheme(name: string, scheme: TypeScheme): string {
+    const typeStr = this.formatType(scheme.type);
+    if (scheme.quantified.length === 0) {
+      return `${name} : ${typeStr}`;
+    }
+    const vars = scheme.quantified.join(', ');
+    return `${name} : ∀${vars}. ${typeStr}`;
+  }
+
   buildTypeInferenceTree(lambdaExpr: ExprNode, initialAssumptions?: Map<string, TypeNode>): TypeInferenceNode {
     this.polymorphicBindings.clear();
+    this.collectedLetBindings.clear();
     this.polyVarCounter = 0;
     let assumptions = initialAssumptions ? new Map(initialAssumptions) : new Map<string, TypeNode>();
     const freeVars = TreeUtils.getFreeVars(lambdaExpr);
@@ -76,21 +91,6 @@ export class TypeInferenceService {
       
       case 'LetPair':
         return this.inferLetPair(expr, assumptions);
-      
-      case 'If':
-        return this.inferIf(expr, assumptions);
-      
-      case 'True':
-      case 'False':
-        return this.inferBool(expr);
-      
-      case 'Zero':
-        return this.inferZero(expr);
-      
-      case 'Succ':
-      case 'Pred':
-      case 'IsZero':
-        return this.inferNatOp(expr, assumptions);
       
       case 'DependentAbs':
         return this.inferDependentAbs(expr, assumptions);
@@ -187,11 +187,17 @@ export class TypeInferenceService {
       if (!this.matchTypePattern(fnType.from, argInference.inferredType, substitutions)) {
         throw new Error('Type mismatch in application');
       }
+      if (argInference.inferredType.kind === 'TypeVar' && argInference.inferredType.name === '?') {
+        argInference.inferredType = fnType.from;
+      }
       resultType = this.applyTypeSubstitutions(fnType.to, substitutions);
     } else if (fnType.kind === 'DependentFunc') {
       const substitutions = new Map<string, TypeNode>();
       if (!this.matchTypePattern(fnType.paramType, argInference.inferredType, substitutions)) {
         throw new Error('Type mismatch in application');
+      }
+      if (argInference.inferredType.kind === 'TypeVar' && argInference.inferredType.name === '?') {
+        argInference.inferredType = fnType.paramType;
       }
       const witnessName = expr.arg.kind === 'Var' ? expr.arg.name : fnType.param;
       const instantiatedBody = this.applyTypeSubstitutions(fnType.bodyType, substitutions);
@@ -265,9 +271,7 @@ export class TypeInferenceService {
           this.substituteInType(type.paramType, paramName, replacement),
           this.substituteInType(type.bodyType, paramName, replacement)
         );
-      case 'Bool':
       case 'Bottom':
-      case 'Nat':
         return type;
       default:
         return type;
@@ -420,6 +424,10 @@ export class TypeInferenceService {
       quantified,
       type: valueInference.inferredType
     };
+
+    if (quantified.length > 0) {
+      this.collectedLetBindings.set(expr.name, scheme);
+    }
     
     const newAssumptions = new Map(assumptions);
     newAssumptions.set(expr.name, valueInference.inferredType);
@@ -606,86 +614,13 @@ export class TypeInferenceService {
     return 'pair';
   }
 
-  private inferIf(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
-    if (expr.kind !== 'If') throw new Error('Expected If expression');
-    
-    const condInference = this.inferType(expr.cond, assumptions);
-    const thenInference = this.inferType(expr.thenBranch, assumptions);
-    const elseInference = this.inferType(expr.elseBranch, assumptions);
-    
-    if (condInference.inferredType.kind !== 'Bool') {
-      throw new Error('If condition must be boolean');
-    }
-    
-    if (!this.typesEqual(thenInference.inferredType, elseInference.inferredType)) {
-      throw new Error('If branches must have the same type');
-    }
-
-    return {
-      rule: 'If',
-      expression: expr,
-      inferredType: thenInference.inferredType,
-      assumptions: new Map(assumptions),
-      children: [condInference, thenInference, elseInference]
-    };
-  }
-
-  private inferBool(expr: ExprNode): TypeInferenceNode {
-    return {
-      rule: expr.kind,
-      expression: expr,
-      inferredType: { kind: 'Bool' },
-      assumptions: new Map(),
-      children: []
-    };
-  }
-
-  private inferZero(expr: ExprNode): TypeInferenceNode {
-    return {
-      rule: 'Zero',
-      expression: expr,
-      inferredType: { kind: 'Nat' },
-      assumptions: new Map(),
-      children: []
-    };
-  }
-
-  private inferNatOp(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
-    if (expr.kind !== 'Succ' && expr.kind !== 'Pred' && expr.kind !== 'IsZero') {
-      throw new Error('Expected Succ, Pred, or IsZero expression');
-    }
-    
-    const innerInference = this.inferType(expr.expr, assumptions);
-    
-    if (innerInference.inferredType.kind !== 'Nat') {
-      throw new Error(`${expr.kind} requires natural number`);
-    }
-    
-    let resultType: TypeNode;
-    if (expr.kind === 'IsZero') {
-      resultType = { kind: 'Bool' };
-    } else {
-      resultType = { kind: 'Nat' };
-    }
-
-    return {
-      rule: expr.kind,
-      expression: expr,
-      inferredType: resultType,
-      assumptions: new Map(assumptions),
-      children: [innerInference]
-    };
-  }
-
   private typesEqual(t1: TypeNode, t2: TypeNode): boolean {
     if (t1.kind !== t2.kind) return false;
     
     switch (t1.kind) {
       case 'TypeVar':
         return t1.name === (t2 as any).name;
-      case 'Bool':
       case 'Bottom':
-      case 'Nat':
         return true;
       case 'Func':
         return this.typesEqual(t1.from, (t2 as any).from) && 
@@ -770,9 +705,7 @@ export class TypeInferenceService {
           this.applyTypeSubstitutions(type.paramType, substitutions),
           this.applyTypeSubstitutions(type.bodyType, substitutions)
         );
-      case 'Bool':
       case 'Bottom':
-      case 'Nat':
         return type;
       default:
         return type;
@@ -780,6 +713,10 @@ export class TypeInferenceService {
   }
 
   private matchTypePattern(pattern: TypeNode, actual: TypeNode, substitutions: Map<string, TypeNode>): boolean {
+    if (actual.kind === 'TypeVar' && actual.name === '?') {
+      return true;
+    }
+
     if (pattern.kind === 'TypeVar') {
       if (pattern.name === '?') {
         return true;
@@ -800,9 +737,7 @@ export class TypeInferenceService {
     }
 
     switch (pattern.kind) {
-      case 'Bool':
       case 'Bottom':
-      case 'Nat':
         return true;
       case 'Func':
         return this.matchTypePattern(pattern.from, (actual as any).from, substitutions)
@@ -855,9 +790,7 @@ export class TypeInferenceService {
         this.collectTypeVariables(type.paramType, bucket);
         this.collectTypeVariables(type.bodyType, bucket);
         break;
-      case 'Bool':
       case 'Bottom':
-      case 'Nat':
         break;
     }
     return bucket;
@@ -934,12 +867,8 @@ export class TypeInferenceService {
     switch (type.kind) {
       case 'TypeVar':
         return this.formatTypeVariableName(type.name);
-      case 'Bool':
-        return 'Bool';
       case 'Bottom':
         return '⊥';
-      case 'Nat':
-        return 'Nat';
       case 'Func':
         const fromStr = this.formatType(type.from);
         const toStr = this.formatType(type.to);
@@ -964,11 +893,11 @@ export class TypeInferenceService {
       case 'DependentFunc':
         const dfParamStr = this.formatType(type.paramType);
         const dfBodyStr = this.formatType(type.bodyType);
-        return `(${type.param}: ${dfParamStr}) → ${dfBodyStr}`;
+        return `Π${type.param}:${dfParamStr}. ${dfBodyStr}`;
       case 'DependentProd':
         const dpParamStr = this.formatType(type.paramType);
         const dpBodyStr = this.formatType(type.bodyType);
-        return `∃${type.param}:${dpParamStr}. ${dpBodyStr}`;
+        return `Σ${type.param}:${dpParamStr}. ${dpBodyStr}`;
       default:
         return `[${(type as any).kind}]`;
     }
@@ -1054,14 +983,7 @@ export class TypeInferenceService {
         inferInl: () => this.inferInlInteractive(expr, assumptions),
         inferInr: () => this.inferInrInteractive(expr, assumptions),
         inferCase: () => this.inferCaseInteractive(expr, assumptions),
-        inferIf: () => this.inferIfInteractive(expr, assumptions),
         inferLet: () => this.inferLetInteractive(expr, assumptions),
-        inferTrue: () => this.inferBool(expr),
-        inferFalse: () => this.inferBool(expr),
-        inferZero: () => this.inferZero(expr),
-        inferSucc: () => this.inferNatOpInteractive(expr, assumptions),
-        inferPred: () => this.inferNatOpInteractive(expr, assumptions),
-        inferIsZero: () => this.inferNatOpInteractive(expr, assumptions),
         inferDependentAbs: () => this.inferDependentAbsInteractive(expr, assumptions),
         inferDependentPair: () => this.inferDependentPairInteractive(expr, assumptions),
         inferLetDependentPair: () => this.inferLetDependentPairInteractive(expr, assumptions)
@@ -1173,12 +1095,6 @@ export class TypeInferenceService {
       case 'Let':
         if (node.children.length >= 2) {
           node.inferredType = node.children[node.children.length - 1].inferredType;
-        }
-        break;
-        
-      case 'If':
-        if (node.children.length >= 2) {
-          node.inferredType = node.children[1].inferredType;
         }
         break;
         
@@ -1538,42 +1454,6 @@ export class TypeInferenceService {
     };
   }
 
-  private inferIfInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
-    if (expr.kind !== 'If') throw new Error('Expected If expression');
-    
-    const condChild: TypeInferenceNode = {
-      rule: '∅',
-      expression: expr.cond,
-      inferredType: { kind: 'Bool' },
-      assumptions: new Map(assumptions),
-      children: []
-    };
-
-    const thenChild: TypeInferenceNode = {
-      rule: '∅',
-      expression: expr.thenBranch,
-      inferredType: { kind: 'TypeVar', name: '?' },
-      assumptions: new Map(assumptions),
-      children: []
-    };
-
-    const elseChild: TypeInferenceNode = {
-      rule: '∅',
-      expression: expr.elseBranch,
-      inferredType: { kind: 'TypeVar', name: '?' },
-      assumptions: new Map(assumptions),
-      children: []
-    };
-
-    return {
-      rule: 'If',
-      expression: expr,
-      inferredType: thenChild.inferredType,
-      assumptions: new Map(assumptions),
-      children: [condChild, thenChild, elseChild]
-    };
-  }
-
   private inferLetInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
     if (expr.kind !== 'Let') throw new Error('Expected Let expression');
     
@@ -1600,30 +1480,6 @@ export class TypeInferenceService {
       inferredType: inChild.inferredType,
       assumptions: new Map(assumptions),
       children: [valueChild, inChild]
-    };
-  }
-
-  private inferNatOpInteractive(expr: ExprNode, assumptions: Map<string, TypeNode>): TypeInferenceNode {
-    if (expr.kind !== 'Succ' && expr.kind !== 'Pred' && expr.kind !== 'IsZero') {
-      throw new Error('Expected Succ, Pred, or IsZero expression');
-    }
-    
-    const innerChild: TypeInferenceNode = {
-      rule: '∅',
-      expression: expr.expr,
-      inferredType: { kind: 'Nat' },
-      assumptions: new Map(assumptions),
-      children: []
-    };
-
-    const resultType = expr.kind === 'IsZero' ? { kind: 'Bool' as const } : { kind: 'Nat' as const };
-
-    return {
-      rule: expr.kind,
-      expression: expr,
-      inferredType: resultType,
-      assumptions: new Map(assumptions),
-      children: [innerChild]
     };
   }
 }

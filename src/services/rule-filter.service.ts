@@ -28,7 +28,9 @@ export class RuleFilterService {
           return hasInConcl('Implies');
         case '∧R':
           return hasInConcl('And');
-        case '∨R':
+        case '∨R1':
+          return hasInConcl('Or');
+        case '∨R2':
           return hasInConcl('Or');
         case '¬R':
           return hasInConcl('Not');
@@ -38,7 +40,9 @@ export class RuleFilterService {
           return hasInConcl('Exists');
         case '→L':
           return hasInAssump('Implies');
-        case '∧L':
+        case '∧L1':
+          return hasInAssump('And');
+        case '∧L2':
           return hasInAssump('And');
         case '∨L':
           return hasInAssump('Or');
@@ -49,7 +53,6 @@ export class RuleFilterService {
         case '∃L':
           return hasInAssump('Exists');
         case 'WL':
-        case 'WR':
         case 'Ax':
         case 'id':
         case 'ID':
@@ -88,12 +91,12 @@ export class RuleFilterService {
           return goal.kind === 'And';
         case '∧E1':
         case '∧E2':
-          return hasInContext('And');
+          return hasInContext('And') || this.contextHasForallWithBodyKind(context, 'And');
         case '∨I1':
         case '∨I2':
           return goal.kind === 'Or';
         case '∨E':
-          return hasInContext('Or');
+          return hasInContext('Or') || this.contextHasForallWithBodyKind(context, 'Or');
         case '→I':
           return goal.kind === 'Implies';
         case '→E':
@@ -172,6 +175,19 @@ export class RuleFilterService {
     return false;
   }
 
+  private contextHasForallWithBodyKind(context: FormulaNode[], bodyKind: string): boolean {
+    for (const formula of context) {
+      let current = this.unwrapParen(formula);
+      while (current.kind === 'Forall' || current.kind === 'Exists') {
+        current = this.unwrapParen(current.body);
+      }
+      if (current.kind === (bodyKind as never)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   filterTypeRules(
     rules: readonly string[],
     popupNode: DerivationNode | NdNode | TypeInferenceNode | null,
@@ -204,22 +220,8 @@ export class RuleFilterService {
           return expr.kind === 'Inr';
         case 'Case':
           return expr.kind === 'Case';
-        case 'If':
-          return expr.kind === 'If';
         case 'Let':
           return expr.kind === 'Let';
-        case 'True':
-          return expr.kind === 'True';
-        case 'False':
-          return expr.kind === 'False';
-        case 'Zero':
-          return expr.kind === 'Zero';
-        case 'Succ':
-          return expr.kind === 'Succ';
-        case 'Pred':
-          return expr.kind === 'Pred';
-        case 'IsZero':
-          return expr.kind === 'IsZero';
         case 'DependentAbs':
           return expr.kind === 'DependentAbs';
         case 'DependentPair':

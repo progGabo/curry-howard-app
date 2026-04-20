@@ -28,10 +28,6 @@ class LambdaVisitorWrapper implements ParseTreeVisitor<unknown> {
     return this.astBuilder.visitLetPairExpr(ctx);
   }
 
-  visitIfExpr(ctx: any): unknown {
-    return this.astBuilder.visitIfExpr(ctx);
-  }
-
   visitCaseExpr(ctx: any): unknown {
     return this.astBuilder.visitCaseExpr(ctx);
   }
@@ -102,6 +98,8 @@ export class LambdaParserService {
       
       let processedCode = lambdaCode
         .replace(/\u03BB/g, '\\')   // λ (Greek lambda) -> \
+        .replace(/\u03A0/g, '\u2200')  // Π -> ∀ (dependent function type = universal)
+        .replace(/\u03A3/g, '\u2203')  // Σ -> ∃ (dependent product type = existential)
         .replace(/\u2192/g, '->')   // → -> ->
         .replace(/\u21D4/g, '=>')   // ⇒ -> =>
         .replace(/\u22A5/g, 'Bottom') // ⊥ -> Bottom (parseable TYPEID)
@@ -240,7 +238,7 @@ export class LambdaParserService {
           continue;
         }
         if (depth === 0) {
-          if (code.startsWith('->', cursor) || code.startsWith('=>', cursor) || ch === ',' || ch === '+') {
+          if (ch === ',' || ch === '+') {
             break;
           }
         }
@@ -290,9 +288,9 @@ export class LambdaParserService {
         case 'DependentFunc':
         case 'DependentProd':
           return { ...type, paramType: expandType(type.paramType), bodyType: expandType(type.bodyType) };
-        case 'Bool':
         case 'Bottom':
-        case 'Nat':
+          return type;
+        default:
           return type;
       }
     };
@@ -325,12 +323,6 @@ export class LambdaParserService {
           return { ...node, value: visit(node.value), inExpr: visit(node.inExpr) };
         case 'LetPair':
           return { ...node, pair: visit(node.pair), inExpr: visit(node.inExpr) };
-        case 'If':
-          return { ...node, cond: visit(node.cond), thenBranch: visit(node.thenBranch), elseBranch: visit(node.elseBranch) };
-        case 'Succ':
-        case 'Pred':
-        case 'IsZero':
-          return { ...node, expr: visit(node.expr) };
         case 'DependentPair':
           return {
             ...node,
@@ -350,9 +342,8 @@ export class LambdaParserService {
         case 'Abort':
           return { ...node, expr: visit(node.expr), targetType: expandType(node.targetType) };
         case 'Var':
-        case 'True':
-        case 'False':
-        case 'Zero':
+          return node;
+        default:
           return node;
       }
     };
@@ -364,9 +355,7 @@ export class LambdaParserService {
     switch (type.kind) {
       case 'TypeVar':
         return { ...type };
-      case 'Bool':
       case 'Bottom':
-      case 'Nat':
         return { ...type };
       case 'Func':
         return { ...type, from: this.cloneType(type.from), to: this.cloneType(type.to) };
@@ -434,8 +423,11 @@ export class LambdaParserService {
       case 'Var':
         return expr.name;
       
-      case 'Abs':
-        return `λ${expr.param}:${this.formatType(expr.paramType)}. ${this.formatExpr(expr.body)}`;
+      case 'Abs': {
+        const typeStr = this.formatType(expr.paramType);
+        const typeNeedsParens = expr.paramType.kind === 'DependentFunc' || expr.paramType.kind === 'DependentProd';
+        return `λ${expr.param}:${typeNeedsParens ? `(${typeStr})` : typeStr}. ${this.formatExpr(expr.body)}`;
+      }
       
       case 'App':
         const fnStr = this.formatExpr(expr.fn);
@@ -467,27 +459,6 @@ export class LambdaParserService {
       case 'Case':
         return `case ${this.formatExpr(expr.expr)} of inl ${expr.leftVar}:${this.formatType(expr.leftType)} => ${this.formatExpr(expr.leftBranch)} | inr ${expr.rightVar}:${this.formatType(expr.rightType)} => ${this.formatExpr(expr.rightBranch)}`;
       
-      case 'If':
-        return `if ${this.formatExpr(expr.cond)} then ${this.formatExpr(expr.thenBranch)} else ${this.formatExpr(expr.elseBranch)}`;
-      
-      case 'True':
-        return 'true';
-      
-      case 'False':
-        return 'false';
-      
-      case 'Zero':
-        return '0';
-      
-      case 'Succ':
-        return `succ ${this.formatExpr(expr.expr)}`;
-      
-      case 'Pred':
-        return `pred ${this.formatExpr(expr.expr)}`;
-      
-      case 'IsZero':
-        return `iszero ${this.formatExpr(expr.expr)}`;
-
       case 'Abort':
         return `abort(${this.formatExpr(expr.expr)}): ${this.formatType(expr.targetType)}`;
       
@@ -512,12 +483,8 @@ export class LambdaParserService {
     switch (type.kind) {
       case 'TypeVar':
         return type.name;
-      case 'Bool':
-        return 'Bool';
       case 'Bottom':
         return '⊥';
-      case 'Nat':
-        return 'Nat';
       case 'Func':
         const from = this.formatType(type.from);
         const to = this.formatType(type.to);
@@ -540,9 +507,9 @@ export class LambdaParserService {
         const args = type.argTypes.map((t: any) => this.formatType(t)).join(', ');
         return `${type.name}(${args})`;
       case 'DependentFunc':
-        return `(${type.param}: ${this.formatType(type.paramType)}) -> ${this.formatType(type.bodyType)}`;
+        return `Π${type.param}:${this.formatType(type.paramType)}. ${this.formatType(type.bodyType)}`;
       case 'DependentProd':
-        return `∃${type.param}:${this.formatType(type.paramType)}. ${this.formatType(type.bodyType)}`;
+        return `Σ${type.param}:${this.formatType(type.paramType)}. ${this.formatType(type.bodyType)}`;
       default:
         return `[${type.kind}]`;
     }
