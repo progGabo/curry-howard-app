@@ -84,7 +84,7 @@ export function parenthesizeFormula(child: FormulaNode, parent: FormulaNode): st
   return formulaPrecedence(child) < formulaPrecedence(parent) ? `(${text})` : text;
 }
 
-export function sequentToText(sequent: { assumptions: FormulaNode[];  }): string {
+export function sequentToText(sequent: { assumptions: FormulaNode[]; conclusions: FormulaNode[] }): string {
   const assumptions = sequent.assumptions.map(formulaToText).join(', ');
   const conclusion = sequent.conclusions[0] ? formulaToText(sequent.conclusions[0]) : '';
   return `${assumptions} ⊢ ${conclusion}`;

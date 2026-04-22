@@ -21,7 +21,7 @@ export type FormulaNode =
 // Sequent (Γ ⊢ A)
 export interface SequentNode {
   assumptions: FormulaNode[];
-  ;
+  conclusions: FormulaNode[];
   assumptionVars?: WeakMap<FormulaNode, string>;
 }
 
