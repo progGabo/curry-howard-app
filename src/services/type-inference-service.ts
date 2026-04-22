@@ -364,6 +364,16 @@ export class TypeInferenceService {
     
     const resultType = expr.asType;
 
+    if (resultType.kind === 'Sum') {
+      const expectedInner = resultType.left;
+      const isPlaceholder = innerInference.inferredType.kind === 'TypeVar' && innerInference.inferredType.name === '?';
+      if (isPlaceholder) {
+        innerInference.inferredType = expectedInner;
+      } else if (!this.typesEqual(innerInference.inferredType, expectedInner)) {
+        throw new Error(`inl: inner type ${this.formatType(innerInference.inferredType)} does not match left type ${this.formatType(expectedInner)} of ${this.formatType(resultType)}`);
+      }
+    }
+
     return {
       rule: 'Inl',
       expression: expr,
@@ -379,6 +389,16 @@ export class TypeInferenceService {
     const innerInference = this.inferType(expr.expr, assumptions);
     
     const resultType = expr.asType;
+
+    if (resultType.kind === 'Sum') {
+      const expectedInner = resultType.right;
+      const isPlaceholder = innerInference.inferredType.kind === 'TypeVar' && innerInference.inferredType.name === '?';
+      if (isPlaceholder) {
+        innerInference.inferredType = expectedInner;
+      } else if (!this.typesEqual(innerInference.inferredType, expectedInner)) {
+        throw new Error(`inr: inner type ${this.formatType(innerInference.inferredType)} does not match right type ${this.formatType(expectedInner)} of ${this.formatType(resultType)}`);
+      }
+    }
 
     return {
       rule: 'Inr',

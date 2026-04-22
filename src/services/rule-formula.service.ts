@@ -18,6 +18,12 @@ export class RuleFormulaService {
       description: 'Identity rule',
       type: 'special'
     },
+    'cut': {
+      name: 'cut (Cut)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\varphi, \\Delta \\vdash \\psi}{\\Gamma, \\Delta \\vdash \\psi}\\; (cut)',
+      description: 'Cut rule',
+      type: 'special'
+    },
     '→R': {
       name: '→R (Implication Right)',
       formula: '\\frac{\\Gamma, \\varphi \\vdash \\psi}{\\Gamma \\vdash \\varphi \\Rightarrow \\psi}\\; (⇒R)',
@@ -63,7 +69,7 @@ export class RuleFormulaService {
     // Assumption rules
     '→L': {
       name: '→L (Implication Left)',
-      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\Rightarrow \\psi \\vdash A}\\; (⇒L)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Delta, \\psi \\vdash \\theta}{\\Gamma, \\Delta, \\varphi \\Rightarrow \\psi \\vdash \\theta}\\; (⇒L)',
       description: 'Eliminate implication on the left side',
       type: 'assumption'
     },
@@ -311,6 +317,12 @@ export class RuleFormulaService {
       description: 'Pravidlo identity',
       type: 'special'
     },
+    'cut': {
+      name: 'cut (Rez)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\varphi, \\Delta \\vdash \\psi}{\\Gamma, \\Delta \\vdash \\psi}\\; (cut)',
+      description: 'Pravidlo rezu',
+      type: 'special'
+    },
     '→R': {
       name: '→R (Implikácia vpravo)',
       formula: '\\frac{\\Gamma, \\varphi \\vdash \\psi}{\\Gamma \\vdash \\varphi \\Rightarrow \\psi}\\; (⇒R)',
@@ -355,7 +367,7 @@ export class RuleFormulaService {
     },
     '→L': {
       name: '→L (Implikácia vľavo)',
-      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Gamma, \\psi \\vdash A}{\\Gamma, \\varphi \\Rightarrow \\psi \\vdash A}\\; (⇒L)',
+      formula: '\\frac{\\Gamma \\vdash \\varphi \\quad \\Delta, \\psi \\vdash \\theta}{\\Gamma, \\Delta, \\varphi \\Rightarrow \\psi \\vdash \\theta}\\; (⇒L)',
       description: 'Eliminácia implikácie na ľavej strane',
       type: 'assumption'
     },

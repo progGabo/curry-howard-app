@@ -144,7 +144,7 @@ export class App {
   conclusionRules = [...CONCLUSION_RULES];
   assumptionRules = [...ASSUMPTION_RULES];
   specialRules = [...SPECIAL_RULES];
-  seqSidebarIdentityCutRules = ['id'];
+  seqSidebarIdentityCutRules = ['id', 'cut'];
   seqSidebarNegationRules = ['¬L', '¬R'];
   seqSidebarConjunctionRules = ['∧L1', '∧L2', '∧R'];
   seqSidebarDisjunctionRules = ['∨R1', '∨R2', '∨L'];

@@ -32,7 +32,7 @@ export class HelpModalComponent {
 
   readonly sequentConclusionRules = ['→R', '∧R', '∨R1', '∨R2', '¬R', '∀R', '∃R'];
   readonly sequentAssumptionRules = ['→L', '∧L1', '∧L2', '∨L', '¬L', '∀L', '∃L'];
-  readonly sequentSpecialRules = ['id', 'WL'];
+  readonly sequentSpecialRules = ['id', 'cut', 'WL'];
 
   readonly ndIntroRules = ['⊤I', '¬I', '∧I', '∨I1', '∨I2', '→I'];
   readonly ndElimRules = ['⊥E1', '¬E', '∧E1', '∧E2', '∨E', '→E'];
