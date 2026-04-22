@@ -413,6 +413,19 @@ export class TypeInferenceService {
     if (expr.kind !== 'Case') throw new Error('Expected Case expression');
     
     const exprInference = this.inferType(expr.expr, assumptions);
+
+    // Propagate the expected scrutinee type from the branch annotations
+    const expectedSumType: TypeNode = { kind: 'Sum', left: expr.leftType, right: expr.rightType };
+    const scrutineePlaceholder = exprInference.inferredType.kind === 'TypeVar' && exprInference.inferredType.name === '?';
+    if (scrutineePlaceholder) {
+      exprInference.inferredType = expectedSumType;
+    } else if (exprInference.inferredType.kind === 'Sum') {
+      // verify consistency
+      if (!this.typesEqual(exprInference.inferredType.left, expr.leftType) ||
+          !this.typesEqual(exprInference.inferredType.right, expr.rightType)) {
+        throw new Error('Case scrutinee type does not match branch annotations');
+      }
+    }
     
     const leftAssumptions = new Map(assumptions);
     leftAssumptions.set(expr.leftVar, expr.leftType);
